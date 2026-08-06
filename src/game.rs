@@ -6295,7 +6295,7 @@ mod tests {
             CardInstanceId(10_001),
             "the untapped newcomer is kept over the tapped original",
         );
-        assert!(!mine[0].tapped, "the survivor is the untapped one",);
+        assert!(!mine[0].tapped, "the survivor is the untapped one");
         assert_eq!(
             game.players[0].graveyard.len(),
             1,

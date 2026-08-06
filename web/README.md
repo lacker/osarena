@@ -14,12 +14,12 @@ is required to play a local game.
 
 ```bash
 pnpm install
-pnpm run wasm:build
 pnpm run dev
 ```
 
 Then open `http://localhost:3000`. The client defaults to The Deck versus
-Goblins, and all game state stays in the browser.
+Goblins, and all game state stays in the browser. Development, production
+builds, and tests regenerate the Git-ignored WASM bindings automatically.
 
 ## Checks
 

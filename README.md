@@ -183,11 +183,12 @@ when doing a longer soak run, for example
 ## Web interface
 
 The `web/` application runs the same Rust engine in the browser through the
-small `wasm/` adapter. Generated bindings live under `web/app/wasm` so Vite can
-bundle the module and its binary together. The browser submits an index from
-the engine's current legal-action list for ordinary actions. Generic decisions
-submit a decision ID and option IDs through the same WASM facade; the browser
-never reconstructs or mutates game rules in TypeScript.
+small `wasm/` adapter. Generated bindings are built locally under
+`web/app/wasm`, which is ignored by Git, so Vite can bundle the module and its
+binary together. The browser submits an index from the engine's current
+legal-action list for ordinary actions. Generic decisions submit a decision ID
+and option IDs through the same WASM facade; the browser never reconstructs or
+mutates game rules in TypeScript.
 
 Build fresh browser bindings after changing the Rust API:
 
@@ -204,6 +205,9 @@ cd web
 pnpm install
 pnpm dev
 ```
+
+The `dev`, `build`, and `test` workflows rebuild the ignored WASM bindings
+before they run.
 
 ```sh
 cargo test

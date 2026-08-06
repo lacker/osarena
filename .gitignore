@@ -1,5 +1,6 @@
 /target
 /wasm/target
 /bindings/penta-py/target
+/web/app/wasm/
 .pnpm-store/
 .DS_Store
