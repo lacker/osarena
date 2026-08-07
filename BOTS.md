@@ -46,7 +46,7 @@ game = penta.Game("Sligh", "The Deck", opponent="handcrafted", seed=42)
 while game.result() is None:
     observation = json.loads(game.observe())
     actions = observation["legalActions"]
-    choice = actions[0]["index"]          # your bot's decision goes here
+    choice = actions[1]["index"]     # your bot goes here; [0] is Concede
     game.act(choice)
 print(game.result())                       # "p1", "p2", or "draw"
 ```
@@ -105,7 +105,7 @@ use penta::PlayerId;
 let mut game = BotGame::new("Sligh", "The Deck", Opponent::Handcrafted, PlayerId::Two, 42)?;
 while game.result().is_none() {
     let observation = game.observe_json(game.decision_seat().unwrap());
-    game.act(0)?; // your bot's index here
+    game.act(1)?; // your bot's index here; index 0 is always Concede
 }
 ```
 
@@ -184,8 +184,11 @@ targeting), `ActivateAbility`, `ActivateManaAbility`, `PayLifeForMana`,
 `ChooseUntap`, `ChooseDecision`, `CancelDecision`, `PassPriority`,
 `Concede`.
 
-Two things worth knowing:
+Three things worth knowing:
 
+- **`legalActions[0]` is always `Concede`.** A "grab the first action"
+  starter bot resigns on the spot: take `actions[1]`, or filter out
+  `type == "Concede"`, until your bot has real preferences.
 - **Mana is handled for you.** If a `CastSpell` appears in `legalActions`,
   you can afford it; playing it taps lands automatically. Tapping lands by
   hand (`ActivateManaAbility`) exists but is never required.
