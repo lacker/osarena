@@ -19,7 +19,8 @@ pnpm run dev
 
 Then open `http://localhost:3000`. The client defaults to The Deck versus
 Goblins, and all game state stays in the browser. Development, production
-builds, and tests regenerate the Git-ignored WASM bindings automatically.
+builds, and tests keep the Git-ignored WASM bindings current automatically.
+Cargo checks incrementally, and unchanged bindings skip `wasm-bindgen`.
 
 ## Checks
 

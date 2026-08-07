@@ -206,8 +206,9 @@ pnpm install
 pnpm dev
 ```
 
-The `dev`, `build`, and `test` workflows rebuild the ignored WASM bindings
-before they run.
+The `dev`, `build`, and `test` workflows ensure the ignored WASM bindings are
+up to date before they run. Cargo checks incrementally, and `wasm-bindgen` is
+skipped when the compiled module and generator version are unchanged.
 
 ```sh
 cargo test
