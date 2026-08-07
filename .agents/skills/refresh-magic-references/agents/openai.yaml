@@ -1,0 +1,4 @@
+interface:
+  display_name: "Refresh Magic References"
+  short_description: "Inspect and refresh shared Magic references"
+  default_prompt: "Use $refresh-magic-references to inspect this clone’s shared Magic reference cache, and refresh or rebuild it only after human approval when the current task requires it."

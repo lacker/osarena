@@ -1,0 +1,4 @@
+interface:
+  display_name: "Query Magic References"
+  short_description: "Query shared Scryfall cards and rulings"
+  default_prompt: "Use $query-magic-references to resolve and query this clone’s shared Scryfall index read-only, without refreshing it unless the task truly requires newer or repaired data."

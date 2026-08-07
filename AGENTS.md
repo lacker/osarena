@@ -1,5 +1,31 @@
 # Repository instructions
 
+## Optional reference material
+
+Magic rules and card data may be available in an optional development cache
+under Git's common directory. One cache is shared by every linked worktree in
+the clone. Use `$query-magic-references` for efficient read-only access to its
+generated Scryfall SQLite index and `$refresh-magic-references` to locate,
+inspect, migrate, populate, or rebuild the cache.
+
+Locating the cache, querying it, checking `status scryfall-index`, and viewing
+`lock-status` are low-friction read operations; they do not justify a refresh.
+Fetch, index, and migration commands mutate shared clone state and require
+explicit human approval. Run them rarely: only when material is missing or
+corrupt, the required database schema is unavailable, or the current task
+genuinely requires fresher source data. Do not refresh merely because a new
+worktree was created. If the cache is absent, stale for an irrelevant purpose,
+or unavailable, continue with appropriate authoritative online sources.
+
+Treat `refresh.lock` metadata as diagnostic information. The kernel lock is
+authoritative; never delete or bypass the lock merely because its recorded
+owner appears stale. Do not commit or ship downloaded reference payloads.
+
+Treat both reference skills as maintained development tooling. When repeated
+work exposes a missing field, relationship, index, or query pattern, update the
+refresh builder, both skills, and the documented schema together, then rebuild
+and validate the cache. Avoid expanding them for isolated one-off questions.
+
 ## UI changes
 
 For every change that can affect the web interface:
