@@ -960,6 +960,8 @@ impl WebGame {
                         || self.card_name(permanent.definition),
                         |part| part.name.clone(),
                     ),
+                    "scryfallId": card.and_then(|card| card.scryfall_id.as_deref()).unwrap_or(""),
+                    "artist": card.and_then(|card| card.artist.as_deref()).unwrap_or(""),
                     "kind": current_kind,
                     "typeLine": rules.map_or("", |rules| rules.type_line),
                     "metadataOnly": rules.is_some_and(|rules| {
@@ -1000,6 +1002,8 @@ impl WebGame {
                 json!({
                     "id": id.0,
                     "name": self.card_name(*definition),
+                    "scryfallId": card.and_then(|card| card.scryfall_id.as_deref()).unwrap_or(""),
+                    "artist": card.and_then(|card| card.artist.as_deref()).unwrap_or(""),
                     "kind": card.map_or("unknown".into(), |card| {
                         format!("{:?}", card.rules.kind).to_ascii_lowercase()
                     }),
@@ -1045,6 +1049,8 @@ impl WebGame {
                     "cardId": object.id.0,
                     "sourceId": object.source.map(|source| source.0),
                     "name": presentation.name,
+                    "scryfallId": card.and_then(|card| card.scryfall_id.as_deref()).unwrap_or(""),
+                    "artist": card.and_then(|card| card.artist.as_deref()).unwrap_or(""),
                     "owner": if object.controller == self.human { "human" } else { "opponent" },
                     "kind": format!("{:?}", object.kind),
                     "x": signature.map_or(0, penta::CastSignature::x),
@@ -2456,6 +2462,53 @@ mod tests {
         );
         assert!(fused.rules_text.contains("Turn — Until end of turn"));
         assert!(fused.rules_text.contains("Burn — Burn deals 2 damage"));
+    }
+
+    #[test]
+    fn visible_cards_include_scryfall_metadata() {
+        let game = WebGame::new("Goblins", "Sligh", "Handcrafted", true, 9_394, None).unwrap();
+        let snapshot = game.snapshot_value(false);
+        let hand = snapshot["human"]["hand"].as_array().unwrap();
+
+        assert_eq!(hand.len(), 7);
+        assert!(hand.iter().all(|card| {
+            card["scryfallId"].as_str().is_some_and(|id| id.len() == 36)
+                && card["artist"]
+                    .as_str()
+                    .is_some_and(|artist| !artist.is_empty())
+        }));
+    }
+
+    #[test]
+    fn standard_visible_cards_include_scryfall_metadata() {
+        let game = WebGame::new(
+            "Briksza Naya Midrange",
+            "Greer G/R Aggro",
+            "Handcrafted",
+            true,
+            2_013,
+            Some("isd-rtr-standard".into()),
+        )
+        .unwrap();
+        let snapshot = game.snapshot_value(false);
+        let hand = snapshot["human"]["hand"].as_array().unwrap();
+        let standard_cards = hand
+            .iter()
+            .filter(|card| {
+                !matches!(
+                    card["name"].as_str(),
+                    Some("Plains" | "Island" | "Swamp" | "Mountain" | "Forest")
+                )
+            })
+            .collect::<Vec<_>>();
+
+        assert!(!standard_cards.is_empty());
+        assert!(standard_cards.iter().all(|card| {
+            card["scryfallId"].as_str().is_some_and(|id| id.len() == 36)
+                && card["artist"]
+                    .as_str()
+                    .is_some_and(|artist| !artist.is_empty())
+        }));
     }
 
     #[test]

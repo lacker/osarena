@@ -2,9 +2,11 @@ use super::{CardRecord, PrintingRecord};
 use crate::card::{CardBehavior, CardKind, CardRules, CardSet, ManaCost, cards};
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static CHAIN_LIGHTNING: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static CHAIN_LIGHTNING: CardRecord = CardRecord::new_with_art(
     cards::CHAIN_LIGHTNING,
     "Chain Lightning",
+    "b5883762-ca0a-4932-8d2a-41a45796a5f8",
+    "Sandra Everingham",
     CardSet::Legends,
     false,
     CardBehavior::ChainLightning,
@@ -16,9 +18,11 @@ pub(in crate::card::sets) static CHAIN_LIGHTNING: CardRecord = CardRecord::new(
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static DIVINE_OFFERING: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static DIVINE_OFFERING: CardRecord = CardRecord::new_with_art(
     cards::DIVINE_OFFERING,
     "Divine Offering",
+    "9c78c2f3-2f40-48ad-9dc4-55d1fa399a56",
+    "Jeff A. Menges",
     CardSet::Legends,
     false,
     CardBehavior::DivineOffering,
@@ -30,9 +34,11 @@ pub(in crate::card::sets) static DIVINE_OFFERING: CardRecord = CardRecord::new(
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static MANA_DRAIN: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static MANA_DRAIN: CardRecord = CardRecord::new_with_art(
     cards::MANA_DRAIN,
     "Mana Drain",
+    "e691adef-3027-4e6a-889f-9f4e2df36a7c",
+    "Mark Tedin",
     CardSet::Legends,
     false,
     CardBehavior::ManaDrain,
@@ -44,9 +50,11 @@ pub(in crate::card::sets) static MANA_DRAIN: CardRecord = CardRecord::new(
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static RECALL: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static RECALL: CardRecord = CardRecord::new_with_art(
     cards::RECALL,
     "Recall",
+    "33296718-0625-4422-a65c-b21cf99c52ec",
+    "Brian Snõddy",
     CardSet::Legends,
     false,
     CardBehavior::Recall,
@@ -58,9 +66,11 @@ pub(in crate::card::sets) static RECALL: CardRecord = CardRecord::new(
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static SYLVAN_LIBRARY: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static SYLVAN_LIBRARY: CardRecord = CardRecord::new_with_art(
     cards::SYLVAN_LIBRARY,
     "Sylvan Library",
+    "f486df00-7c4a-4ff0-bb0b-c8b5432ac742",
+    "Harold McNeill",
     CardSet::Legends,
     false,
     CardBehavior::SylvanLibrary,
@@ -72,9 +82,11 @@ pub(in crate::card::sets) static SYLVAN_LIBRARY: CardRecord = CardRecord::new(
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static THUNDER_SPIRIT: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static THUNDER_SPIRIT: CardRecord = CardRecord::new_with_art(
     cards::THUNDER_SPIRIT,
     "Thunder Spirit",
+    "61a59775-b1cd-4ed0-8abf-c2b37f7be0d5",
+    "Randy Asplund-Faith",
     CardSet::Legends,
     false,
     CardBehavior::ThunderSpirit,
@@ -88,9 +100,11 @@ pub(in crate::card::sets) static THUNDER_SPIRIT: CardRecord = CardRecord::new(
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static WHIRLING_DERVISH: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static WHIRLING_DERVISH: CardRecord = CardRecord::new_with_art(
     cards::WHIRLING_DERVISH,
     "Whirling Dervish",
+    "eba294e7-7097-4bc3-b396-72e85dd4f441",
+    "Susan Van Camp",
     CardSet::Legends,
     false,
     CardBehavior::WhirlingDervish,
@@ -103,23 +117,11 @@ pub(in crate::card::sets) static WHIRLING_DERVISH: CardRecord = CardRecord::new(
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static ENERGY_FLUX: CardRecord = CardRecord::new(
-    cards::ENERGY_FLUX,
-    "Energy Flux",
-    CardSet::Legends,
-    false,
-    CardBehavior::EnergyFlux,
-    CardRules::new(
-        CardKind::Enchantment,
-        ManaCost::colored(2, 0, 1, 0, 0, 0),
-        "At the beginning of each player's upkeep, sacrifice each artifact unless you pay 2 for it.",
-    ),
-);
-
-// Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static MOAT: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static MOAT: CardRecord = CardRecord::new_with_art(
     cards::MOAT,
     "Moat",
+    "952ba126-0915-47f0-9b6a-a0a6dcd22c6f",
+    "Jeff A. Menges",
     CardSet::Legends,
     false,
     CardBehavior::Moat,
@@ -131,9 +133,11 @@ pub(in crate::card::sets) static MOAT: CardRecord = CardRecord::new(
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static PENDELHAVEN: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static PENDELHAVEN: CardRecord = CardRecord::new_with_art(
     cards::PENDELHAVEN,
     "Pendelhaven",
+    "79427109-c1f3-476d-a029-0049217237b5",
+    "Bryon Wackwitz",
     CardSet::Legends,
     false,
     CardBehavior::Pendelhaven,
@@ -150,9 +154,11 @@ pub(in crate::card::sets) static PENDELHAVEN: CardRecord = CardRecord::new(
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static RELIC_BARRIER: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static RELIC_BARRIER: CardRecord = CardRecord::new_with_art(
     cards::RELIC_BARRIER,
     "Relic Barrier",
+    "c062cbae-ce5e-43be-9932-c81a0a3622e8",
+    "Harold McNeill",
     CardSet::Legends,
     false,
     CardBehavior::RelicBarrier,
@@ -165,24 +171,11 @@ pub(in crate::card::sets) static RELIC_BARRIER: CardRecord = CardRecord::new(
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static SEDGE_TROLL: CardRecord = CardRecord::new(
-    cards::SEDGE_TROLL,
-    "Sedge Troll",
-    CardSet::Legends,
-    false,
-    CardBehavior::SedgeTroll,
-    CardRules::new(
-        CardKind::Creature,
-        ManaCost::new(2, 1),
-        "Sedge Troll gets +1/+1 as long as you control a Swamp. R: Regenerate Sedge Troll.",
-    )
-    .creature(2, 2),
-);
-
-// Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static THE_ABYSS: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static THE_ABYSS: CardRecord = CardRecord::new_with_art(
     cards::THE_ABYSS,
     "The Abyss",
+    "86a27d68-3e58-4ade-976d-36381beed451",
+    "Pete Venters",
     CardSet::Legends,
     false,
     CardBehavior::TheAbyss,
@@ -201,11 +194,9 @@ pub(in crate::card::sets) static CARDS: &[&CardRecord] = &[
     &SYLVAN_LIBRARY,
     &THUNDER_SPIRIT,
     &WHIRLING_DERVISH,
-    &ENERGY_FLUX,
     &MOAT,
     &PENDELHAVEN,
     &RELIC_BARRIER,
-    &SEDGE_TROLL,
     &THE_ABYSS,
 ];
 

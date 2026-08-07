@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { CardArt, type CardArtMode } from "./CardArt";
 import {
   createEngineGame,
   initializeEngine,
@@ -112,7 +113,11 @@ const isPresentationPredecessor = (
   before.name === after.name &&
   isPlausibleVisibleZoneTransition(before.zone, after.zone);
 
-export function GameClient() {
+export function GameClient({
+  cardArtMode = "off",
+}: {
+  cardArtMode?: CardArtMode;
+} = {}) {
   const game = useRef<EngineGame | null>(null);
   const tableRef = useRef<HTMLElement | null>(null);
   const wasmReady = useRef(false);
@@ -1490,6 +1495,7 @@ export function GameClient() {
 
             <Zone
               cards={opponentPermanents}
+              cardArtMode={cardArtMode}
               label="Opponent battlefield"
               actionCount={cardActions}
               isDraggable={cardIsDraggable}
@@ -1546,6 +1552,8 @@ export function GameClient() {
                     card={{
                       id: item.id,
                       name: item.name,
+                      scryfallId: item.scryfallId,
+                      artist: item.artist,
                       kind: item.cardKind,
                       typeLine: item.typeLine,
                       metadataOnly: item.metadataOnly,
@@ -1557,6 +1565,7 @@ export function GameClient() {
                       owner: item.owner,
                       xValue: item.manaCost?.x ? item.x : null,
                     }}
+                    cardArtMode={cardArtMode}
                     zone="stack"
                     targetKey={`stack:${item.id}`}
                     actionable={isStackTargetable(item.id)}
@@ -1581,6 +1590,7 @@ export function GameClient() {
 
             <Zone
               cards={humanPermanents}
+              cardArtMode={cardArtMode}
               label="Your battlefield"
               actionCount={cardActions}
               isDraggable={cardIsDraggable}
@@ -1674,6 +1684,7 @@ export function GameClient() {
 
             <HandZone
               cards={state.human.hand}
+              cardArtMode={cardArtMode}
               actionCount={cardActions}
               isDraggable={cardIsDraggable}
               isTargetable={isTargetable}
@@ -1934,6 +1945,11 @@ export function GameClient() {
                   {action.label}
                 </button>
               ))}
+              <p className="fan-content-notice">
+                Penta is unofficial Fan Content permitted under the Fan Content Policy. Not
+                approved or endorsed by Wizards. Portions of the materials used are property of
+                Wizards of the Coast. © Wizards of the Coast LLC.
+              </p>
             </details>
             <details
               className="game-log"
@@ -2270,6 +2286,7 @@ function BlockArrows({
 
 function Zone({
   cards,
+  cardArtMode,
   label,
   actionCount,
   isDraggable,
@@ -2288,6 +2305,7 @@ function Zone({
   opponent = false,
 }: {
   cards: Card[];
+  cardArtMode: CardArtMode;
   label: string;
   actionCount(id: number): number;
   isDraggable(id: number): boolean;
@@ -2312,6 +2330,7 @@ function Zone({
       <CardPile
         key={pile.key}
         cards={pile.cards}
+        cardArtMode={cardArtMode}
         actionCount={actionCount}
         isDraggable={isDraggable}
         isTargetable={isTargetable}
@@ -2378,6 +2397,7 @@ function groupCardsIntoPiles(cards: Card[]) {
 
 function CardPile({
   cards,
+  cardArtMode,
   actionCount,
   isDraggable,
   isTargetable,
@@ -2394,6 +2414,7 @@ function CardPile({
   onDropTarget,
 }: {
   cards: Card[];
+  cardArtMode: CardArtMode;
   actionCount(id: number): number;
   isDraggable(id: number): boolean;
   isTargetable(id: number): boolean;
@@ -2445,6 +2466,7 @@ function CardPile({
           >
             <GameCard
               card={card}
+              cardArtMode={cardArtMode}
               zone="battlefield"
               actionable={actionCount(card.id) > 0}
               draggableAction={isDraggable(card.id)}
@@ -2473,6 +2495,7 @@ function CardPile({
 
 function HandZone({
   cards,
+  cardArtMode,
   actionCount,
   isDraggable,
   isTargetable,
@@ -2485,6 +2508,7 @@ function HandZone({
   onPaymentPreviewEnd,
 }: {
   cards: Card[];
+  cardArtMode: CardArtMode;
   actionCount(id: number): number;
   isDraggable(id: number): boolean;
   isTargetable(id: number): boolean;
@@ -2539,6 +2563,7 @@ function HandZone({
             >
               <GameCard
                 card={card}
+                cardArtMode={cardArtMode}
                 zone="hand"
                 actionable={actionCount(card.id) > 0}
                 draggableAction={isDraggable(card.id)}
@@ -2562,6 +2587,7 @@ function HandZone({
 
 function GameCard({
   card,
+  cardArtMode,
   zone = "battlefield",
   targetKey,
   actionable,
@@ -2583,6 +2609,7 @@ function GameCard({
   compact = false,
 }: {
   card: Card;
+  cardArtMode: CardArtMode;
   zone?: string;
   targetKey?: string;
   actionable: boolean;
@@ -2774,9 +2801,11 @@ function GameCard({
             </span>
           )}
         </span>
-        <span className="card-art" aria-hidden="true">
-          <i>{card.kind.includes("land") ? "▲" : card.kind.includes("artifact") ? "◇" : "●"}</i>
-        </span>
+        <CardArt
+          mode={cardArtMode}
+          cardKind={card.kind}
+          scryfallId={card.scryfallId}
+        />
         <span className="card-type">{type}</span>
         <span className="card-text">{card.attacking ? "Attacking" : card.rulesText}</span>
         {card.power !== null && card.power !== undefined && (
@@ -2813,6 +2842,11 @@ function GameCard({
             </span>
             {battlefieldState.length > 0 && (
               <span className="card-hover-state">{battlefieldState.join(" · ")}</span>
+            )}
+            {cardArtMode === "scryfall" && card.scryfallId && card.artist && (
+              <span className="card-hover-credit">
+                Illustration: {card.artist} · Card art © Wizards of the Coast LLC · Image via Scryfall
+              </span>
             )}
           </span>,
           document.body,

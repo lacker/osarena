@@ -1223,7 +1223,6 @@ button {
 @keyframes opponent-card-action {
   0% {
     border-color: #f4d58b;
-    filter: brightness(1.5);
     box-shadow:
       0 0 0 4px rgba(244, 213, 139, 0.85),
       0 0 28px rgba(244, 213, 139, 0.8);
@@ -1231,13 +1230,9 @@ button {
   12%,
   88% {
     border-color: #dba84e;
-    filter: brightness(1.12);
     box-shadow:
       0 0 0 3px rgba(219, 168, 78, 0.65),
       0 0 20px rgba(219, 168, 78, 0.55);
-  }
-  100% {
-    filter: none;
   }
 }
 
@@ -1371,9 +1366,11 @@ button {
 }
 
 .card-art {
+  position: relative;
   min-height: 42px;
   display: grid;
   place-items: center;
+  overflow: hidden;
   border: 1px solid rgba(49, 36, 26, 0.55);
   color: rgba(255, 243, 221, 0.75);
   background:
@@ -1394,6 +1391,22 @@ button {
 .card-art i {
   font-size: 23px;
   font-style: normal;
+}
+
+.card-art img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+  user-select: none;
+}
+
+.card-art img[hidden] {
+  display: none;
 }
 
 .card-type {
@@ -1509,6 +1522,14 @@ button {
 .card-hover-state {
   color: #8a382a;
   font-weight: 700;
+}
+
+.card-hover-credit {
+  padding-top: 6px;
+  border-top: 1px solid rgba(74, 59, 43, 0.2);
+  color: #74695c;
+  font-size: 9px;
+  line-height: 1.25;
 }
 
 .is-actionable {
@@ -2034,6 +2055,13 @@ button {
   text-align: left;
 }
 
+.fan-content-notice {
+  margin: 10px 0 2px;
+  color: #6f685e;
+  font-size: 9px;
+  line-height: 1.35;
+}
+
 .game-log {
   max-height: 160px;
   padding: 12px 15px;
@@ -2170,26 +2198,11 @@ button {
   background: var(--red);
 }
 
-/* A short window has to give somewhere. The hand keeps its full height — its
-   cards are the ones you read — so the board cards shrink instead, and every
-   row stays a fixed size so the stack still never moves anything. */
+/* A short window keeps the hand at full height while the flexible battlefield
+   rows absorb the remaining space. */
 @media (max-height: 820px) {
   .table {
     grid-template-rows: 38px minmax(112px, 1fr) 78px minmax(112px, 1fr) 44px 190px;
-  }
-
-  .battlefield-zone {
-    grid-template-rows: repeat(2, 54px);
-  }
-
-  .game-card-compact {
-    height: 54px;
-  }
-
-  /* The art is the part of a board card nobody reads, so it gives up the
-     height rather than the title or the type line. */
-  .game-card-compact .card-art {
-    min-height: 12px;
   }
 }
 

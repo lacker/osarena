@@ -4,9 +4,11 @@ use super::{CardRecord, PrintingRecord, alpha};
 use crate::card::{CardBehavior, CardKind, CardRules, CardSet, ManaCost, cards};
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static VOLCANIC_ISLAND: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static VOLCANIC_ISLAND: CardRecord = CardRecord::new_with_art(
     cards::VOLCANIC_ISLAND,
     "Volcanic Island",
+    "0324641d-af55-4c53-b4dc-c8262e967da5",
+    "Brian Snõddy",
     CardSet::Beta,
     false,
     CardBehavior::VolcanicIsland,
@@ -57,6 +59,7 @@ pub(in crate::card::sets) static ADDITIONAL_PRINTINGS: &[PrintingRecord] = &[
     PrintingRecord::reprint(&alpha::SWORDS_TO_PLOWSHARES),
     PrintingRecord::reprint(&alpha::TIME_WALK),
     PrintingRecord::reprint(&alpha::TUNDRA),
+    PrintingRecord::reprint(&alpha::SEDGE_TROLL),
     PrintingRecord::reprint(&alpha::ARMAGEDDON),
     PrintingRecord::reprint(&alpha::BADLANDS),
     PrintingRecord::reprint(&alpha::BALANCE),

@@ -8,9 +8,11 @@ use crate::card::{
 use crate::ids::{CardPartId, PlayOptionId};
 
 // Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
-pub(in crate::card::sets) static HELLRIDER: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static HELLRIDER: CardRecord = CardRecord::new_with_art(
     cards::HELLRIDER,
     "Hellrider",
+    "0ec8d800-7f06-44e0-b22d-cdff0a9b153d",
+    "Svetlin Velinov",
     CardSet::DarkAscension,
     false,
     CardBehavior::Hellrider,
@@ -69,9 +71,11 @@ fn huntmaster_composition() -> CardComposition {
 }
 
 // Implementation status: Baseline front-face creature is playable; both faces and transformation topology are cataloged, while triggers are pending.
-pub(in crate::card::sets) static HUNTMASTER_OF_THE_FELLS: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static HUNTMASTER_OF_THE_FELLS: CardRecord = CardRecord::new_with_art(
     cards::HUNTMASTER_OF_THE_FELLS,
     "Huntmaster of the Fells",
+    "aae6fb12-b252-453b-bca7-1ea2a0d6c8dc",
+    "Chris Rahn",
     CardSet::DarkAscension,
     false,
     CardBehavior::HuntmasterOfTheFells,
@@ -80,9 +84,11 @@ pub(in crate::card::sets) static HUNTMASTER_OF_THE_FELLS: CardRecord = CardRecor
 .with_composition(huntmaster_composition);
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static RAY_OF_REVELATION: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static RAY_OF_REVELATION: CardRecord = CardRecord::new_with_art(
     cards::RAY_OF_REVELATION,
     "Ray of Revelation",
+    "d7e2c5a4-cf92-46bd-9033-8036436488cb",
+    "Cliff Childs",
     CardSet::DarkAscension,
     false,
     CardBehavior::RayOfRevelation,
@@ -96,9 +102,11 @@ pub(in crate::card::sets) static RAY_OF_REVELATION: CardRecord = CardRecord::new
 );
 
 // Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
-pub(in crate::card::sets) static STRANGLEROOT_GEIST: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static STRANGLEROOT_GEIST: CardRecord = CardRecord::new_with_art(
     cards::STRANGLEROOT_GEIST,
     "Strangleroot Geist",
+    "bf1fb137-205c-480f-b6dc-dfa137793ae3",
+    "Jason Chan",
     CardSet::DarkAscension,
     false,
     CardBehavior::StranglerootGeist,
@@ -115,9 +123,11 @@ pub(in crate::card::sets) static STRANGLEROOT_GEIST: CardRecord = CardRecord::ne
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static TRAGIC_SLIP: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static TRAGIC_SLIP: CardRecord = CardRecord::new_with_art(
     cards::TRAGIC_SLIP,
     "Tragic Slip",
+    "09666671-601e-4fca-bdfb-fb288bf2672c",
+    "Christopher Moeller",
     CardSet::DarkAscension,
     false,
     CardBehavior::TragicSlip,
@@ -131,9 +141,11 @@ pub(in crate::card::sets) static TRAGIC_SLIP: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Land entry and modeled mana production are active; other printed abilities are pending.
-pub(in crate::card::sets) static VAULT_OF_THE_ARCHANGEL: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static VAULT_OF_THE_ARCHANGEL: CardRecord = CardRecord::new_with_art(
     cards::VAULT_OF_THE_ARCHANGEL,
     "Vault of the Archangel",
+    "35a65437-430a-42ef-854f-6e66f8e1a04a",
+    "John Avon",
     CardSet::DarkAscension,
     false,
     CardBehavior::VaultOfTheArchangel,

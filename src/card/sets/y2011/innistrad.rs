@@ -8,9 +8,11 @@ use crate::card::{
 use crate::ids::{CardPartId, PlayOptionId};
 
 // Implementation status: Baseline creature and printed mana ability are active.
-pub(in crate::card::sets) static AVACYNS_PILGRIM: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static AVACYNS_PILGRIM: CardRecord = CardRecord::new_with_art(
     cards::AVACYNS_PILGRIM,
     "Avacyn's Pilgrim",
+    "7eb39e97-53c2-4df0-9fb3-a3d6a24ec41f",
+    "Jana Schirmer & Johannes Voss",
     CardSet::Innistrad,
     false,
     CardBehavior::AvacynsPilgrim,
@@ -26,9 +28,11 @@ pub(in crate::card::sets) static AVACYNS_PILGRIM: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static BLASPHEMOUS_ACT: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static BLASPHEMOUS_ACT: CardRecord = CardRecord::new_with_art(
     cards::BLASPHEMOUS_ACT,
     "Blasphemous Act",
+    "509ce648-fb76-486d-8b39-183e368b7cb7",
+    "Daarken",
     CardSet::Innistrad,
     false,
     CardBehavior::BlasphemousAct,
@@ -42,9 +46,11 @@ pub(in crate::card::sets) static BLASPHEMOUS_ACT: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Land entry and mana production are active.
-pub(in crate::card::sets) static CLIFFTOP_RETREAT: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static CLIFFTOP_RETREAT: CardRecord = CardRecord::new_with_art(
     cards::CLIFFTOP_RETREAT,
     "Clifftop Retreat",
+    "fd7e1bf9-bd6a-48e3-9331-178e5142c06a",
+    "John Avon",
     CardSet::Innistrad,
     false,
     CardBehavior::ClifftopRetreat,
@@ -62,9 +68,11 @@ pub(in crate::card::sets) static CLIFFTOP_RETREAT: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static DISSIPATE: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static DISSIPATE: CardRecord = CardRecord::new_with_art(
     cards::DISSIPATE,
     "Dissipate",
+    "5d778082-bcdb-423a-b16f-57ac0d4dace7",
+    "Tomasz Jedruszek",
     CardSet::Innistrad,
     false,
     CardBehavior::Dissipate,
@@ -121,9 +129,11 @@ fn garruk_composition() -> CardComposition {
 }
 
 // Implementation status: Spell is withheld from play; both faces and transformation topology are cataloged, while printed effects are pending.
-pub(in crate::card::sets) static GARRUK_RELENTLESS: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static GARRUK_RELENTLESS: CardRecord = CardRecord::new_with_art(
     cards::GARRUK_RELENTLESS,
     "Garruk Relentless",
+    "b4160322-ff40-41a4-887a-73cd6b85ae45",
+    "Eric Deschamps",
     CardSet::Innistrad,
     false,
     CardBehavior::GarrukRelentless,
@@ -132,9 +142,11 @@ pub(in crate::card::sets) static GARRUK_RELENTLESS: CardRecord = CardRecord::new
 .with_composition(garruk_composition);
 
 // Implementation status: Land entry and modeled mana production are active; other printed abilities are pending.
-pub(in crate::card::sets) static GAVONY_TOWNSHIP: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static GAVONY_TOWNSHIP: CardRecord = CardRecord::new_with_art(
     cards::GAVONY_TOWNSHIP,
     "Gavony Township",
+    "b5f73443-2fe8-424f-8e71-fc7ce1f3a3eb",
+    "Peter Mohrbacher",
     CardSet::Innistrad,
     false,
     CardBehavior::GavonyTownship,
@@ -150,9 +162,11 @@ pub(in crate::card::sets) static GAVONY_TOWNSHIP: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Land entry and modeled mana production are active; other printed abilities are pending.
-pub(in crate::card::sets) static GHOST_QUARTER: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static GHOST_QUARTER: CardRecord = CardRecord::new_with_art(
     cards::GHOST_QUARTER,
     "Ghost Quarter",
+    "1c6456ed-0ffb-4d22-b252-5775076030ce",
+    "Peter Mohrbacher",
     CardSet::Innistrad,
     false,
     CardBehavior::GhostQuarter,
@@ -168,9 +182,11 @@ pub(in crate::card::sets) static GHOST_QUARTER: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Land entry and mana production are active.
-pub(in crate::card::sets) static ISOLATED_CHAPEL: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static ISOLATED_CHAPEL: CardRecord = CardRecord::new_with_art(
     cards::ISOLATED_CHAPEL,
     "Isolated Chapel",
+    "b3c1a371-5ded-4a3a-bf96-503c4f1a665d",
+    "Cliff Childs",
     CardSet::Innistrad,
     false,
     CardBehavior::IsolatedChapel,
@@ -188,9 +204,11 @@ pub(in crate::card::sets) static ISOLATED_CHAPEL: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Land entry and modeled mana production are active; other printed abilities are pending.
-pub(in crate::card::sets) static KESSIG_WOLF_RUN: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static KESSIG_WOLF_RUN: CardRecord = CardRecord::new_with_art(
     cards::KESSIG_WOLF_RUN,
     "Kessig Wolf Run",
+    "4a8447fe-7368-470a-911a-1083ec6cc831",
+    "Eytan Zana",
     CardSet::Innistrad,
     false,
     CardBehavior::KessigWolfRun,
@@ -206,9 +224,11 @@ pub(in crate::card::sets) static KESSIG_WOLF_RUN: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static LILIANA_OF_THE_VEIL: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static LILIANA_OF_THE_VEIL: CardRecord = CardRecord::new_with_art(
     cards::LILIANA_OF_THE_VEIL,
     "Liliana of the Veil",
+    "ac506c17-adc8-49c6-9d8d-43db7cb1ec9d",
+    "Steve Argyle",
     CardSet::Innistrad,
     false,
     CardBehavior::LilianaOfTheVeil,
@@ -224,9 +244,11 @@ pub(in crate::card::sets) static LILIANA_OF_THE_VEIL: CardRecord = CardRecord::n
 );
 
 // Implementation status: Land entry and modeled mana production are active; other printed abilities are pending.
-pub(in crate::card::sets) static MOORLAND_HAUNT: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static MOORLAND_HAUNT: CardRecord = CardRecord::new_with_art(
     cards::MOORLAND_HAUNT,
     "Moorland Haunt",
+    "1d5569e3-278c-4cf3-860e-712010333fe6",
+    "James Paick",
     CardSet::Innistrad,
     false,
     CardBehavior::MoorlandHaunt,
@@ -242,9 +264,11 @@ pub(in crate::card::sets) static MOORLAND_HAUNT: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static MULCH: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static MULCH: CardRecord = CardRecord::new_with_art(
     cards::MULCH,
     "Mulch",
+    "52a1dabd-82df-4814-9d64-bf7bf9c1018d",
+    "Christopher Moeller",
     CardSet::Innistrad,
     false,
     CardBehavior::Mulch,
@@ -258,9 +282,11 @@ pub(in crate::card::sets) static MULCH: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
-pub(in crate::card::sets) static SNAPCASTER_MAGE: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static SNAPCASTER_MAGE: CardRecord = CardRecord::new_with_art(
     cards::SNAPCASTER_MAGE,
     "Snapcaster Mage",
+    "9e5b279e-4670-4a1e-87d0-3cab7e4f9e58",
+    "Volkan Baǵa",
     CardSet::Innistrad,
     false,
     CardBehavior::SnapcasterMage,
@@ -276,9 +302,11 @@ pub(in crate::card::sets) static SNAPCASTER_MAGE: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Land entry and mana production are active.
-pub(in crate::card::sets) static SULFUR_FALLS: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static SULFUR_FALLS: CardRecord = CardRecord::new_with_art(
     cards::SULFUR_FALLS,
     "Sulfur Falls",
+    "4968b65d-50e5-4d7e-b78b-cdada1cbf7a7",
+    "Cliff Childs",
     CardSet::Innistrad,
     false,
     CardBehavior::SulfurFalls,
@@ -296,9 +324,11 @@ pub(in crate::card::sets) static SULFUR_FALLS: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static THINK_TWICE: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static THINK_TWICE: CardRecord = CardRecord::new_with_art(
     cards::THINK_TWICE,
     "Think Twice",
+    "53e44060-a9a2-4095-9f5b-f60297525315",
+    "Anthony Francisco",
     CardSet::Innistrad,
     false,
     CardBehavior::ThinkTwice,
@@ -312,9 +342,11 @@ pub(in crate::card::sets) static THINK_TWICE: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static UNBURIAL_RITES: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static UNBURIAL_RITES: CardRecord = CardRecord::new_with_art(
     cards::UNBURIAL_RITES,
     "Unburial Rites",
+    "2794c82b-e5ce-4369-894e-bf56c6402ae1",
+    "Ryan Pancoast",
     CardSet::Innistrad,
     false,
     CardBehavior::UnburialRites,
@@ -328,9 +360,11 @@ pub(in crate::card::sets) static UNBURIAL_RITES: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static URGENT_EXORCISM: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static URGENT_EXORCISM: CardRecord = CardRecord::new_with_art(
     cards::URGENT_EXORCISM,
     "Urgent Exorcism",
+    "516a437c-a2ee-43c6-876c-1a63a455c97c",
+    "Svetlin Velinov",
     CardSet::Innistrad,
     false,
     CardBehavior::UrgentExorcism,
@@ -344,9 +378,11 @@ pub(in crate::card::sets) static URGENT_EXORCISM: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Land entry and mana production are active.
-pub(in crate::card::sets) static WOODLAND_CEMETERY: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static WOODLAND_CEMETERY: CardRecord = CardRecord::new_with_art(
     cards::WOODLAND_CEMETERY,
     "Woodland Cemetery",
+    "67139101-ec5e-434b-be3a-21338cc33840",
+    "Lars Grant-West",
     CardSet::Innistrad,
     false,
     CardBehavior::WoodlandCemetery,

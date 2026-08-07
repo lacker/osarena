@@ -7,6 +7,8 @@ type CompositionBuilder = fn() -> CardComposition;
 pub(super) struct CardRecord {
     pub(super) id: CardDefinitionId,
     pub(super) name: &'static str,
+    pub(super) scryfall_id: Option<&'static str>,
+    pub(super) artist: Option<&'static str>,
     pub(super) set: CardSet,
     pub(super) is_basic_land: bool,
     pub(super) behavior: CardBehavior,
@@ -15,6 +17,9 @@ pub(super) struct CardRecord {
 }
 
 impl CardRecord {
+    // Keep the metadata-free path available for future records whose exact
+    // printing has not been selected yet.
+    #[allow(dead_code)]
     pub(super) const fn new(
         id: CardDefinitionId,
         name: &'static str,
@@ -26,6 +31,32 @@ impl CardRecord {
         Self {
             id,
             name,
+            scryfall_id: None,
+            artist: None,
+            set,
+            is_basic_land,
+            behavior,
+            rules,
+            composition: None,
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(super) const fn new_with_art(
+        id: CardDefinitionId,
+        name: &'static str,
+        scryfall_id: &'static str,
+        artist: &'static str,
+        set: CardSet,
+        is_basic_land: bool,
+        behavior: CardBehavior,
+        rules: CardRules,
+    ) -> Self {
+        Self {
+            id,
+            name,
+            scryfall_id: Some(scryfall_id),
+            artist: Some(artist),
             set,
             is_basic_land,
             behavior,
@@ -49,6 +80,8 @@ impl CardRecord {
         CardDefinition {
             id: self.id,
             name: self.name.into(),
+            scryfall_id: self.scryfall_id.map(str::to_owned),
+            artist: self.artist.map(str::to_owned),
             set: self.set,
             printings: vec![CardPrinting::new(self.id, self.set)],
             is_basic_land: self.is_basic_land,

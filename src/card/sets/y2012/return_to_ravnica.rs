@@ -9,9 +9,11 @@ use crate::card::{
 use crate::ids::{CardPartId, ModeId, PlayOptionId, TargetSlotId};
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static ABRUPT_DECAY: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static ABRUPT_DECAY: CardRecord = CardRecord::new_with_art(
     cards::ABRUPT_DECAY,
     "Abrupt Decay",
+    "3b1e92b4-6e53-4dba-a572-c67e01965ac5",
+    "Svetlin Velinov",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::AbruptDecay,
@@ -25,9 +27,11 @@ pub(in crate::card::sets) static ABRUPT_DECAY: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
-pub(in crate::card::sets) static ANGEL_OF_SERENITY: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static ANGEL_OF_SERENITY: CardRecord = CardRecord::new_with_art(
     cards::ANGEL_OF_SERENITY,
     "Angel of Serenity",
+    "f10d82f7-7759-457e-a9bb-f9a5bd968f82",
+    "Aleksi Briclot",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::AngelOfSerenity,
@@ -43,9 +47,11 @@ pub(in crate::card::sets) static ANGEL_OF_SERENITY: CardRecord = CardRecord::new
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static AZORIUS_CHARM: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static AZORIUS_CHARM: CardRecord = CardRecord::new_with_art(
     cards::AZORIUS_CHARM,
     "Azorius Charm",
+    "26adc211-d089-4102-91e5-225bbeb5f382",
+    "Zoltan Boros",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::AzoriusCharm,
@@ -59,9 +65,11 @@ pub(in crate::card::sets) static AZORIUS_CHARM: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static COUNTERFLUX: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static COUNTERFLUX: CardRecord = CardRecord::new_with_art(
     cards::COUNTERFLUX,
     "Counterflux",
+    "94e4b773-40a4-4272-85dd-f728ada22748",
+    "Scott M. Fischer",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::Counterflux,
@@ -75,9 +83,11 @@ pub(in crate::card::sets) static COUNTERFLUX: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
-pub(in crate::card::sets) static DESECRATION_DEMON: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static DESECRATION_DEMON: CardRecord = CardRecord::new_with_art(
     cards::DESECRATION_DEMON,
     "Desecration Demon",
+    "8242fade-754c-4404-b3fb-f3cccf84b3b6",
+    "Jason Chan",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::DesecrationDemon,
@@ -93,9 +103,11 @@ pub(in crate::card::sets) static DESECRATION_DEMON: CardRecord = CardRecord::new
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static DETENTION_SPHERE: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static DETENTION_SPHERE: CardRecord = CardRecord::new_with_art(
     cards::DETENTION_SPHERE,
     "Detention Sphere",
+    "afee5464-83b7-4d7a-b407-9ee7de21535b",
+    "Kev Walker",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::DetentionSphere,
@@ -109,9 +121,11 @@ pub(in crate::card::sets) static DETENTION_SPHERE: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static DISPEL: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static DISPEL: CardRecord = CardRecord::new_with_art(
     cards::DISPEL,
     "Dispel",
+    "08d4a8d7-c136-472f-8146-a1100701ca4f",
+    "Chase Stone",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::Dispel,
@@ -125,9 +139,11 @@ pub(in crate::card::sets) static DISPEL: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Land entry and mana production are active.
-pub(in crate::card::sets) static GOLGARI_GUILDGATE: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static GOLGARI_GUILDGATE: CardRecord = CardRecord::new_with_art(
     cards::GOLGARI_GUILDGATE,
     "Golgari Guildgate",
+    "8fe2fd1a-f7d3-48b4-bad8-be5ee45d6121",
+    "Eytan Zana",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::GolgariGuildgate,
@@ -143,9 +159,11 @@ pub(in crate::card::sets) static GOLGARI_GUILDGATE: CardRecord = CardRecord::new
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static GRISLY_SALVAGE: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static GRISLY_SALVAGE: CardRecord = CardRecord::new_with_art(
     cards::GRISLY_SALVAGE,
     "Grisly Salvage",
+    "dcb5eb2a-ae7a-4416-970c-6e9306689c88",
+    "Dave Kendall",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::GrislySalvage,
@@ -159,9 +177,11 @@ pub(in crate::card::sets) static GRISLY_SALVAGE: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Land types and mana production are active; entry currently takes the tapped/no-life branch.
-pub(in crate::card::sets) static HALLOWED_FOUNTAIN: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static HALLOWED_FOUNTAIN: CardRecord = CardRecord::new_with_art(
     cards::HALLOWED_FOUNTAIN,
     "Hallowed Fountain",
+    "af7091c9-5f98-4078-a42b-c9e057346d9b",
+    "Jung Park",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::HallowedFountain,
@@ -236,9 +256,11 @@ fn izzet_charm_composition() -> CardComposition {
 }
 
 // Implementation status: Spell form, three modes, and their target slots are cataloged; effect execution is pending.
-pub(in crate::card::sets) static IZZET_CHARM: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static IZZET_CHARM: CardRecord = CardRecord::new_with_art(
     cards::IZZET_CHARM,
     "Izzet Charm",
+    "1e3a5af6-5423-442b-a207-364e97a871d8",
+    "Zoltan Boros",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::IzzetCharm,
@@ -247,9 +269,11 @@ pub(in crate::card::sets) static IZZET_CHARM: CardRecord = CardRecord::new(
 .with_composition(izzet_charm_composition);
 
 // Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
-pub(in crate::card::sets) static IZZET_STATICASTER: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static IZZET_STATICASTER: CardRecord = CardRecord::new_with_art(
     cards::IZZET_STATICASTER,
     "Izzet Staticaster",
+    "190ac2fe-532d-4d7e-9d74-07ae6850aac8",
+    "Scott M. Fischer",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::IzzetStaticaster,
@@ -266,9 +290,11 @@ pub(in crate::card::sets) static IZZET_STATICASTER: CardRecord = CardRecord::new
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static JACE_ARCHITECT_OF_THOUGHT: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static JACE_ARCHITECT_OF_THOUGHT: CardRecord = CardRecord::new_with_art(
     cards::JACE_ARCHITECT_OF_THOUGHT,
     "Jace, Architect of Thought",
+    "d4df3a38-678e-42dc-a3fd-d1d399368f07",
+    "Jaime Jones",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::JaceArchitectOfThought,
@@ -284,9 +310,11 @@ pub(in crate::card::sets) static JACE_ARCHITECT_OF_THOUGHT: CardRecord = CardRec
 );
 
 // Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
-pub(in crate::card::sets) static LOXODON_SMITER: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static LOXODON_SMITER: CardRecord = CardRecord::new_with_art(
     cards::LOXODON_SMITER,
     "Loxodon Smiter",
+    "69247168-2bfb-4cce-a2a6-61459a0fbce4",
+    "Ryan Barger",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::LoxodonSmiter,
@@ -301,9 +329,11 @@ pub(in crate::card::sets) static LOXODON_SMITER: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static MIZZIUM_MORTARS: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static MIZZIUM_MORTARS: CardRecord = CardRecord::new_with_art(
     cards::MIZZIUM_MORTARS,
     "Mizzium Mortars",
+    "d4ded88d-2688-4f5e-a8b2-16216cf9c792",
+    "Noah Bradley",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::MizziumMortars,
@@ -317,9 +347,11 @@ pub(in crate::card::sets) static MIZZIUM_MORTARS: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Land types and mana production are active; entry currently takes the tapped/no-life branch.
-pub(in crate::card::sets) static OVERGROWN_TOMB: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static OVERGROWN_TOMB: CardRecord = CardRecord::new_with_art(
     cards::OVERGROWN_TOMB,
     "Overgrown Tomb",
+    "1c7d50d6-b63a-4d8c-88fa-1d78ae693a45",
+    "Steven Belledin",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::OvergrownTomb,
@@ -336,9 +368,11 @@ pub(in crate::card::sets) static OVERGROWN_TOMB: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static PITHING_NEEDLE: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static PITHING_NEEDLE: CardRecord = CardRecord::new_with_art(
     cards::PITHING_NEEDLE,
     "Pithing Needle",
+    "786c1e91-9d75-46a3-9e0d-56d29fcb01a7",
+    "Anthony Palumbo",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::PithingNeedle,
@@ -352,9 +386,11 @@ pub(in crate::card::sets) static PITHING_NEEDLE: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static REST_IN_PEACE: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static REST_IN_PEACE: CardRecord = CardRecord::new_with_art(
     cards::REST_IN_PEACE,
     "Rest in Peace",
+    "37c2b1d1-faa0-40fd-82f4-216604ce7635",
+    "Terese Nielsen",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::RestInPeace,
@@ -368,9 +404,11 @@ pub(in crate::card::sets) static REST_IN_PEACE: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static SELESNYA_CHARM: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static SELESNYA_CHARM: CardRecord = CardRecord::new_with_art(
     cards::SELESNYA_CHARM,
     "Selesnya Charm",
+    "a9848eab-1d3a-4ab0-adf6-c20858aa3afb",
+    "Zoltan Boros",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::SelesnyaCharm,
@@ -384,9 +422,11 @@ pub(in crate::card::sets) static SELESNYA_CHARM: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static SPHINXS_REVELATION: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static SPHINXS_REVELATION: CardRecord = CardRecord::new_with_art(
     cards::SPHINXS_REVELATION,
     "Sphinx's Revelation",
+    "404d9413-ef57-4b6e-8584-48a1dc7fe6f1",
+    "Slawomir Maniak",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::SphinxsRevelation,
@@ -400,9 +440,11 @@ pub(in crate::card::sets) static SPHINXS_REVELATION: CardRecord = CardRecord::ne
 );
 
 // Implementation status: Land types and mana production are active; entry currently takes the tapped/no-life branch.
-pub(in crate::card::sets) static STEAM_VENTS: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static STEAM_VENTS: CardRecord = CardRecord::new_with_art(
     cards::STEAM_VENTS,
     "Steam Vents",
+    "de911c88-f5c8-4955-9fa5-1f28a9b17236",
+    "Yeong-Hao Han",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::SteamVents,
@@ -419,9 +461,11 @@ pub(in crate::card::sets) static STEAM_VENTS: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static SUPREME_VERDICT: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static SUPREME_VERDICT: CardRecord = CardRecord::new_with_art(
     cards::SUPREME_VERDICT,
     "Supreme Verdict",
+    "4e9648f9-7a67-4717-bca1-861d1f7fed43",
+    "Sam Burley",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::SupremeVerdict,
@@ -435,9 +479,11 @@ pub(in crate::card::sets) static SUPREME_VERDICT: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static SYNCOPATE: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static SYNCOPATE: CardRecord = CardRecord::new_with_art(
     cards::SYNCOPATE,
     "Syncopate",
+    "ba6f218f-83b0-4b68-a00f-0327cd79f32a",
+    "Clint Cearley",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::Syncopate,
@@ -451,9 +497,11 @@ pub(in crate::card::sets) static SYNCOPATE: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Land types and mana production are active; entry currently takes the tapped/no-life branch.
-pub(in crate::card::sets) static TEMPLE_GARDEN: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static TEMPLE_GARDEN: CardRecord = CardRecord::new_with_art(
     cards::TEMPLE_GARDEN,
     "Temple Garden",
+    "b821e604-f9fd-47a4-b5ff-bfb5022834c2",
+    "Volkan Baǵa",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::TempleGarden,
@@ -470,9 +518,11 @@ pub(in crate::card::sets) static TEMPLE_GARDEN: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static ULTIMATE_PRICE: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static ULTIMATE_PRICE: CardRecord = CardRecord::new_with_art(
     cards::ULTIMATE_PRICE,
     "Ultimate Price",
+    "d2b4912a-83a2-4870-8fac-81fa79da2830",
+    "Karl Kopinski",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::UltimatePrice,
@@ -486,9 +536,11 @@ pub(in crate::card::sets) static ULTIMATE_PRICE: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static UNDERWORLD_CONNECTIONS: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static UNDERWORLD_CONNECTIONS: CardRecord = CardRecord::new_with_art(
     cards::UNDERWORLD_CONNECTIONS,
     "Underworld Connections",
+    "19c52e3b-b3b8-4243-96fe-fa4c8eea7c59",
+    "Yeong-Hao Han",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::UnderworldConnections,
@@ -502,9 +554,11 @@ pub(in crate::card::sets) static UNDERWORLD_CONNECTIONS: CardRecord = CardRecord
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static VRASKA_THE_UNSEEN: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static VRASKA_THE_UNSEEN: CardRecord = CardRecord::new_with_art(
     cards::VRASKA_THE_UNSEEN,
     "Vraska the Unseen",
+    "8971938c-cd26-4b83-96d7-1408cd0b0de6",
+    "Aleksi Briclot",
     CardSet::ReturnToRavnica,
     false,
     CardBehavior::VraskaTheUnseen,

@@ -4,9 +4,11 @@ use super::{CardRecord, PrintingRecord};
 use crate::card::{CardBehavior, CardKind, CardRules, CardSet, LandEntry, ManaCost, cards};
 
 // Implementation status: Metadata only; this spell is withheld from legal actions.
-pub(in crate::card::sets) static ASSEMBLE_THE_LEGION: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static ASSEMBLE_THE_LEGION: CardRecord = CardRecord::new_with_art(
     cards::ASSEMBLE_THE_LEGION,
     "Assemble the Legion",
+    "43675ed7-ece1-4414-965e-9ebadcbf3dfb",
+    "Eric Deschamps",
     CardSet::Gatecrash,
     false,
     CardBehavior::AssembleTheLegion,
@@ -20,9 +22,11 @@ pub(in crate::card::sets) static ASSEMBLE_THE_LEGION: CardRecord = CardRecord::n
 );
 
 // Implementation status: Metadata only; this spell is withheld from legal actions.
-pub(in crate::card::sets) static AURELIAS_FURY: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static AURELIAS_FURY: CardRecord = CardRecord::new_with_art(
     cards::AURELIAS_FURY,
     "Aurelia's Fury",
+    "1a3465b6-ee7f-4553-bbf1-85fae9734b67",
+    "Tyler Jacobson",
     CardSet::Gatecrash,
     false,
     CardBehavior::AureliasFury,
@@ -36,9 +40,11 @@ pub(in crate::card::sets) static AURELIAS_FURY: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Baseline creature casting/combat and declaratively modeled traits are active; remaining printed abilities are pending.
-pub(in crate::card::sets) static AURELIA_THE_WARLEADER: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static AURELIA_THE_WARLEADER: CardRecord = CardRecord::new_with_art(
     cards::AURELIA_THE_WARLEADER,
     "Aurelia, the Warleader",
+    "4ec18e35-05e4-4bfc-b32b-c3e71c95a71d",
+    "Slawomir Maniak",
     CardSet::Gatecrash,
     false,
     CardBehavior::AureliaTheWarleader,
@@ -57,9 +63,11 @@ pub(in crate::card::sets) static AURELIA_THE_WARLEADER: CardRecord = CardRecord:
 );
 
 // Implementation status: Metadata only; this spell is withheld from legal actions.
-pub(in crate::card::sets) static BLIND_OBEDIENCE: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static BLIND_OBEDIENCE: CardRecord = CardRecord::new_with_art(
     cards::BLIND_OBEDIENCE,
     "Blind Obedience",
+    "07c3e78d-d917-4552-842f-feff99c059e0",
+    "Seb McKinnon",
     CardSet::Gatecrash,
     false,
     CardBehavior::BlindObedience,
@@ -73,9 +81,11 @@ pub(in crate::card::sets) static BLIND_OBEDIENCE: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Metadata only; this spell is withheld from legal actions.
-pub(in crate::card::sets) static BOROS_CHARM: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static BOROS_CHARM: CardRecord = CardRecord::new_with_art(
     cards::BOROS_CHARM,
     "Boros Charm",
+    "d4ddf9cc-40a7-4b4f-bb51-b08171453c9a",
+    "Zoltan Boros",
     CardSet::Gatecrash,
     false,
     CardBehavior::BorosCharm,
@@ -89,9 +99,11 @@ pub(in crate::card::sets) static BOROS_CHARM: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Baseline creature casting/combat and declaratively modeled traits are active; remaining printed abilities are pending.
-pub(in crate::card::sets) static BOROS_RECKONER: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static BOROS_RECKONER: CardRecord = CardRecord::new_with_art(
     cards::BOROS_RECKONER,
     "Boros Reckoner",
+    "82a18b07-38b8-4854-9735-3cfe83b11bf1",
+    "Howard Lyon",
     CardSet::Gatecrash,
     false,
     CardBehavior::BorosReckoner,
@@ -106,9 +118,11 @@ pub(in crate::card::sets) static BOROS_RECKONER: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Metadata only; this spell is withheld from legal actions.
-pub(in crate::card::sets) static DOMRI_RADE: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static DOMRI_RADE: CardRecord = CardRecord::new_with_art(
     cards::DOMRI_RADE,
     "Domri Rade",
+    "21b48170-99dd-440f-9954-fc229d6094d3",
+    "Tyler Jacobson",
     CardSet::Gatecrash,
     false,
     CardBehavior::DomriRade,
@@ -124,9 +138,11 @@ pub(in crate::card::sets) static DOMRI_RADE: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Baseline creature casting/combat and declaratively modeled traits are active; remaining printed abilities are pending.
-pub(in crate::card::sets) static GHOR_CLAN_RAMPAGER: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static GHOR_CLAN_RAMPAGER: CardRecord = CardRecord::new_with_art(
     cards::GHOR_CLAN_RAMPAGER,
     "Ghor-Clan Rampager",
+    "382048ec-0bf5-49a5-90d5-f80fbda08962",
+    "Charles Urbach",
     CardSet::Gatecrash,
     false,
     CardBehavior::GhorClanRampager,
@@ -142,9 +158,11 @@ pub(in crate::card::sets) static GHOR_CLAN_RAMPAGER: CardRecord = CardRecord::ne
 );
 
 // Implementation status: Mana production is active; the land currently takes the tapped/no-life branch, and the choice is pending.
-pub(in crate::card::sets) static GODLESS_SHRINE: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static GODLESS_SHRINE: CardRecord = CardRecord::new_with_art(
     cards::GODLESS_SHRINE,
     "Godless Shrine",
+    "6fd672bb-18cf-44e3-8dda-5310b1e0fffe",
+    "Cliff Childs",
     CardSet::Gatecrash,
     false,
     CardBehavior::GodlessShrine,
@@ -161,9 +179,11 @@ pub(in crate::card::sets) static GODLESS_SHRINE: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Baseline creature casting/combat and declaratively modeled traits are active; remaining printed abilities are pending.
-pub(in crate::card::sets) static OBZEDAT_GHOST_COUNCIL: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static OBZEDAT_GHOST_COUNCIL: CardRecord = CardRecord::new_with_art(
     cards::OBZEDAT_GHOST_COUNCIL,
     "Obzedat, Ghost Council",
+    "4cc198d8-1f27-482d-8f5d-21e02c59797a",
+    "Svetlin Velinov",
     CardSet::Gatecrash,
     false,
     CardBehavior::ObzedatGhostCouncil,
@@ -179,9 +199,11 @@ pub(in crate::card::sets) static OBZEDAT_GHOST_COUNCIL: CardRecord = CardRecord:
 );
 
 // Implementation status: Mana production is active; the land currently takes the tapped/no-life branch, and the choice is pending.
-pub(in crate::card::sets) static SACRED_FOUNDRY: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static SACRED_FOUNDRY: CardRecord = CardRecord::new_with_art(
     cards::SACRED_FOUNDRY,
     "Sacred Foundry",
+    "0a26d900-c652-4f9c-8681-a35c5f8b1937",
+    "Sam Burley",
     CardSet::Gatecrash,
     false,
     CardBehavior::SacredFoundry,
@@ -198,9 +220,11 @@ pub(in crate::card::sets) static SACRED_FOUNDRY: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Baseline creature casting/combat and declaratively modeled traits are active; remaining printed abilities are pending.
-pub(in crate::card::sets) static SEPULCHRAL_PRIMORDIAL: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static SEPULCHRAL_PRIMORDIAL: CardRecord = CardRecord::new_with_art(
     cards::SEPULCHRAL_PRIMORDIAL,
     "Sepulchral Primordial",
+    "eb0865cd-d9b4-43ea-87d2-ad5c65fc0459",
+    "Stephan Martiniere",
     CardSet::Gatecrash,
     false,
     CardBehavior::SepulchralPrimordial,
@@ -216,9 +240,11 @@ pub(in crate::card::sets) static SEPULCHRAL_PRIMORDIAL: CardRecord = CardRecord:
 );
 
 // Implementation status: Mana production is active; the land currently takes the tapped/no-life branch, and the choice is pending.
-pub(in crate::card::sets) static STOMPING_GROUND: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static STOMPING_GROUND: CardRecord = CardRecord::new_with_art(
     cards::STOMPING_GROUND,
     "Stomping Ground",
+    "f29f3415-971c-4a5d-aae9-3893f4bdab1e",
+    "David Palumbo",
     CardSet::Gatecrash,
     false,
     CardBehavior::StompingGround,

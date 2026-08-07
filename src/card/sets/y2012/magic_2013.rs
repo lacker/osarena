@@ -4,9 +4,11 @@ use super::{CardRecord, PrintingRecord};
 use crate::card::{CardBehavior, CardKind, CardRules, CardSet, LandEntry, ManaCost, cards};
 
 // Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
-pub(in crate::card::sets) static ARBOR_ELF: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static ARBOR_ELF: CardRecord = CardRecord::new_with_art(
     cards::ARBOR_ELF,
     "Arbor Elf",
+    "b7d6b117-0c14-4455-92fc-29555ee75d97",
+    "rk post",
     CardSet::Magic2013,
     false,
     CardBehavior::ArborElf,
@@ -21,9 +23,11 @@ pub(in crate::card::sets) static ARBOR_ELF: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
-pub(in crate::card::sets) static AUGUR_OF_BOLAS: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static AUGUR_OF_BOLAS: CardRecord = CardRecord::new_with_art(
     cards::AUGUR_OF_BOLAS,
     "Augur of Bolas",
+    "2e6ec8a6-ad88-45c9-ab4b-dd7de2418bb7",
+    "Slawomir Maniak",
     CardSet::Magic2013,
     false,
     CardBehavior::AugurOfBolas,
@@ -38,9 +42,11 @@ pub(in crate::card::sets) static AUGUR_OF_BOLAS: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
-pub(in crate::card::sets) static DISCIPLE_OF_BOLAS: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static DISCIPLE_OF_BOLAS: CardRecord = CardRecord::new_with_art(
     cards::DISCIPLE_OF_BOLAS,
     "Disciple of Bolas",
+    "c4dd57f8-27bc-4ad9-a79e-48a68af33b02",
+    "Slawomir Maniak",
     CardSet::Magic2013,
     false,
     CardBehavior::DiscipleOfBolas,
@@ -55,9 +61,11 @@ pub(in crate::card::sets) static DISCIPLE_OF_BOLAS: CardRecord = CardRecord::new
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static DURESS: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static DURESS: CardRecord = CardRecord::new_with_art(
     cards::DURESS,
     "Duress",
+    "f7201d43-ae2e-4faa-a508-8555079c3bc7",
+    "Steven Belledin",
     CardSet::Magic2013,
     false,
     CardBehavior::Duress,
@@ -71,9 +79,11 @@ pub(in crate::card::sets) static DURESS: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static ESSENCE_SCATTER: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static ESSENCE_SCATTER: CardRecord = CardRecord::new_with_art(
     cards::ESSENCE_SCATTER,
     "Essence Scatter",
+    "fcd965f9-bdaa-4434-a9c8-53fc57e997db",
+    "Jon Foster",
     CardSet::Magic2013,
     false,
     CardBehavior::EssenceScatter,
@@ -87,9 +97,11 @@ pub(in crate::card::sets) static ESSENCE_SCATTER: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static FLAMES_OF_THE_FIREBRAND: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static FLAMES_OF_THE_FIREBRAND: CardRecord = CardRecord::new_with_art(
     cards::FLAMES_OF_THE_FIREBRAND,
     "Flames of the Firebrand",
+    "aca215b1-7b98-49ce-afae-eeb61058125a",
+    "Steve Argyle",
     CardSet::Magic2013,
     false,
     CardBehavior::FlamesOfTheFirebrand,
@@ -103,9 +115,11 @@ pub(in crate::card::sets) static FLAMES_OF_THE_FIREBRAND: CardRecord = CardRecor
 );
 
 // Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
-pub(in crate::card::sets) static FLINTHOOF_BOAR: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static FLINTHOOF_BOAR: CardRecord = CardRecord::new_with_art(
     cards::FLINTHOOF_BOAR,
     "Flinthoof Boar",
+    "7e380b99-0173-4083-a4a2-222ad98b904a",
+    "Erica Yang",
     CardSet::Magic2013,
     false,
     CardBehavior::FlinthoofBoar,
@@ -120,9 +134,11 @@ pub(in crate::card::sets) static FLINTHOOF_BOAR: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Land entry and mana production are active.
-pub(in crate::card::sets) static GLACIAL_FORTRESS: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static GLACIAL_FORTRESS: CardRecord = CardRecord::new_with_art(
     cards::GLACIAL_FORTRESS,
     "Glacial Fortress",
+    "bc9d29ee-1a21-4c3e-99c1-f815d40e8f19",
+    "Franz Vohwinkel",
     CardSet::Magic2013,
     false,
     CardBehavior::GlacialFortress,
@@ -140,9 +156,11 @@ pub(in crate::card::sets) static GLACIAL_FORTRESS: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static JACE_MEMORY_ADEPT: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static JACE_MEMORY_ADEPT: CardRecord = CardRecord::new_with_art(
     cards::JACE_MEMORY_ADEPT,
     "Jace, Memory Adept",
+    "96b2a335-2f01-4ba7-a037-453dbb1045e9",
+    "D. Alexander Gregory",
     CardSet::Magic2013,
     false,
     CardBehavior::JaceMemoryAdept,
@@ -158,9 +176,11 @@ pub(in crate::card::sets) static JACE_MEMORY_ADEPT: CardRecord = CardRecord::new
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static MUTILATE: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static MUTILATE: CardRecord = CardRecord::new_with_art(
     cards::MUTILATE,
     "Mutilate",
+    "c48bc86b-df0a-4a9c-8aad-c3ffb742a5ff",
+    "Tyler Jacobson",
     CardSet::Magic2013,
     false,
     CardBehavior::Mutilate,
@@ -174,9 +194,11 @@ pub(in crate::card::sets) static MUTILATE: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static NEGATE: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static NEGATE: CardRecord = CardRecord::new_with_art(
     cards::NEGATE,
     "Negate",
+    "8da17a86-3666-46b8-932e-daafd6a0cd69",
+    "Jeremy Jarvis",
     CardSet::Magic2013,
     false,
     CardBehavior::Negate,
@@ -190,9 +212,11 @@ pub(in crate::card::sets) static NEGATE: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static OBLIVION_RING: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static OBLIVION_RING: CardRecord = CardRecord::new_with_art(
     cards::OBLIVION_RING,
     "Oblivion Ring",
+    "1e2a73ec-39be-4d23-8c25-17d7c174dcee",
+    "Franz Vohwinkel",
     CardSet::Magic2013,
     false,
     CardBehavior::OblivionRing,
@@ -206,9 +230,11 @@ pub(in crate::card::sets) static OBLIVION_RING: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
-pub(in crate::card::sets) static RHOX_FAITHMENDER: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static RHOX_FAITHMENDER: CardRecord = CardRecord::new_with_art(
     cards::RHOX_FAITHMENDER,
     "Rhox Faithmender",
+    "85ea185a-7b38-49f3-be73-be8180fb6295",
+    "Wesley Burt",
     CardSet::Magic2013,
     false,
     CardBehavior::RhoxFaithmender,
@@ -224,9 +250,11 @@ pub(in crate::card::sets) static RHOX_FAITHMENDER: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Land entry and mana production are active.
-pub(in crate::card::sets) static ROOTBOUND_CRAG: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static ROOTBOUND_CRAG: CardRecord = CardRecord::new_with_art(
     cards::ROOTBOUND_CRAG,
     "Rootbound Crag",
+    "76364643-bfcb-4c50-9224-bf9e35648ddf",
+    "Matt Stewart",
     CardSet::Magic2013,
     false,
     CardBehavior::RootboundCrag,
@@ -244,9 +272,11 @@ pub(in crate::card::sets) static ROOTBOUND_CRAG: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static SIGN_IN_BLOOD: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static SIGN_IN_BLOOD: CardRecord = CardRecord::new_with_art(
     cards::SIGN_IN_BLOOD,
     "Sign in Blood",
+    "64f6600b-36c4-43bd-8c01-cfbca402ecd6",
+    "Howard Lyon",
     CardSet::Magic2013,
     false,
     CardBehavior::SignInBlood,
@@ -260,9 +290,11 @@ pub(in crate::card::sets) static SIGN_IN_BLOOD: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Land entry and mana production are active.
-pub(in crate::card::sets) static SUNPETAL_GROVE: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static SUNPETAL_GROVE: CardRecord = CardRecord::new_with_art(
     cards::SUNPETAL_GROVE,
     "Sunpetal Grove",
+    "15663129-9deb-4c34-84a0-f94cf1a723f0",
+    "Jason Chan",
     CardSet::Magic2013,
     false,
     CardBehavior::SunpetalGrove,
@@ -280,9 +312,11 @@ pub(in crate::card::sets) static SUNPETAL_GROVE: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
-pub(in crate::card::sets) static THRAGTUSK: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static THRAGTUSK: CardRecord = CardRecord::new_with_art(
     cards::THRAGTUSK,
     "Thragtusk",
+    "28667c8b-d02c-4e57-a050-1549207b65d1",
+    "Nils Hamm",
     CardSet::Magic2013,
     false,
     CardBehavior::Thragtusk,
@@ -297,9 +331,11 @@ pub(in crate::card::sets) static THRAGTUSK: CardRecord = CardRecord::new(
 );
 
 // Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
-pub(in crate::card::sets) static THUNDERMAW_HELLKITE: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static THUNDERMAW_HELLKITE: CardRecord = CardRecord::new_with_art(
     cards::THUNDERMAW_HELLKITE,
     "Thundermaw Hellkite",
+    "d0476e0f-61df-46a6-aaf1-8ee79c701160",
+    "Svetlin Velinov",
     CardSet::Magic2013,
     false,
     CardBehavior::ThundermawHellkite,
@@ -316,9 +352,11 @@ pub(in crate::card::sets) static THUNDERMAW_HELLKITE: CardRecord = CardRecord::n
 );
 
 // Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
-pub(in crate::card::sets) static VAMPIRE_NIGHTHAWK: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static VAMPIRE_NIGHTHAWK: CardRecord = CardRecord::new_with_art(
     cards::VAMPIRE_NIGHTHAWK,
     "Vampire Nighthawk",
+    "9ba96d96-8d9e-47c8-ab39-17479564aadf",
+    "Jason Chan",
     CardSet::Magic2013,
     false,
     CardBehavior::VampireNighthawk,
@@ -336,9 +374,11 @@ pub(in crate::card::sets) static VAMPIRE_NIGHTHAWK: CardRecord = CardRecord::new
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static VOLCANIC_STRENGTH: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static VOLCANIC_STRENGTH: CardRecord = CardRecord::new_with_art(
     cards::VOLCANIC_STRENGTH,
     "Volcanic Strength",
+    "f1963f08-1765-4f3e-92be-479773de47a0",
+    "Izzy",
     CardSet::Magic2013,
     false,
     CardBehavior::VolcanicStrength,
@@ -352,9 +392,11 @@ pub(in crate::card::sets) static VOLCANIC_STRENGTH: CardRecord = CardRecord::new
 );
 
 // Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
-pub(in crate::card::sets) static WAR_PRIEST_OF_THUNE: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static WAR_PRIEST_OF_THUNE: CardRecord = CardRecord::new_with_art(
     cards::WAR_PRIEST_OF_THUNE,
     "War Priest of Thune",
+    "d28eb320-aea7-466e-8718-de8652a2b191",
+    "Izzy",
     CardSet::Magic2013,
     false,
     CardBehavior::WarPriestOfThune,

@@ -429,6 +429,9 @@ impl CardComposition {
 pub struct CardDefinition {
     pub id: CardDefinitionId,
     pub name: String,
+    /// Canonical artwork metadata used when no exact printing is selected.
+    pub scryfall_id: Option<String>,
+    pub artist: Option<String>,
     /// The canonical record's debut set within this catalog.
     ///
     /// Rules that care where a card debuted, such as City in a Bottle, use
@@ -461,6 +464,8 @@ impl CardDefinition {
         Self {
             id,
             name,
+            scryfall_id: None,
+            artist: None,
             set,
             printings: vec![CardPrinting::new(id, set)],
             is_basic_land,

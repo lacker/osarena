@@ -29,6 +29,8 @@ export type Card = {
   /** Logical card part supplying this permanent's visible characteristics. */
   partId?: number;
   name: string;
+  scryfallId: string;
+  artist: string;
   kind: string;
   typeLine?: string;
   metadataOnly?: boolean;
@@ -149,6 +151,8 @@ export type GameState = {
     sourceId?: number | null;
     signature?: CastSignatureMetadata | null;
     name: string;
+    scryfallId: string;
+    artist: string;
     owner: Owner;
     kind: string;
     cardKind: string;

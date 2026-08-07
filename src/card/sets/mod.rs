@@ -278,7 +278,7 @@ pub(super) const fn rules(behavior: CardBehavior) -> &'static CardRules {
         CardBehavior::CityInABottle => &y1993::arabian_nights::CITY_IN_A_BOTTLE.rules,
         CardBehavior::CopyArtifact => &y1993::alpha::COPY_ARTIFACT.rules,
         CardBehavior::DustToDust => &y1994::the_dark::DUST_TO_DUST.rules,
-        CardBehavior::EnergyFlux => &y1994::legends::ENERGY_FLUX.rules,
+        CardBehavior::EnergyFlux => &y1994::antiquities::ENERGY_FLUX.rules,
         CardBehavior::GiantGrowth => &y1993::alpha::GIANT_GROWTH.rules,
         CardBehavior::HurkylsRecall => &y1994::antiquities::HURKYLS_RECALL.rules,
         CardBehavior::IcyManipulator => &y1993::alpha::ICY_MANIPULATOR.rules,
@@ -288,7 +288,7 @@ pub(super) const fn rules(behavior: CardBehavior) -> &'static CardRules {
         CardBehavior::Pendelhaven => &y1994::legends::PENDELHAVEN.rules,
         CardBehavior::RelicBarrier => &y1994::legends::RELIC_BARRIER.rules,
         CardBehavior::SageOfLatNam => &y1994::antiquities::SAGE_OF_LAT_NAM.rules,
-        CardBehavior::SedgeTroll => &y1994::legends::SEDGE_TROLL.rules,
+        CardBehavior::SedgeTroll => &y1993::alpha::SEDGE_TROLL.rules,
         CardBehavior::ScrybSprites => &y1993::alpha::SCRYB_SPRITES.rules,
         CardBehavior::StoneRain => &y1993::alpha::STONE_RAIN.rules,
         CardBehavior::Tetravus => &y1994::antiquities::TETRAVUS.rules,
@@ -486,6 +486,14 @@ mod tests {
         records
     }
 
+    fn is_uuid(value: &str) -> bool {
+        value.len() == 36
+            && value.bytes().enumerate().all(|(index, byte)| match index {
+                8 | 13 | 18 | 23 => byte == b'-',
+                _ => byte.is_ascii_hexdigit(),
+            })
+    }
+
     fn printings_for_set(set: CardSet) -> Vec<CardPrinting> {
         let module = SET_MODULES.iter().find(|module| module.set == set).unwrap();
         module
@@ -576,7 +584,7 @@ mod tests {
             .map(|id| catalog.printings_for(CardDefinitionId(id)).len())
             .sum::<usize>();
 
-        assert_eq!(printing_count, 620);
+        assert_eq!(printing_count, 624);
         for variant in 0..3 {
             assert!(
                 catalog
@@ -640,6 +648,37 @@ mod tests {
 
         assert!(!names.contains("Celestial Purge"));
         assert!(names.contains("Celestial Flare"));
+    }
+
+    #[test]
+    fn standard_records_have_complete_unique_scryfall_metadata() {
+        let records = standard_records();
+        let mut scryfall_ids = HashSet::new();
+
+        for record in records {
+            let scryfall_id = record
+                .scryfall_id
+                .unwrap_or_else(|| panic!("{} is missing its Scryfall ID", record.name));
+            assert!(
+                is_uuid(scryfall_id),
+                "{} has an invalid Scryfall ID: {scryfall_id}",
+                record.name
+            );
+            assert!(
+                scryfall_ids.insert(scryfall_id),
+                "{} repeats Scryfall ID {scryfall_id}",
+                record.name
+            );
+            assert!(
+                record
+                    .artist
+                    .is_some_and(|artist| !artist.trim().is_empty()),
+                "{} is missing its artist",
+                record.name
+            );
+        }
+
+        assert_eq!(scryfall_ids.len(), 116);
     }
 
     #[test]
@@ -772,11 +811,11 @@ mod tests {
         ];
 
         let early_sets = [
-            (CardSet::Alpha, 82, 87, 2_u16),
-            (CardSet::Beta, 83, 93, 3_u16),
-            (CardSet::Unlimited, 83, 93, 3_u16),
-            (CardSet::CollectorsEdition, 83, 93, 3_u16),
-            (CardSet::InternationalCollectorsEdition, 83, 93, 3_u16),
+            (CardSet::Alpha, 83, 88, 2_u16),
+            (CardSet::Beta, 84, 94, 3_u16),
+            (CardSet::Unlimited, 84, 94, 3_u16),
+            (CardSet::CollectorsEdition, 84, 94, 3_u16),
+            (CardSet::InternationalCollectorsEdition, 84, 94, 3_u16),
         ];
 
         let mut printing_ids = HashSet::new();

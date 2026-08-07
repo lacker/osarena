@@ -2,9 +2,11 @@ use super::{CardRecord, PrintingRecord};
 use crate::card::{CardBehavior, CardKind, CardRules, CardSet, ManaCost, cards};
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static ATOG: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static ATOG: CardRecord = CardRecord::new_with_art(
     cards::ATOG,
     "Atog",
+    "2249fc40-4412-48fd-800a-7ea3678aee3f",
+    "Jesper Myrfors",
     CardSet::Antiquities,
     false,
     CardBehavior::Atog,
@@ -17,9 +19,11 @@ pub(in crate::card::sets) static ATOG: CardRecord = CardRecord::new(
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static DETONATE: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static DETONATE: CardRecord = CardRecord::new_with_art(
     cards::DETONATE,
     "Detonate",
+    "ffd7eb90-ae95-49df-898a-9510187bce1c",
+    "Randy Asplund-Faith",
     CardSet::Antiquities,
     false,
     CardBehavior::Detonate,
@@ -31,9 +35,11 @@ pub(in crate::card::sets) static DETONATE: CardRecord = CardRecord::new(
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static SU_CHI: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static SU_CHI: CardRecord = CardRecord::new_with_art(
     cards::SU_CHI,
     "Su-Chi",
+    "a64d4f93-0c04-4078-aec0-7e9de92f260f",
+    "Christopher Rush",
     CardSet::Antiquities,
     false,
     CardBehavior::SuChi,
@@ -46,9 +52,11 @@ pub(in crate::card::sets) static SU_CHI: CardRecord = CardRecord::new(
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static MISHRA_S_FACTORY: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static MISHRA_S_FACTORY: CardRecord = CardRecord::new_with_art(
     cards::MISHRA_S_FACTORY,
     "Mishra's Factory",
+    "a696c5b6-f216-454d-8029-74e84bbd1428",
+    "Kaja Foglio & Phil Foglio",
     CardSet::Antiquities,
     false,
     CardBehavior::MishrasFactory,
@@ -61,9 +69,11 @@ pub(in crate::card::sets) static MISHRA_S_FACTORY: CardRecord = CardRecord::new(
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static ORCISH_MECHANICS: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static ORCISH_MECHANICS: CardRecord = CardRecord::new_with_art(
     cards::ORCISH_MECHANICS,
     "Orcish Mechanics",
+    "5e34fc6b-5f00-4a22-9ee2-afc1caf99961",
+    "Pete Venters",
     CardSet::Antiquities,
     false,
     CardBehavior::OrcishMechanics,
@@ -77,9 +87,11 @@ pub(in crate::card::sets) static ORCISH_MECHANICS: CardRecord = CardRecord::new(
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static STRIP_MINE: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static STRIP_MINE: CardRecord = CardRecord::new_with_art(
     cards::STRIP_MINE,
     "Strip Mine",
+    "e7880157-7f27-4f1b-9cdc-ab36a6252376",
+    "Daniel Gelon",
     CardSet::Antiquities,
     false,
     CardBehavior::StripMine,
@@ -92,9 +104,11 @@ pub(in crate::card::sets) static STRIP_MINE: CardRecord = CardRecord::new(
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static TRISKELION: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static TRISKELION: CardRecord = CardRecord::new_with_art(
     cards::TRISKELION,
     "Triskelion",
+    "a79c99e1-722a-44b6-8fa3-2be3f0c193d8",
+    "Douglas Shuler",
     CardSet::Antiquities,
     false,
     CardBehavior::Triskelion,
@@ -108,9 +122,11 @@ pub(in crate::card::sets) static TRISKELION: CardRecord = CardRecord::new(
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static IVORY_TOWER: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static IVORY_TOWER: CardRecord = CardRecord::new_with_art(
     cards::IVORY_TOWER,
     "Ivory Tower",
+    "a5f23039-45ca-4c15-af50-bfd40ea26453",
+    "Margaret Organ-Kean",
     CardSet::Antiquities,
     false,
     CardBehavior::IvoryTower,
@@ -122,9 +138,11 @@ pub(in crate::card::sets) static IVORY_TOWER: CardRecord = CardRecord::new(
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static MISHRA_S_WORKSHOP: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static MISHRA_S_WORKSHOP: CardRecord = CardRecord::new_with_art(
     cards::MISHRA_S_WORKSHOP,
     "Mishra's Workshop",
+    "135de5c7-6ac9-4b68-8f1a-97f120a4b125",
+    "Kaja Foglio",
     CardSet::Antiquities,
     false,
     CardBehavior::MishrasWorkshop,
@@ -136,9 +154,11 @@ pub(in crate::card::sets) static MISHRA_S_WORKSHOP: CardRecord = CardRecord::new
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static ARGOTHIAN_PIXIES: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static ARGOTHIAN_PIXIES: CardRecord = CardRecord::new_with_art(
     cards::ARGOTHIAN_PIXIES,
     "Argothian Pixies",
+    "5712e87a-2381-4f5b-a853-6973841f9bf1",
+    "Amy Weber",
     CardSet::Antiquities,
     false,
     CardBehavior::ArgothianPixies,
@@ -151,9 +171,11 @@ pub(in crate::card::sets) static ARGOTHIAN_PIXIES: CardRecord = CardRecord::new(
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static HURKYLS_RECALL: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static HURKYLS_RECALL: CardRecord = CardRecord::new_with_art(
     cards::HURKYLS_RECALL,
     "Hurkyl's Recall",
+    "f32373dd-06d8-45d1-8777-3b1411bcb30a",
+    "NéNé Thomas",
     CardSet::Antiquities,
     false,
     CardBehavior::HurkylsRecall,
@@ -165,9 +187,11 @@ pub(in crate::card::sets) static HURKYLS_RECALL: CardRecord = CardRecord::new(
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static SAGE_OF_LAT_NAM: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static SAGE_OF_LAT_NAM: CardRecord = CardRecord::new_with_art(
     cards::SAGE_OF_LAT_NAM,
     "Sage of Lat-Nam",
+    "b4ff60ce-073c-46b8-807c-8b40467b960c",
+    "Pete Venters",
     CardSet::Antiquities,
     false,
     CardBehavior::SageOfLatNam,
@@ -180,9 +204,11 @@ pub(in crate::card::sets) static SAGE_OF_LAT_NAM: CardRecord = CardRecord::new(
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static TETRAVUS: CardRecord = CardRecord::new(
+pub(in crate::card::sets) static TETRAVUS: CardRecord = CardRecord::new_with_art(
     cards::TETRAVUS,
     "Tetravus",
+    "23eb19f9-2e8f-4bf0-9bf8-868e6da70e2d",
+    "Mark Tedin",
     CardSet::Antiquities,
     false,
     CardBehavior::Tetravus,
@@ -193,6 +219,22 @@ pub(in crate::card::sets) static TETRAVUS: CardRecord = CardRecord::new(
     )
     .creature(1, 1)
     .flying(),
+);
+
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static ENERGY_FLUX: CardRecord = CardRecord::new_with_art(
+    cards::ENERGY_FLUX,
+    "Energy Flux",
+    "bd1f624b-e8f2-462f-838a-7cb9e8fda988",
+    "Kaja Foglio",
+    CardSet::Antiquities,
+    false,
+    CardBehavior::EnergyFlux,
+    CardRules::new(
+        CardKind::Enchantment,
+        ManaCost::colored(2, 0, 1, 0, 0, 0),
+        "At the beginning of each player's upkeep, sacrifice each artifact unless you pay 2 for it.",
+    ),
 );
 
 pub(in crate::card::sets) static CARDS: &[&CardRecord] = &[
@@ -209,6 +251,7 @@ pub(in crate::card::sets) static CARDS: &[&CardRecord] = &[
     &HURKYLS_RECALL,
     &SAGE_OF_LAT_NAM,
     &TETRAVUS,
+    &ENERGY_FLUX,
 ];
 
 pub(in crate::card::sets) static ADDITIONAL_PRINTINGS: &[PrintingRecord] = &[];

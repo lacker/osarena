@@ -50,6 +50,7 @@ pub(in crate::card::sets) static ADDITIONAL_PRINTINGS: &[PrintingRecord] = &[
     PrintingRecord::reprint(&alpha::TIME_WALK),
     PrintingRecord::reprint(&alpha::TUNDRA),
     PrintingRecord::reprint(&beta::VOLCANIC_ISLAND),
+    PrintingRecord::reprint(&alpha::SEDGE_TROLL),
     PrintingRecord::reprint(&alpha::ARMAGEDDON),
     PrintingRecord::reprint(&alpha::BADLANDS),
     PrintingRecord::reprint(&alpha::BALANCE),
