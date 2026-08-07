@@ -60,6 +60,12 @@ char *penta_deck_names_for_format_json(const char *format);
  * seats). Returns NULL on error; see penta_last_error(). */
 PentaGame *penta_new(const char *config_json);
 
+/* An independent copy of a game: same state, and the same future for the
+ * same actions, the built-in opponent's state included. Fork a game to
+ * roll out a candidate line without disturbing the original. Free it with
+ * penta_free() like any other game. Returns NULL when game is NULL. */
+PentaGame *penta_clone(const PentaGame *game);
+
 /* The seat that must act next: 0 for p1, 1 for p2, -1 when the game is
  * over. With a scripted opponent this is always your seat. */
 int32_t penta_decision_seat(const PentaGame *game);

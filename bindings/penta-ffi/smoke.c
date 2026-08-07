@@ -21,6 +21,22 @@ static int fail(const char *what) {
     return 1;
 }
 
+/* Plays one uniform-random action on game, and the same index on mirror
+ * when mirror is not NULL, so two copies can be driven in lockstep. */
+static int act_random(PentaGame *game, PentaGame *mirror) {
+    uint32_t count = penta_legal_action_count(game);
+    if (count == 0) {
+        fprintf(stderr, "FAIL: no legal actions but no result\n");
+        return 1;
+    }
+    uint32_t pick = (uint32_t)(next_rand() % count);
+    if (penta_act(game, pick) != 0)
+        return fail("penta_act");
+    if (mirror && penta_act(mirror, pick) != 0)
+        return fail("penta_act on a clone");
+    return 0;
+}
+
 static int play_one(const char *config, int check_json) {
     PentaGame *game = penta_new(config);
     if (!game) return fail("penta_new");
@@ -43,13 +59,7 @@ static int play_one(const char *config, int check_json) {
     int steps;
     for (steps = 0; steps < 200000; steps++) {
         if (penta_result(game) != -1) break;
-        uint32_t count = penta_legal_action_count(game);
-        if (count == 0) {
-            fprintf(stderr, "FAIL: no legal actions but no result\n");
-            return 1;
-        }
-        if (penta_act(game, (uint32_t)(next_rand() % count)) != 0)
-            return fail("penta_act");
+        if (act_random(game, NULL) != 0) return 1;
     }
 
     int32_t result = penta_result(game);
@@ -83,6 +93,95 @@ static int check_standard_game(void) {
         fprintf(stderr, "FAIL: Standard observation has the wrong format\n");
         return 1;
     }
+    return 0;
+}
+
+/* A cloned game replays identically under the same actions, and acting on
+ * one copy never disturbs the other. */
+static int check_clone(const char *config) {
+    PentaGame *game = penta_new(config);
+    if (!game) return fail("penta_new");
+
+    /* Reach a mid-game state. */
+    for (int step = 0; step < 30; step++) {
+        if (act_random(game, NULL) != 0) return 1;
+        if (penta_result(game) != -1) {
+            fprintf(stderr, "FAIL: game ended before the clone check\n");
+            return 1;
+        }
+    }
+
+    /* Identical bytes at the fork, and after the same actions. */
+    PentaGame *replay = penta_clone(game);
+    if (!replay) return fail("penta_clone");
+    for (int step = 0; step < 10; step++) {
+        int32_t seat = penta_decision_seat(game);
+        char *original = penta_observe_json(game, seat);
+        char *cloned = penta_observe_json(replay, seat);
+        if (!original || !cloned) return fail("penta_observe_json");
+        if (strcmp(original, cloned) != 0) {
+            fprintf(stderr, "FAIL: clone diverged under identical actions\n");
+            return 1;
+        }
+        penta_string_free(original);
+        penta_string_free(cloned);
+        if (act_random(game, replay) != 0) return 1;
+        if (penta_result(game) != penta_result(replay)) {
+            fprintf(stderr, "FAIL: clone and original disagree on result\n");
+            return 1;
+        }
+        if (penta_result(game) != -1) break;
+    }
+    penta_free(replay);
+
+    /* Diverge: the fork plays a different legal action than the original,
+     * the two games stop matching, and the original never notices. */
+    if (penta_result(game) == -1) {
+        /* Walk to a decision with at least two options to disagree on. */
+        while (penta_result(game) == -1 && penta_legal_action_count(game) < 2) {
+            if (act_random(game, NULL) != 0) return 1;
+        }
+        if (penta_result(game) != -1) {
+            fprintf(stderr, "FAIL: game ended before the divergence check\n");
+            return 1;
+        }
+        uint32_t count = penta_legal_action_count(game);
+        uint32_t choice = (uint32_t)(next_rand() % count);
+        uint32_t other = (choice + 1) % count;
+        int32_t seat = penta_decision_seat(game);
+        char *before = penta_observe_json(game, seat);
+        if (!before) return fail("penta_observe_json");
+        PentaGame *fork = penta_clone(game);
+        if (!fork) return fail("penta_clone");
+        if (penta_act(fork, other) != 0)
+            return fail("penta_act on a fork");
+        char *after = penta_observe_json(game, seat);
+        if (!after) return fail("penta_observe_json");
+        if (strcmp(before, after) != 0) {
+            fprintf(stderr, "FAIL: the original changed when its fork acted\n");
+            return 1;
+        }
+        penta_string_free(before);
+        penta_string_free(after);
+        if (penta_act(game, choice) != 0) return fail("penta_act");
+        char *original = penta_observe_json(game, seat);
+        char *forked = penta_observe_json(fork, seat);
+        if (!original || !forked) return fail("penta_observe_json");
+        if (strcmp(original, forked) == 0) {
+            fprintf(stderr, "FAIL: different actions, same observation\n");
+            return 1;
+        }
+        penta_string_free(original);
+        penta_string_free(forked);
+        /* A fork is a live game, not a snapshot: it plays on by itself. */
+        for (int step = 0; step < 10; step++) {
+            if (penta_result(fork) != -1) break;
+            if (act_random(fork, NULL) != 0) return 1;
+        }
+        penta_free(fork);
+    }
+    penta_free(game);
+    printf("clone: forks replay identically and diverge independently\n");
     return 0;
 }
 
@@ -126,6 +225,12 @@ int main(void) {
         return 1;
     if (play_one("{\"p1Deck\":\"Sligh\",\"p2Deck\":\"Goblins\","
                  "\"opponent\":\"external\",\"seed\":13}", 0))
+        return 1;
+
+    /* Clones: fork a game mid-state and check the copies are independent. */
+    if (check_clone("{\"p1Deck\":\"Sligh\",\"p2Deck\":\"The Deck\","
+                    "\"opponent\":\"handcrafted\",\"opponentSeat\":\"p2\","
+                    "\"seed\":7}"))
         return 1;
 
     /* Error paths report through penta_last_error instead of crashing. */

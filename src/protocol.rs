@@ -896,11 +896,15 @@ pub enum Opponent {
     Handcrafted,
 }
 
+// Concrete policy types rather than a boxed trait object, so the enum stays
+// Clone — forking a game for search clones the opponent's state with it —
+// and Send + Sync, which the Python bindings need to move games across
+// threads and parallel rollout collection wants anyway.
+#[derive(Clone)]
 enum OpponentPolicy {
     External,
-    // Send + Sync so a BotGame can move across threads — the Python bindings
-    // need it, and parallel rollout collection wants it anyway.
-    Scripted(Box<dyn Policy + Send + Sync>),
+    Random(RandomPolicy),
+    Handcrafted(HandcraftedPolicy),
 }
 
 /// A game driven through the bot protocol.
@@ -910,6 +914,12 @@ enum OpponentPolicy {
 /// hotseat against the built-in bot. With [`Opponent::External`] it stops at
 /// every decision, whichever seat owns it, so one loop can drive both sides
 /// for self-play.
+///
+/// Cloning a `BotGame` snapshots everything — the game and any scripted
+/// opponent's state — so a clone fed the same indices replays the identical
+/// game, and a clone fed different ones never disturbs the original. That
+/// fork-and-try is the primitive rollout- and tree-search bots are built on.
+#[derive(Clone)]
 pub struct BotGame {
     game: Game,
     catalog: CardCatalog,
@@ -966,11 +976,9 @@ impl BotGame {
             .map_err(|error| error.to_string())?;
         let opponent = match opponent {
             Opponent::External => OpponentPolicy::External,
-            Opponent::Random => {
-                OpponentPolicy::Scripted(Box::new(RandomPolicy::new(seed ^ 0x00b0_7b07)))
-            }
+            Opponent::Random => OpponentPolicy::Random(RandomPolicy::new(seed ^ 0x00b0_7b07)),
             Opponent::Handcrafted => {
-                OpponentPolicy::Scripted(Box::new(HandcraftedPolicy::new(catalog.clone())))
+                OpponentPolicy::Handcrafted(HandcraftedPolicy::new(catalog.clone()))
             }
         };
         let mut bot_game = Self {
@@ -1133,8 +1141,10 @@ impl BotGame {
     /// Runs the scripted opponent until the driven seat must decide or the
     /// game ends. A no-op with an external opponent.
     fn advance(&mut self) -> Result<(), String> {
-        let OpponentPolicy::Scripted(policy) = &mut self.opponent else {
-            return Ok(());
+        let policy: &mut dyn Policy = match &mut self.opponent {
+            OpponentPolicy::External => return Ok(()),
+            OpponentPolicy::Random(policy) => policy,
+            OpponentPolicy::Handcrafted(policy) => policy,
         };
         for _ in 0..ACTION_LIMIT {
             let Some(player) = self.game.decision_player() else {
@@ -1271,6 +1281,70 @@ mod tests {
             assert_eq!(first.observe_json(seat), second.observe_json(seat));
             first.act(0).expect("index 0 is legal");
             second.act(0).expect("index 0 is legal");
+        }
+    }
+
+    #[test]
+    fn a_clone_replays_identically_and_diverges_independently() {
+        let mut game = BotGame::new("Sligh", "The Deck", Opponent::Handcrafted, PlayerId::Two, 7)
+            .expect("game starts");
+        // Reach a mid-game state with real board state on both sides.
+        for _ in 0..30 {
+            let seat = game.decision_seat().expect("game is still running");
+            let observation: Value =
+                serde_json::from_str(&game.observe_json(seat)).expect("valid JSON");
+            game.act(pass_bot(&observation)).expect("legal index");
+        }
+        let seat = game.decision_seat().expect("game is still running");
+        let mut replay = game.clone();
+        assert_eq!(game.observe_json(seat), replay.observe_json(seat));
+
+        // Determinism: the same indices drive both copies — the scripted
+        // opponent's state included — to byte-identical observations.
+        for _ in 0..20 {
+            let seat = game.decision_seat().expect("game is still running");
+            let observation: Value =
+                serde_json::from_str(&game.observe_json(seat)).expect("valid JSON");
+            let choice = pass_bot(&observation);
+            game.act(choice).expect("legal in the original");
+            replay.act(choice).expect("legal in the clone");
+            assert_eq!(game.observe_json(seat), replay.observe_json(seat));
+        }
+
+        // Independence: the fork plays a different legal action than the
+        // original, the two games stop matching, and the original never
+        // notices. Walk to a decision with at least two options first.
+        let (seat, choice, other) = loop {
+            let seat = game.decision_seat().expect("game is still running");
+            let observation: Value =
+                serde_json::from_str(&game.observe_json(seat)).expect("valid JSON");
+            let count = observation["legalActions"].as_array().expect("array").len();
+            if count >= 2 {
+                let choice = pass_bot(&observation);
+                break (seat, choice, (choice + 1) % count);
+            }
+            game.act(0).expect("legal index");
+        };
+        let before = game.observe_json(seat);
+        let mut fork = game.clone();
+        fork.act(other).expect("legal in the fork");
+        assert_eq!(game.observe_json(seat), before, "the original is untouched");
+        game.act(choice).expect("legal in the original");
+        assert_ne!(
+            game.observe_json(seat),
+            fork.observe_json(seat),
+            "different actions, different games",
+        );
+
+        // A fork is a live game, not a snapshot: it plays on by itself.
+        for _ in 0..10 {
+            if fork.result().is_some() {
+                break;
+            }
+            let seat = fork.decision_seat().expect("fork is still running");
+            let observation: Value =
+                serde_json::from_str(&fork.observe_json(seat)).expect("valid JSON");
+            fork.act(pass_bot(&observation)).expect("legal in the fork");
         }
     }
 

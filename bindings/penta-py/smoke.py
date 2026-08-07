@@ -73,6 +73,38 @@ a, b = run(99), run(99)
 assert a == b, "same seed, same game"
 print("determinism ok:", a[0], "over", len(a[1]), "decisions")
 
+# clone: a fork replays identically and diverges independently
+game = penta.Game("Sligh", "The Deck", opponent="handcrafted", seed=7)
+for _ in range(30):
+    game.act(pass_bot(json.loads(game.observe())))
+replay = game.clone()
+assert game.observe() == replay.observe(), "a clone starts byte-identical"
+for _ in range(20):
+    choice = pass_bot(json.loads(game.observe()))
+    game.act(choice)
+    replay.act(choice)
+    assert game.observe("p1") == replay.observe("p1"), "same actions, same bytes"
+# Diverge: the fork plays a different legal action than the original, the
+# two games stop matching, and the original never notices. Walk to a
+# decision with at least two options first.
+while len(json.loads(game.observe())["legalActions"]) < 2:
+    game.act(0)
+obs = json.loads(game.observe())
+choice = pass_bot(obs)
+other = (choice + 1) % len(obs["legalActions"])
+before = game.observe()
+fork = game.clone()
+fork.act(other)
+assert game.observe() == before, "the original is untouched"
+game.act(choice)
+assert game.observe("p1") != fork.observe("p1"), \
+    "different actions, different games"
+for _ in range(10):  # a fork is a live game, not a snapshot: it plays on
+    if fork.result() is not None:
+        break
+    fork.act(pass_bot(json.loads(fork.observe())))
+print("clone: forks replay identically and diverge independently")
+
 # self-play: one loop drives both seats
 game = penta.Game("Goblins", "White Weenie", opponent="external", seed=13)
 steps = 0

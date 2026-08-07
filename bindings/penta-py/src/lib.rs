@@ -83,6 +83,16 @@ impl Game {
         self.inner.decision_seat_name()
     }
 
+    /// An independent copy of the game: same state, same future for the
+    /// same actions — the built-in opponent's state included. Fork a game
+    /// to roll out candidate lines without disturbing the original.
+    #[pyo3(name = "clone")]
+    fn clone_game(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+        }
+    }
+
     /// One seat's observation as protocol JSON. Defaults to the seat that
     /// must act.
     #[pyo3(signature = (seat=None))]

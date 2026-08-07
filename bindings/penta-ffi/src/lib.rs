@@ -11,7 +11,8 @@
 //! - Strings returned as `const char *` are borrowed; do not free them.
 //!   [`penta_last_error`] stays valid until the next failing call on the
 //!   same thread.
-//! - Games from [`penta_new`] are freed with [`penta_free`].
+//! - Games from [`penta_new`] and [`penta_clone`] are freed with
+//!   [`penta_free`].
 
 use std::cell::RefCell;
 use std::ffi::{CStr, CString, c_char};
@@ -188,6 +189,24 @@ pub unsafe extern "C" fn penta_new(config_json: *const c_char) -> *mut BotGame {
     }
 }
 
+/// An independent copy of a game: same state, same future for the same
+/// actions — the built-in opponent's state included — so a bot can fork a
+/// game, roll out a candidate line, and discard the copy. Freed with
+/// [`penta_free`], like a game from [`penta_new`]. Returns null when `game`
+/// is null.
+///
+/// # Safety
+///
+/// `game` must be a live pointer from [`penta_new`] or [`penta_clone`].
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn penta_clone(game: *const BotGame) -> *mut BotGame {
+    let Some(game) = (unsafe { game.as_ref() }) else {
+        set_error("game is null");
+        return std::ptr::null_mut();
+    };
+    Box::into_raw(Box::new(game.clone()))
+}
+
 /// The seat that must act: 0 for p1, 1 for p2, -1 when the game is over.
 ///
 /// # Safety
@@ -329,11 +348,12 @@ pub unsafe extern "C" fn penta_string_free(string: *mut c_char) {
     }
 }
 
-/// Frees a game from [`penta_new`]. Null is a no-op.
+/// Frees a game from [`penta_new`] or [`penta_clone`]. Null is a no-op.
 ///
 /// # Safety
 ///
-/// `game` must have come from [`penta_new`] and not been freed before.
+/// `game` must have come from [`penta_new`] or [`penta_clone`] and not been
+/// freed before.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn penta_free(game: *mut BotGame) {
     if !game.is_null() {

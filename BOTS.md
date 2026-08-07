@@ -85,6 +85,7 @@ The module surface:
 | `game.act(index)` | play one entry from `legalActions` |
 | `game.choose_decision([ids])` | answer a multi-pick decision explicitly (see below) |
 | `game.decision_seat()` | `"p1"` / `"p2"` / `None` when the game is over |
+| `game.clone()` | an independent copy of the game — fork it, try a line, discard it |
 | `game.result()` | `None`, `"p1"`, `"p2"`, or `"draw"` |
 | `penta.catalog(format=)` | every canonical definition annotated with legality for the selected format, as JSON |
 | `penta.deck_names(format=)` | the selected format's built-in decks |
@@ -175,6 +176,13 @@ while game.result() is None:
 
 Observations are per-seat and redacted — `p1`'s observation never contains
 `p2`'s hand — so neither side of a self-play loop can accidentally peek.
+
+Search bots build on the same surface plus one call: `game.clone()`
+(`penta_clone` in C, plain `.clone()` on a Rust `BotGame`) forks a game
+mid-state into an independent copy, the built-in opponent's state included.
+Fork at a decision, roll each candidate action out to the end, play the
+winner in the real game — the clone and the original never disturb each
+other, and a clone fed the same indices replays byte-identically.
 
 ## The observation
 
