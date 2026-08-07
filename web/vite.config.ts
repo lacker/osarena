@@ -1,5 +1,6 @@
 import vinext from "vinext";
 import { defineConfig } from "vite";
+import { getWorktreeDevPort } from "./worktree-port.js";
 
 // macOS Seatbelt blocks FSEvents, so sandboxed previews need polling for HMR.
 const isSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
@@ -12,6 +13,8 @@ const workerConfig = {
 };
 
 export default defineConfig(async () => {
+  const devPort = getWorktreeDevPort();
+
   // Keep Wrangler and Miniflare state project-local. These are non-secret tool
   // settings; application environment belongs in ignored `.env*` files.
   process.env.WRANGLER_WRITE_LOGS ??= "false";
@@ -22,9 +25,13 @@ export default defineConfig(async () => {
   const { cloudflare } = await import("@cloudflare/vite-plugin");
 
   return {
-    server: isSeatbeltSandbox
-      ? { watch: { useFsEvents: false, usePolling: true } }
-      : undefined,
+    server: {
+      port: devPort,
+      strictPort: true,
+      ...(isSeatbeltSandbox
+        ? { watch: { useFsEvents: false, usePolling: true } }
+        : {}),
+    },
     // The generated WASM declarations are TypeScript-only and are not valid
     // dependency-scan entry points. This app has a small, fixed dependency
     // graph, so discovery adds noise without improving startup.
@@ -34,7 +41,7 @@ export default defineConfig(async () => {
       cloudflare({
         // The local client does not need the Miniflare inspector. Disabling
         // its extra listener keeps `pnpm dev` usable in locked-down sandboxes
-        // and leaves port 3000 as the only development server endpoint.
+        // and leaves the worktree's app port as the only server endpoint.
         inspectorPort: false,
         viteEnvironment: { name: "rsc", childEnvironments: ["ssr"] },
         config: workerConfig,

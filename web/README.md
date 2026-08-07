@@ -17,10 +17,14 @@ pnpm install
 pnpm run dev
 ```
 
-Then open `http://localhost:3000`. The client defaults to The Deck versus
-Goblins, and all game state stays in the browser. Development, production
-builds, and tests keep the Git-ignored WASM bindings current automatically.
-Cargo checks incrementally, and unchanged bindings skip `wasm-bindgen`.
+The primary checkout uses `http://localhost:3000`; linked Git worktrees each
+receive a stable, distinct port so their development servers can run together.
+The server prints its URL at startup, and `pnpm run dev:url` reports it without
+starting the server. A linked worktree keeps its assignment in the ignored
+`web/.dev-port` file. The client defaults to The Deck versus Goblins, and all
+game state stays in the browser. Development, production builds, and tests keep
+the Git-ignored WASM bindings current automatically. Cargo checks incrementally,
+and unchanged bindings skip `wasm-bindgen`.
 
 ## Checks
 

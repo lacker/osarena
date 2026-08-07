@@ -285,6 +285,10 @@ pnpm install
 pnpm dev
 ```
 
+The primary checkout uses port 3000. Each linked Git worktree automatically
+uses its own stable port; run `pnpm run dev:url` from `web/` to print that
+checkout's URL.
+
 The `dev`, `build`, and `test` workflows ensure the ignored WASM bindings are
 up to date before they run. Cargo checks incrementally, and `wasm-bindgen` is
 skipped when the compiled module and generator version are unchanged.

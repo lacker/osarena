@@ -5,8 +5,9 @@
 For every change that can affect the web interface:
 
 1. Start or restart the local server from the current working tree. Confirm that
-   `http://localhost:3000` is served by that process; do not accept a fallback
-   port or assume an older server picked up the change.
+   the worktree-specific URL from `cd web && pnpm run dev:url` is served by that
+   process; do not accept a fallback port or assume an older server picked up
+   the change.
 2. Open the rendered application in a browser and inspect it visually. A
    successful build, DOM snapshot, or HTTP response is not sufficient.
 3. Check at least a 1280×720 laptop viewport. Verify that important content is

@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+/.dev-port
 
 # next.js
 /.next/
