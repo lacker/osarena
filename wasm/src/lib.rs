@@ -1,9 +1,9 @@
 use penta::{
     Action, ActivatedAbilityText, BattlefieldExit, CardCatalog, CardDefinitionId, CardInstanceId,
-    Game, GameEvent, GameResult, HandcraftedPolicy, PlayerId, PlayerObservation, Policy,
-    RandomPolicy, Step, Target,
+    Format, Game, GameEvent, GameResult, HandcraftedPolicy, ModeId, PlayOptionId, PlayerId,
+    PlayerObservation, Policy, RandomPolicy, Step, Target,
 };
-use penta::card;
+use penta::{card, decks};
 use serde_json::{Value, json};
 use std::fmt::Write as _;
 use wasm_bindgen::prelude::*;
@@ -53,6 +53,7 @@ impl WebGame {
     ///
     /// Returns a JavaScript error when a deck or policy name is unknown, game
     /// construction fails, or the bot cannot reach a human decision.
+    #[allow(clippy::needless_pass_by_value)] // wasm-bindgen owns optional strings at the ABI.
     #[wasm_bindgen(constructor)]
     pub fn new(
         human_deck: &str,
@@ -60,10 +61,12 @@ impl WebGame {
         bot_policy: &str,
         human_first: bool,
         seed: u32,
+        format: Option<String>,
     ) -> Result<WebGame, JsValue> {
+        let format = format_by_slug(format.as_deref())?;
         let catalog = card::catalog().map_err(js_error)?;
-        let human_deck = deck_by_name(human_deck)?;
-        let bot_deck = deck_by_name(bot_deck)?;
+        let human_deck = deck_by_name(format, human_deck)?;
+        let bot_deck = deck_by_name(format, bot_deck)?;
         let human = if human_first {
             PlayerId::One
         } else {
@@ -73,7 +76,8 @@ impl WebGame {
             PlayerId::One => [human_deck, bot_deck],
             PlayerId::Two => [bot_deck, human_deck],
         };
-        let game = Game::new(catalog.clone(), decks, u64::from(seed)).map_err(js_error)?;
+        let game = Game::new_with_format(format, catalog.clone(), decks, u64::from(seed))
+            .map_err(js_error)?;
         let bot = match bot_policy.to_ascii_lowercase().as_str() {
             "random" => BotPolicy::Random(RandomPolicy::new(u64::from(seed) ^ 0x00b0_7b07)),
             "handcrafted" => BotPolicy::Handcrafted(HandcraftedPolicy::new(catalog.clone())),
@@ -419,7 +423,7 @@ impl WebGame {
             let stack_owners: Vec<(CardInstanceId, PlayerId)> = observation
                 .stack
                 .iter()
-                .map(|object| (object.card, object.controller))
+                .map(|object| (object.id, object.controller))
                 .collect();
             let event_start = self.game.events().len();
             self.game.apply(player, action).map_err(js_error)?;
@@ -482,22 +486,22 @@ impl WebGame {
         let resolved: Vec<_> = self.game.events()[event_start..]
             .iter()
             .filter_map(|event| match event {
-                GameEvent::SpellResolved { card } | GameEvent::AbilityResolved { source: card } => {
-                    Some((*card, false))
-                }
-                GameEvent::SpellFizzled { card } => Some((*card, true)),
+                GameEvent::SpellResolved { card, definition } => Some((*card, *definition, false)),
+                GameEvent::AbilityResolved {
+                    object, definition, ..
+                } => Some((*object, *definition, false)),
+                GameEvent::SpellFizzled { card, definition } => Some((*card, *definition, true)),
                 _ => None,
             })
             .collect();
-        for (card, fizzled) in resolved {
+        for (card, definition, fizzled) in resolved {
             let yours = stack_owners
                 .iter()
                 .any(|(object, controller)| *object == card && *controller == self.human);
             if yours && !fizzled {
                 continue;
             }
-            let observation = self.game.observe(self.human);
-            let name = self.instance_name(&observation, card);
+            let name = self.card_name(definition);
             self.opponent_actions.push(json!({
                 "label": if fizzled {
                     format!("{name} fizzles")
@@ -896,7 +900,18 @@ impl WebGame {
                         _ => None,
                     },
                     "x": match action {
-                        Action::CastSpell { x, .. } => Some(*x),
+                        Action::CastSpell { choices, .. } => Some(choices.x()),
+                        _ => None,
+                    },
+                    "playOptionId": match action {
+                        Action::PlayLand { option, .. } => Some(option.0),
+                        Action::CastSpell { choices, .. } => Some(choices.play_option().0),
+                        _ => None,
+                    },
+                    "modeIds": match action {
+                        Action::CastSpell { choices, .. } => Some(
+                            choices.modes().iter().map(|mode| mode.0).collect::<Vec<_>>(),
+                        ),
                         _ => None,
                     },
                     "paymentAction": matches!(action, Action::CastSpell { .. } | Action::ActivateAbility { .. }),
@@ -918,21 +933,36 @@ impl WebGame {
             .iter()
             .map(|permanent| {
                 let card = self.catalog.get(permanent.definition);
-                let mana_cost = card.map(|card| card.rules.mana_cost);
-                let current_kind = card.map_or("unknown".into(), |card| {
-                    if card.behavior == penta::CardBehavior::MishrasFactory
+                let part = card.and_then(|card| card.part(permanent.presented));
+                let rules = part
+                    .map(|part| &part.rules)
+                    .or_else(|| card.map(|card| &card.rules));
+                let mana_cost = part.map_or_else(
+                    || card.map(|card| card.rules.mana_cost),
+                    |part| part.mana_cost,
+                );
+                let current_kind = rules.map_or("unknown".into(), |rules| {
+                    if card.is_some_and(|card| card.behavior == penta::CardBehavior::MishrasFactory)
                         && permanent.power.is_some()
                     {
                         "artifactcreature".into()
                     } else {
-                        format!("{:?}", card.rules.kind).to_ascii_lowercase()
+                        format!("{:?}", rules.kind).to_ascii_lowercase()
                     }
                 });
                 json!({
                     "id": permanent.id.0,
-                    "name": self.card_name(permanent.definition),
+                    "partId": permanent.presented.0,
+                    "name": part.map_or_else(
+                        || self.card_name(permanent.definition),
+                        |part| part.name.clone(),
+                    ),
                     "kind": current_kind,
-                    "isLand": card.is_some_and(|card| card.rules.kind == penta::CardKind::Land),
+                    "typeLine": rules.map_or("", |rules| rules.type_line),
+                    "metadataOnly": rules.is_some_and(|rules| {
+                        rules.effect_status == penta::CardEffectStatus::MetadataOnly
+                    }),
+                    "isLand": rules.is_some_and(|rules| rules.kind == penta::CardKind::Land),
                     "manaCost": mana_cost.map(|cost| json!({
                         "generic": cost.generic,
                         "white": cost.white,
@@ -940,9 +970,10 @@ impl WebGame {
                         "black": cost.black,
                         "red": cost.red,
                         "green": cost.green,
+                        "whiteRedHybrid": cost.white_red_hybrid,
                         "x": cost.variable_x,
                     })),
-                    "rulesText": card.map_or("", |card| card.rules.text),
+                    "rulesText": rules.map_or("", |rules| rules.text),
                     "owner": if permanent.controller == self.human { "human" } else { "opponent" },
                     "tapped": permanent.tapped,
                     "power": permanent.power,
@@ -969,6 +1000,10 @@ impl WebGame {
                     "kind": card.map_or("unknown".into(), |card| {
                         format!("{:?}", card.rules.kind).to_ascii_lowercase()
                     }),
+                    "typeLine": card.map_or("", |card| card.rules.type_line),
+                    "metadataOnly": card.is_some_and(|card| {
+                        card.rules.effect_status == penta::CardEffectStatus::MetadataOnly
+                    }),
                     "isLand": card.is_some_and(|card| card.rules.kind == penta::CardKind::Land),
                     "manaCost": mana_cost.map(|cost| json!({
                         "generic": cost.generic,
@@ -977,6 +1012,7 @@ impl WebGame {
                         "black": cost.black,
                         "red": cost.red,
                         "green": cost.green,
+                        "whiteRedHybrid": cost.white_red_hybrid,
                         "x": cost.variable_x,
                     })),
                     "rulesText": card.map_or("", |card| card.rules.text),
@@ -995,23 +1031,36 @@ impl WebGame {
                 let card = self.catalog.get(object.definition);
                 let mana_cost = card.map(|card| card.rules.mana_cost);
                 let creature_stats = card.and_then(|card| card.rules.creature_stats);
+                let signature = object.signature.as_ref();
+                let targets = signature.map_or_else(
+                    || object.targets.clone(),
+                    |signature| signature.iter_targets().copied().collect(),
+                );
                 json!({
                     "id": object.id.0,
-                    "cardId": object.card.0,
+                    // Kept as a JSON compatibility field for the browser;
+                    // this is the spell/ability object, not physical lineage.
+                    "cardId": object.id.0,
+                    "sourceId": object.source.map(|source| source.0),
                     "name": self.card_name(object.definition),
                     "owner": if object.controller == self.human { "human" } else { "opponent" },
                     "kind": format!("{:?}", object.kind),
-                    "x": object.x,
-                    "targetCardIds": object
-                        .targets
+                    "x": signature.map_or(0, penta::CastSignature::x),
+                    "playOptionId": signature.map(|signature| signature.play_option().0),
+                    "modeIds": signature.map(|signature| {
+                        signature.modes().iter().map(|mode| mode.0).collect::<Vec<_>>()
+                    }),
+                    "signature": signature.map(|signature| {
+                        cast_signature_value(signature, self.human)
+                    }),
+                    "targetCardIds": targets
                         .iter()
                         .filter_map(|target| match target {
                             Target::Permanent(id) => Some(id.0),
                             _ => None,
                         })
                         .collect::<Vec<_>>(),
-                    "targetPlayers": object
-                        .targets
+                    "targetPlayers": targets
                         .iter()
                         .filter_map(|target| match target {
                             Target::Player(player) if *player == self.human => Some("human"),
@@ -1019,8 +1068,7 @@ impl WebGame {
                             _ => None,
                         })
                         .collect::<Vec<_>>(),
-                    "targetStackIds": object
-                        .targets
+                    "targetStackIds": targets
                         .iter()
                         .filter_map(|target| match target {
                             Target::Spell(id) => Some(id.0),
@@ -1030,6 +1078,10 @@ impl WebGame {
                     "cardKind": card.map_or("unknown".into(), |card| {
                         format!("{:?}", card.rules.kind).to_ascii_lowercase()
                     }),
+                    "typeLine": card.map_or("", |card| card.rules.type_line),
+                    "metadataOnly": card.is_some_and(|card| {
+                        card.rules.effect_status == penta::CardEffectStatus::MetadataOnly
+                    }),
                     "isLand": card.is_some_and(|card| card.rules.kind == penta::CardKind::Land),
                     "manaCost": mana_cost.map(|cost| json!({
                         "generic": cost.generic,
@@ -1038,6 +1090,7 @@ impl WebGame {
                         "black": cost.black,
                         "red": cost.red,
                         "green": cost.green,
+                        "whiteRedHybrid": cost.white_red_hybrid,
                         "x": cost.variable_x,
                     })),
                     "rulesText": card.map_or("", |card| card.rules.text),
@@ -1106,6 +1159,7 @@ impl WebGame {
         });
 
         json!({
+            "format": self.game.format().slug(),
             "turn": observation.active_turn,
             "gameTurn": observation.turn,
             "step": readable_debug(observation.step),
@@ -1179,7 +1233,10 @@ impl WebGame {
             .map_or_else(|| "Unknown card".into(), |card| card.name.clone())
     }
 
-    fn instance_name(&self, observation: &PlayerObservation, id: CardInstanceId) -> String {
+    fn instance_definition(
+        observation: &PlayerObservation,
+        id: CardInstanceId,
+    ) -> Option<CardDefinitionId> {
         observation
             .hand
             .iter()
@@ -1204,7 +1261,7 @@ impl WebGame {
                 observation
                     .stack
                     .iter()
-                    .find_map(|object| (object.card == id).then_some(object.definition))
+                    .find_map(|object| (object.id == id).then_some(object.definition))
             })
             .or_else(|| {
                 // Exiled cards stay public, and the log keeps referring to them
@@ -1215,13 +1272,49 @@ impl WebGame {
                     .flatten()
                     .find_map(|(candidate, definition)| (*candidate == id).then_some(*definition))
             })
-            .map_or_else(
-                // A card that has since moved somewhere this observation cannot
-                // read — shuffled back into a library, say — is still described
-                // in words rather than as a raw instance id.
-                || "a card".into(),
-                |definition| self.card_name(definition),
-            )
+    }
+
+    fn instance_name(&self, observation: &PlayerObservation, id: CardInstanceId) -> String {
+        Self::instance_definition(observation, id).map_or_else(
+            // A card that has since moved somewhere this observation cannot
+            // read — shuffled back into a library, say — is still described
+            // in words rather than as a raw instance id.
+            || "a card".into(),
+            |definition| self.card_name(definition),
+        )
+    }
+
+    fn play_option_label(
+        &self,
+        observation: &PlayerObservation,
+        card: CardInstanceId,
+        option: PlayOptionId,
+    ) -> Option<String> {
+        Self::instance_definition(observation, card)
+            .and_then(|definition| self.catalog.get(definition))
+            .and_then(|definition| definition.play_option(option))
+            .map(|option| option.label.clone())
+    }
+
+    fn mode_labels(
+        &self,
+        observation: &PlayerObservation,
+        card: CardInstanceId,
+        option: PlayOptionId,
+        modes: &[ModeId],
+    ) -> Vec<String> {
+        let mode_definitions = Self::instance_definition(observation, card)
+            .and_then(|definition| self.catalog.get(definition))
+            .and_then(|definition| definition.play_option(option))
+            .and_then(|option| option.modes.as_ref());
+        modes
+            .iter()
+            .map(|id| {
+                mode_definitions
+                    .and_then(|definitions| definitions.modes.iter().find(|mode| mode.id == *id))
+                    .map_or_else(|| format!("Mode {}", id.0), |mode| mode.label.clone())
+            })
+            .collect()
     }
 
     fn target_name(&self, observation: &PlayerObservation, target: Target) -> String {
@@ -1269,20 +1362,23 @@ impl WebGame {
                     .collect::<Vec<_>>()
                     .join(", ")
             )),
-            GameEvent::LandPlayed { player, card } => Some(format!(
+            GameEvent::LandPlayed {
+                player, definition, ..
+            } => Some(format!(
                 "{} played {}",
                 self.player_name(*player),
-                self.instance_name(observation, *card)
+                self.card_name(*definition)
             )),
             GameEvent::SpellCast {
                 player,
-                card,
+                definition,
                 targets,
+                ..
             } => {
                 let mut label = format!(
                     "{} cast {}",
                     self.player_name(*player),
-                    self.instance_name(observation, *card)
+                    self.card_name(*definition)
                 );
                 if !targets.is_empty() {
                     let target_names = targets
@@ -1294,10 +1390,12 @@ impl WebGame {
                 }
                 Some(label)
             }
-            GameEvent::AbilityActivated { player, source, .. } => Some(format!(
+            GameEvent::AbilityActivated {
+                player, definition, ..
+            } => Some(format!(
                 "{} activated {}",
                 self.player_name(*player),
-                self.instance_name(observation, *source)
+                self.card_name(*definition)
             )),
             GameEvent::AttackDeclared { player, attackers } => Some(format!(
                 "{} attacked with {}",
@@ -1357,9 +1455,9 @@ impl WebGame {
                     "opponent’s"
                 }
             )),
-            GameEvent::SpellFizzled { card } => Some(format!(
+            GameEvent::SpellFizzled { definition, .. } => Some(format!(
                 "{} fizzled — its target was gone",
-                self.instance_name(observation, *card)
+                self.card_name(*definition)
             )),
             GameEvent::PermanentLeftBattlefield {
                 controller,
@@ -1451,8 +1549,11 @@ impl WebGame {
                     .join(", ")
             ),
             Action::PassPriority => "Pass priority".into(),
-            Action::PlayLand { card } => {
-                format!("Play {}", self.instance_name(observation, *card))
+            Action::PlayLand { card, option } => {
+                let option = self
+                    .play_option_label(observation, *card, *option)
+                    .unwrap_or_else(|| self.instance_name(observation, *card));
+                format!("Play {option}")
             }
             Action::ActivateManaAbility { source, color } => {
                 format!(
@@ -1464,13 +1565,20 @@ impl WebGame {
             Action::PayLifeForMana => "Pay 1 life for 1 colorless mana".into(),
             Action::CastSpell {
                 card,
-                targets: values,
+                choices,
                 sacrifices,
-                x,
             } => {
-                let mut label = format!("Cast {}", self.instance_name(observation, *card));
-                if *x > 0 {
-                    let _ = write!(label, " (X={x})");
+                let option = self
+                    .play_option_label(observation, *card, choices.play_option())
+                    .unwrap_or_else(|| self.instance_name(observation, *card));
+                let mut label = format!("Cast {option}");
+                let modes =
+                    self.mode_labels(observation, *card, choices.play_option(), choices.modes());
+                if !modes.is_empty() {
+                    let _ = write!(label, " — {}", modes.join(" + "));
+                }
+                if choices.x() > 0 {
+                    let _ = write!(label, " (X={})", choices.x());
                 }
                 if !sacrifices.is_empty() {
                     let _ = write!(
@@ -1483,8 +1591,9 @@ impl WebGame {
                             .join(", ")
                     );
                 }
+                let values = choices.iter_targets().copied().collect::<Vec<_>>();
                 if !values.is_empty() {
-                    let _ = write!(label, " → {}", targets(values));
+                    let _ = write!(label, " → {}", targets(&values));
                 }
                 label
             }
@@ -1598,10 +1707,117 @@ impl WebGame {
     }
 }
 
-fn deck_by_name(name: &str) -> Result<penta::Deck, JsValue> {
-    // The protocol module owns the deck list, so bots and the browser can
-    // never disagree about which names exist.
-    penta::protocol::deck_by_name(name).ok_or_else(|| JsValue::from_str("unknown deck"))
+fn cast_signature_value(signature: &penta::CastSignature, human: PlayerId) -> Value {
+    let form = match signature.form() {
+        penta::SpellForm::Part(part) => json!({
+            "kind": "part",
+            "partId": part.0,
+        }),
+        penta::SpellForm::Combined(parts) => json!({
+            "kind": "combined",
+            "partIds": parts.iter().map(|part| part.0).collect::<Vec<_>>(),
+        }),
+    };
+    let target_selections = signature
+        .targets()
+        .iter()
+        .map(|selection| {
+            json!({
+                "slotId": selection.slot().0,
+                "targetCardIds": selection.targets().iter().filter_map(|target| match target {
+                    Target::Permanent(id) => Some(id.0),
+                    Target::Player(_) | Target::Spell(_) => None,
+                }).collect::<Vec<_>>(),
+                "targetPlayers": selection.targets().iter().filter_map(|target| match target {
+                    Target::Player(player) => Some(if *player == human {
+                        "human"
+                    } else {
+                        "opponent"
+                    }),
+                    Target::Permanent(_) | Target::Spell(_) => None,
+                }).collect::<Vec<_>>(),
+                "targetStackIds": selection.targets().iter().filter_map(|target| match target {
+                    Target::Spell(id) => Some(id.0),
+                    Target::Player(_) | Target::Permanent(_) => None,
+                }).collect::<Vec<_>>(),
+            })
+        })
+        .collect::<Vec<_>>();
+    json!({
+        "playOptionId": signature.play_option().0,
+        "form": form,
+        "modeIds": signature.modes().iter().map(|mode| mode.0).collect::<Vec<_>>(),
+        "alternativeCostId": signature.costs().alternative().map(|cost| cost.0),
+        "additionalCostIds": signature
+            .costs()
+            .additional()
+            .iter()
+            .map(|cost| cost.0)
+            .collect::<Vec<_>>(),
+        "x": signature.x(),
+        "targetSelections": target_selections,
+    })
+}
+
+fn format_by_slug(slug: Option<&str>) -> Result<Format, JsValue> {
+    match slug
+        .unwrap_or("old-school-93-94")
+        .to_ascii_lowercase()
+        .as_str()
+    {
+        "old-school-93-94" | "old_school_93_94" => Ok(Format::OldSchool9394),
+        "isd-rtr-standard" | "isd_rtr_standard" => Ok(Format::IsdRtrStandard),
+        _ => Err(JsValue::from_str("unknown format")),
+    }
+}
+
+fn deck_by_name(format: Format, name: &str) -> Result<penta::Deck, JsValue> {
+    let name = name.to_ascii_lowercase();
+    let deck = match (format, name.as_str()) {
+        (Format::OldSchool9394, "goblins") => decks::goblins(),
+        (Format::OldSchool9394, "sligh") => decks::sligh(),
+        (Format::OldSchool9394, "artifacts") => decks::artifacts(),
+        (Format::OldSchool9394, "robots") => decks::robots(),
+        (Format::OldSchool9394, "the deck") => decks::the_deck(),
+        (Format::OldSchool9394, "mono black") => decks::mono_black(),
+        (Format::OldSchool9394, "white weenie") => decks::white_weenie(),
+        (Format::OldSchool9394, "erhnamgeddon") => decks::erhnamgeddon(),
+        (Format::OldSchool9394, "counterburn") => decks::counterburn(),
+        (Format::OldSchool9394, "lions/dib" | "lions dib") => decks::lions_dib(),
+        (Format::OldSchool9394, "bwr aggro") => decks::bwr_aggro(),
+        (Format::OldSchool9394, "gr aggro") => decks::gr_aggro(),
+        (Format::OldSchool9394, "troll disk") => decks::troll_disk(),
+        (Format::OldSchool9394, "jeskai aggro") => decks::jeskai_aggro(),
+        (Format::OldSchool9394, "lion dib bolt" | "lions/dib bolt" | "lions dib bolt") => {
+            decks::lions_dib_bolt()
+        }
+        (Format::IsdRtrStandard, "briksza naya midrange" | "briksza naya") => {
+            decks::isd_rtr_standard::naya_midrange_rudy_briksza()
+        }
+        (Format::IsdRtrStandard, "greer g/r aggro" | "greer gruul aggro") => {
+            decks::isd_rtr_standard::gr_aggro_joseph_greer()
+        }
+        (Format::IsdRtrStandard, "fyrberg b/g midrange" | "fyrberg golgari control") => {
+            decks::isd_rtr_standard::bg_midrange_mike_fyrberg()
+        }
+        (Format::IsdRtrStandard, "smith naya midrange" | "smith naya") => {
+            decks::isd_rtr_standard::naya_midrange_jimmie_smith()
+        }
+        (Format::IsdRtrStandard, "mcduffie u/w/r flash" | "mcduffie uwr flash") => {
+            decks::isd_rtr_standard::uwr_flash_korey_mcduffie()
+        }
+        (Format::IsdRtrStandard, "lorren u/w flash" | "lorren uw control") => {
+            decks::isd_rtr_standard::uw_flash_phillip_lorren()
+        }
+        (Format::IsdRtrStandard, "arch u/w flash" | "arch uw control") => {
+            decks::isd_rtr_standard::uw_flash_clayton_arch()
+        }
+        (Format::IsdRtrStandard, "kuenzinger junk reanimator" | "kuenzinger reanimator") => {
+            decks::isd_rtr_standard::junk_reanimator_drew_kuenzinger()
+        }
+        _ => return Err(JsValue::from_str("unknown deck for format")),
+    };
+    Ok(deck)
 }
 
 /// Describes why the game ended from the browser player's seat.
@@ -1903,7 +2119,7 @@ fn automatic_human_action_with_blockers(
 
 fn action_card(action: &Action) -> Option<CardInstanceId> {
     match action {
-        Action::PlayLand { card } | Action::CastSpell { card, .. } => Some(*card),
+        Action::PlayLand { card, .. } | Action::CastSpell { card, .. } => Some(*card),
         Action::ActivateManaAbility { source, .. } | Action::ActivateAbility { source, .. } => {
             Some(*source)
         }
@@ -1963,14 +2179,14 @@ fn action_target_stack(action: &Action) -> Option<u32> {
         })
 }
 
-fn action_targets(action: &Action) -> &[Target] {
+fn action_targets(action: &Action) -> Vec<Target> {
     match action {
-        Action::CastSpell { targets, .. } => targets.as_slice(),
+        Action::CastSpell { choices, .. } => choices.iter_targets().copied().collect(),
         Action::ActivateAbility {
             target: Some(target),
             ..
-        } => std::slice::from_ref(target),
-        _ => &[],
+        } => vec![*target],
+        _ => Vec::new(),
     }
 }
 
@@ -2066,6 +2282,62 @@ fn js_error(error: impl std::fmt::Display) -> JsValue {
 mod tests {
     use super::*;
 
+    fn choices_targeting(target: Target) -> penta::CastChoices {
+        penta::CastChoices::default().with_targets(vec![penta::TargetSelection::single(
+            penta::TargetSlotId(0),
+            target,
+        )])
+    }
+
+    #[test]
+    fn stack_signature_json_preserves_forms_modes_costs_and_target_slots() {
+        let signature = penta::CastSignature::from_validated_choices(
+            penta::SpellForm::Combined(vec![penta::CardPartId(0), penta::CardPartId(1)]),
+            penta::CastChoices::new(penta::PlayOptionId(2))
+                .with_modes(vec![penta::ModeId(3)])
+                .with_costs(penta::CostConfiguration::new(
+                    Some(penta::AlternativeCostId(4)),
+                    vec![penta::AdditionalCostId(5)],
+                ))
+                .with_x(6)
+                .with_targets(vec![penta::TargetSelection::new(
+                    penta::TargetSlotId(7),
+                    vec![
+                        Target::Permanent(penta::GameObjectId(8)),
+                        Target::Player(PlayerId::Two),
+                        Target::Spell(penta::GameObjectId(9)),
+                    ],
+                )]),
+        );
+
+        assert_eq!(
+            cast_signature_value(&signature, PlayerId::One),
+            json!({
+                "playOptionId": 2,
+                "form": { "kind": "combined", "partIds": [0, 1] },
+                "modeIds": [3],
+                "alternativeCostId": 4,
+                "additionalCostIds": [5],
+                "x": 6,
+                "targetSelections": [{
+                    "slotId": 7,
+                    "targetCardIds": [8],
+                    "targetPlayers": ["opponent"],
+                    "targetStackIds": [9],
+                }],
+            })
+        );
+
+        let part_signature = penta::CastSignature::from_validated_choices(
+            penta::SpellForm::Part(penta::CardPartId::PRIMARY),
+            penta::CastChoices::default(),
+        );
+        assert_eq!(
+            cast_signature_value(&part_signature, PlayerId::One)["form"],
+            json!({ "kind": "part", "partId": 0 })
+        );
+    }
+
     #[test]
     fn blocker_actions_expose_the_attacker_as_their_board_target() {
         let attacker = CardInstanceId(7);
@@ -2123,6 +2395,7 @@ mod tests {
             Action::Concede,
             Action::PlayLand {
                 card: CardInstanceId(7),
+                option: PlayOptionId::DEFAULT,
             },
             Action::PassPriority,
         ];
@@ -2152,6 +2425,7 @@ mod tests {
         }));
         assert!(should_animate_action(&Action::PlayLand {
             card: CardInstanceId(4),
+            option: PlayOptionId::DEFAULT,
         }));
     }
 
@@ -2161,9 +2435,8 @@ mod tests {
             Action::Concede,
             Action::CastSpell {
                 card: CardInstanceId(7),
-                targets: vec![Target::Player(PlayerId::Two)],
+                choices: choices_targeting(Target::Player(PlayerId::Two)),
                 sacrifices: Vec::new(),
-                x: 0,
             },
             Action::PassPriority,
         ];
@@ -2263,9 +2536,8 @@ mod tests {
             Action::Concede,
             Action::CastSpell {
                 card: CardInstanceId(7),
-                targets: vec![Target::Player(PlayerId::Two)],
+                choices: choices_targeting(Target::Player(PlayerId::Two)),
                 sacrifices: Vec::new(),
-                x: 0,
             },
             Action::PassPriority,
         ];
@@ -2403,9 +2675,8 @@ mod tests {
             Action::Concede,
             Action::CastSpell {
                 card: CardInstanceId(7),
-                targets: vec![Target::Player(PlayerId::Two)],
+                choices: choices_targeting(Target::Player(PlayerId::Two)),
                 sacrifices: Vec::new(),
-                x: 0,
             },
             Action::PassPriority,
         ];
@@ -2557,9 +2828,8 @@ mod tests {
             Action::Concede,
             Action::CastSpell {
                 card: CardInstanceId(7),
-                targets: vec![Target::Player(PlayerId::Two)],
+                choices: choices_targeting(Target::Player(PlayerId::Two)),
                 sacrifices: Vec::new(),
-                x: 0,
             },
             Action::PassPriority,
         ];

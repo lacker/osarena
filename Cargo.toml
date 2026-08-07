@@ -9,7 +9,7 @@ resolver = "3"
 name = "penta"
 version = "0.2.0"
 edition = "2024"
-description = "A deterministic engine for Eternal Central Old School 93/94 Magic"
+description = "A deterministic engine for two-player constructed Magic"
 license = "Apache-2.0"
 repository = "https://github.com/lacker/penta"
 

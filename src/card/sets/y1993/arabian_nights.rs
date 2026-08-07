@@ -1,7 +1,8 @@
-use super::CardRecord;
+use super::{CardRecord, PrintingRecord};
 use crate::card::{CardBehavior, CardKind, CardRules, CardSet, ManaCost, cards};
 
-pub(super) static CITY_OF_BRASS: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static CITY_OF_BRASS: CardRecord = CardRecord::new(
     cards::CITY_OF_BRASS,
     "City of Brass",
     CardSet::ArabianNights,
@@ -14,7 +15,8 @@ pub(super) static CITY_OF_BRASS: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static ERHNAM_DJINN: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static ERHNAM_DJINN: CardRecord = CardRecord::new(
     cards::ERHNAM_DJINN,
     "Erhnam Djinn",
     CardSet::ArabianNights,
@@ -28,7 +30,8 @@ pub(super) static ERHNAM_DJINN: CardRecord = CardRecord::new(
     .creature(4, 5),
 );
 
-pub(super) static JUZAM_DJINN: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static JUZAM_DJINN: CardRecord = CardRecord::new(
     cards::JUZAM_DJINN,
     "Juzam Djinn",
     CardSet::ArabianNights,
@@ -42,7 +45,8 @@ pub(super) static JUZAM_DJINN: CardRecord = CardRecord::new(
     .creature(5, 5),
 );
 
-pub(super) static LIBRARY_OF_ALEXANDRIA: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static LIBRARY_OF_ALEXANDRIA: CardRecord = CardRecord::new(
     cards::LIBRARY_OF_ALEXANDRIA,
     "Library of Alexandria",
     CardSet::ArabianNights,
@@ -56,7 +60,8 @@ pub(super) static LIBRARY_OF_ALEXANDRIA: CardRecord = CardRecord::new(
     .legendary(),
 );
 
-pub(super) static SERENDIB_EFREET: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static SERENDIB_EFREET: CardRecord = CardRecord::new(
     cards::SERENDIB_EFREET,
     "Serendib Efreet",
     CardSet::ArabianNights,
@@ -71,7 +76,8 @@ pub(super) static SERENDIB_EFREET: CardRecord = CardRecord::new(
     .flying(),
 );
 
-pub(super) static CITY_IN_A_BOTTLE: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static CITY_IN_A_BOTTLE: CardRecord = CardRecord::new(
     cards::CITY_IN_A_BOTTLE,
     "City in a Bottle",
     CardSet::ArabianNights,
@@ -84,7 +90,8 @@ pub(super) static CITY_IN_A_BOTTLE: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static KIRD_APE: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static KIRD_APE: CardRecord = CardRecord::new(
     cards::KIRD_APE,
     "Kird Ape",
     CardSet::ArabianNights,
@@ -98,7 +105,7 @@ pub(super) static KIRD_APE: CardRecord = CardRecord::new(
     .creature(1, 1),
 );
 
-pub(super) static CARDS: &[&CardRecord] = &[
+pub(in crate::card::sets) static CARDS: &[&CardRecord] = &[
     &CITY_OF_BRASS,
     &ERHNAM_DJINN,
     &JUZAM_DJINN,
@@ -107,3 +114,5 @@ pub(super) static CARDS: &[&CardRecord] = &[
     &CITY_IN_A_BOTTLE,
     &KIRD_APE,
 ];
+
+pub(in crate::card::sets) static ADDITIONAL_PRINTINGS: &[PrintingRecord] = &[];

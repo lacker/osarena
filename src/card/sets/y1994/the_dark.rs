@@ -1,7 +1,8 @@
-use super::CardRecord;
+use super::{CardRecord, PrintingRecord};
 use crate::card::{CardBehavior, CardKind, CardRules, CardSet, ManaCost, cards};
 
-pub(super) static BALL_LIGHTNING: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static BALL_LIGHTNING: CardRecord = CardRecord::new(
     cards::BALL_LIGHTNING,
     "Ball Lightning",
     CardSet::TheDark,
@@ -17,7 +18,8 @@ pub(super) static BALL_LIGHTNING: CardRecord = CardRecord::new(
     .trample(),
 );
 
-pub(super) static BLOOD_MOON: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static BLOOD_MOON: CardRecord = CardRecord::new(
     cards::BLOOD_MOON,
     "Blood Moon",
     CardSet::TheDark,
@@ -30,7 +32,8 @@ pub(super) static BLOOD_MOON: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static GOBLIN_DIGGING_TEAM: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static GOBLIN_DIGGING_TEAM: CardRecord = CardRecord::new(
     cards::GOBLIN_DIGGING_TEAM,
     "Goblin Digging Team",
     CardSet::TheDark,
@@ -45,7 +48,8 @@ pub(super) static GOBLIN_DIGGING_TEAM: CardRecord = CardRecord::new(
     .goblin(),
 );
 
-pub(super) static GOBLINS_OF_THE_FLARG: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static GOBLINS_OF_THE_FLARG: CardRecord = CardRecord::new(
     cards::GOBLINS_OF_THE_FLARG,
     "Goblins of the Flarg",
     CardSet::TheDark,
@@ -57,7 +61,8 @@ pub(super) static GOBLINS_OF_THE_FLARG: CardRecord = CardRecord::new(
         .mountainwalk(),
 );
 
-pub(super) static FELLWAR_STONE: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static FELLWAR_STONE: CardRecord = CardRecord::new(
     cards::FELLWAR_STONE,
     "Fellwar Stone",
     CardSet::TheDark,
@@ -70,7 +75,8 @@ pub(super) static FELLWAR_STONE: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static MAZE_OF_ITH: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static MAZE_OF_ITH: CardRecord = CardRecord::new(
     cards::MAZE_OF_ITH,
     "Maze of Ith",
     CardSet::TheDark,
@@ -84,7 +90,8 @@ pub(super) static MAZE_OF_ITH: CardRecord = CardRecord::new(
     .activated("Untap {} and take it out of combat", "Take an attacker out of combat"),
 );
 
-pub(super) static DUST_TO_DUST: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static DUST_TO_DUST: CardRecord = CardRecord::new(
     cards::DUST_TO_DUST,
     "Dust to Dust",
     CardSet::TheDark,
@@ -97,7 +104,7 @@ pub(super) static DUST_TO_DUST: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static CARDS: &[&CardRecord] = &[
+pub(in crate::card::sets) static CARDS: &[&CardRecord] = &[
     &BALL_LIGHTNING,
     &BLOOD_MOON,
     &GOBLIN_DIGGING_TEAM,
@@ -106,3 +113,5 @@ pub(super) static CARDS: &[&CardRecord] = &[
     &MAZE_OF_ITH,
     &DUST_TO_DUST,
 ];
+
+pub(in crate::card::sets) static ADDITIONAL_PRINTINGS: &[PrintingRecord] = &[];

@@ -856,20 +856,43 @@ test("every deck the picker offers is one the engine can build", async () => {
   );
   await init({ module_or_path: bytes });
 
-  const source = await readFile(new URL("../app/game-config.ts", import.meta.url), "utf8");
-  const block = source.slice(
-    source.indexOf("deckNotes"),
-    source.indexOf("export const defaultHumanDeck"),
-  );
-  const names = [...block.matchAll(/^\s*"?([A-Za-z0-9 '/]+?)"?:\s*"/gm)].map((match) => match[1]);
-  assert.ok(names.length >= 15, `expected the full deck list, found ${names.length}`);
+  const decksByFormat = {
+    "old-school-93-94": [
+      "Goblins", "Sligh", "Artifacts", "Robots", "The Deck", "Mono Black",
+      "White Weenie", "Erhnamgeddon", "Counterburn", "Lions DIB",
+      "Lion Dib Bolt", "BWR Aggro", "GR Aggro", "Troll Disk", "Jeskai Aggro",
+    ],
+    "isd-rtr-standard": [
+      "Briksza Naya Midrange", "Greer G/R Aggro", "Fyrberg B/G Midrange",
+      "Smith Naya Midrange", "McDuffie U/W/R Flash", "Lorren U/W Flash",
+      "Arch U/W Flash", "Kuenzinger Junk Reanimator",
+    ],
+  };
 
-  for (const name of names) {
-    const game = new WebGame(name, name, "Handcrafted", true, 1);
-    const state = JSON.parse(game.state_json());
-    assert.equal(state.human.hand.length, 7, `${name} deals an opening hand`);
-    game.free();
+  for (const [format, names] of Object.entries(decksByFormat)) {
+    for (const name of names) {
+      const game = new WebGame(name, name, "Handcrafted", true, 1, format);
+      const state = JSON.parse(game.state_json());
+      assert.equal(state.format, format, `${name} uses the selected format`);
+      assert.equal(state.human.hand.length, 7, `${name} deals an opening hand`);
+      game.free();
+    }
   }
+
+  assert.throws(
+    () => new WebGame("Goblins", "Goblins", "Handcrafted", true, 1, "isd-rtr-standard"),
+    /unknown deck for format/,
+    "a deck from another format cannot leak into Standard",
+  );
+  assert.throws(
+    () => new WebGame("Briksza Naya Midrange", "Briksza Naya Midrange", "Handcrafted", true, 1),
+    /unknown deck for format/,
+    "the compatibility default remains Old School",
+  );
+  assert.throws(
+    () => new WebGame("Goblins", "Goblins", "Handcrafted", true, 1, "not-a-format"),
+    /unknown format/,
+  );
 });
 
 test("the game log reports permanents leaving the battlefield", async () => {
@@ -1087,13 +1110,8 @@ test("the Random setup choice is a placeholder, never a deck name", async () => 
   );
   assert.equal(/export const defaultBotDeck = (\w+)/.exec(source)?.[1], "randomDeck");
 
-  const block = source.slice(
-    source.indexOf("deckNotes"),
-    source.indexOf("export const randomDeck"),
-  );
-  const names = [...block.matchAll(/^\s*"?([A-Za-z0-9 '/]+?)"?:\s*"/gm)].map((match) => match[1]);
   assert.ok(
-    !names.includes(sentinel),
+    !/^\s*Random:\s*"/m.test(source),
     "the sentinel is not one of the real decks, so it must be resolved before it reaches the engine",
   );
   assert.throws(
@@ -1102,11 +1120,8 @@ test("the Random setup choice is a placeholder, never a deck name", async () => 
     "the engine rejects it, which is why the browser resolves it first",
   );
 
-  // Whatever it resolves to has to be a deck the engine can actually build.
-  for (const name of names) {
-    const game = new WebGame(name, name, "Handcrafted", true, 1);
-    game.free();
-  }
+  const game = new WebGame("Goblins", "Goblins", "Handcrafted", true, 1);
+  game.free();
 });
 
 test("declaring attackers always offers a confirm and a way back", async () => {

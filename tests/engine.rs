@@ -1,8 +1,11 @@
-use penta::card::{CardBehavior, CardCatalog, CardDefinition, CardSet};
+use penta::card::{CardBehavior, CardCatalog, CardDefinition, CardPrinting, CardSet};
 use penta::deck::{Deck, DeckError};
 use penta::game::{GameResult, WinReason};
 use penta::poc;
-use penta::{Action, CardDefinitionId, Game, GameError, GameEvent, PlayerId, Step, Target};
+use penta::{
+    Action, CardDefinitionId, CastChoices, Format, Game, GameError, GameEvent, PlayOptionId,
+    PlayerId, Step, Target, TargetSelection, TargetSlotId,
+};
 
 fn catalog() -> CardCatalog {
     CardCatalog::new([
@@ -31,6 +34,13 @@ fn catalog() -> CardCatalog {
             CardDefinitionId(4),
             "Contract from Below",
             CardSet::Alpha,
+            false,
+            CardBehavior::Unsupported,
+        ),
+        CardDefinition::new(
+            CardDefinitionId(5),
+            "Standard Test Spell",
+            CardSet::Innistrad,
             false,
             CardBehavior::Unsupported,
         ),
@@ -153,11 +163,102 @@ fn banned_cards_are_rejected() {
 }
 
 #[test]
+fn deck_validation_uses_the_selected_formats_card_pool() {
+    let catalog = catalog();
+    let mut main = vec![CardDefinitionId(1); 59];
+    main.push(CardDefinitionId(5));
+    let standard_deck = Deck {
+        main,
+        sideboard: Vec::new(),
+    };
+
+    assert_eq!(
+        standard_deck.clone().validate(&catalog).unwrap_err(),
+        DeckError::CardNotAllowed {
+            card: "Standard Test Spell".into(),
+            format: Format::OldSchool9394,
+        }
+    );
+    standard_deck
+        .validate_for_format(&catalog, Format::IsdRtrStandard)
+        .unwrap();
+
+    let mut main = vec![CardDefinitionId(1); 59];
+    main.push(CardDefinitionId(2));
+    assert_eq!(
+        Deck {
+            main,
+            sideboard: Vec::new(),
+        }
+        .validate_for_format(&catalog, Format::IsdRtrStandard)
+        .unwrap_err(),
+        DeckError::CardNotAllowed {
+            card: "Lightning Bolt".into(),
+            format: Format::IsdRtrStandard,
+        }
+    );
+}
+
+#[test]
+fn deck_validation_uses_reprints_without_splitting_copy_identity() {
+    let mountain = CardDefinition::new(
+        CardDefinitionId(1),
+        "Mountain",
+        CardSet::Alpha,
+        true,
+        CardBehavior::Mountain,
+    );
+    let bolt = CardDefinition::new(
+        CardDefinitionId(2),
+        "Lightning Bolt",
+        CardSet::Alpha,
+        false,
+        CardBehavior::LightningBolt,
+    );
+    let catalog = CardCatalog::with_additional_printings(
+        [mountain, bolt],
+        [
+            CardPrinting::new(CardDefinitionId(2), CardSet::Magic2014),
+            CardPrinting::with_variant(CardDefinitionId(2), CardSet::Magic2014, 1),
+        ],
+    )
+    .unwrap();
+
+    let legal = Deck {
+        main: [vec![CardDefinitionId(1); 56], vec![CardDefinitionId(2); 4]].concat(),
+        sideboard: Vec::new(),
+    };
+    legal
+        .validate_for_format(&catalog, Format::IsdRtrStandard)
+        .unwrap();
+
+    let too_many = Deck {
+        main: [vec![CardDefinitionId(1); 55], vec![CardDefinitionId(2); 5]].concat(),
+        sideboard: Vec::new(),
+    };
+    assert_eq!(
+        too_many
+            .validate_for_format(&catalog, Format::IsdRtrStandard)
+            .unwrap_err(),
+        DeckError::TooManyCopies {
+            card: "Lightning Bolt".into(),
+            count: 5,
+            limit: 4,
+        }
+    );
+    assert_eq!(
+        catalog.find_by_name("lightning bolt"),
+        Some(CardDefinitionId(2))
+    );
+}
+
+#[test]
 fn setup_is_deterministic_and_hides_the_opponents_hand() {
     let catalog = catalog();
     let game_a = Game::new(catalog.clone(), [valid_deck(), valid_deck()], 0xdeca_fbad).unwrap();
     let game_b = Game::new(catalog.clone(), [valid_deck(), valid_deck()], 0xdeca_fbad).unwrap();
 
+    assert_eq!(game_a.format(), Format::OldSchool9394);
     assert_eq!(game_a.observe(PlayerId::One), game_b.observe(PlayerId::One));
     let observation = game_a.observe(PlayerId::One);
     assert_eq!(observation.hand.len(), 7);
@@ -249,8 +350,21 @@ fn mountain_casts_and_resolves_lightning_bolt() {
         .unwrap()
         .0;
 
-    game.apply(PlayerId::One, Action::PlayLand { card: mountain })
-        .unwrap();
+    game.apply(
+        PlayerId::One,
+        Action::PlayLand {
+            card: mountain,
+            option: PlayOptionId::DEFAULT,
+        },
+    )
+    .unwrap();
+    let mountain = game
+        .observe(PlayerId::One)
+        .battlefield
+        .iter()
+        .find(|permanent| permanent.definition == CardDefinitionId(1))
+        .unwrap()
+        .id;
     game.apply(
         PlayerId::One,
         Action::ActivateManaAbility {
@@ -263,15 +377,21 @@ fn mountain_casts_and_resolves_lightning_bolt() {
         PlayerId::One,
         Action::CastSpell {
             card: bolt,
-            targets: vec![Target::Player(PlayerId::Two)],
+            choices: CastChoices::default()
+                .with_x(0)
+                .with_targets(vec![TargetSelection::new(
+                    TargetSlotId(0),
+                    vec![Target::Player(PlayerId::Two)],
+                )]),
             sacrifices: Vec::new(),
-            x: 0,
         },
     )
     .unwrap();
 
     let on_stack = game.observe(PlayerId::One);
     assert_eq!(on_stack.stack.len(), 1);
+    let spell_id = on_stack.stack[0].id;
+    assert_ne!(spell_id, bolt);
     assert_eq!(on_stack.life_totals, [20, 20]);
     assert_eq!(on_stack.mana_pools[0].red, 0);
 
@@ -280,7 +400,8 @@ fn mountain_casts_and_resolves_lightning_bolt() {
     let resolved = game.observe(PlayerId::One);
     assert!(resolved.stack.is_empty());
     assert_eq!(resolved.life_totals, [20, 17]);
-    assert_eq!(resolved.graveyards[0], vec![(bolt, CardDefinitionId(2))]);
+    assert_eq!(resolved.graveyards[0][0].1, CardDefinitionId(2));
+    assert_ne!(resolved.graveyards[0][0].0, spell_id);
     assert!(game.events().contains(&GameEvent::DamageDealt {
         player: PlayerId::Two,
         amount: 3,
@@ -317,7 +438,10 @@ fn nonbasic_lands_cannot_be_cast_as_spells() {
                 .0;
             let actions = game.legal_actions(PlayerId::One);
 
-            assert!(actions.contains(&Action::PlayLand { card }));
+            assert!(actions.contains(&Action::PlayLand {
+                card,
+                option: PlayOptionId::DEFAULT,
+            }));
             assert!(!actions.iter().any(
                 |action| matches!(action, Action::CastSpell { card: cast, .. } if *cast == card)
             ));
@@ -340,8 +464,21 @@ fn unspent_mana_burns_at_the_end_of_a_phase() {
         .unwrap()
         .0;
 
-    game.apply(PlayerId::One, Action::PlayLand { card: mountain })
-        .unwrap();
+    game.apply(
+        PlayerId::One,
+        Action::PlayLand {
+            card: mountain,
+            option: PlayOptionId::DEFAULT,
+        },
+    )
+    .unwrap();
+    let mountain = game
+        .observe(PlayerId::One)
+        .battlefield
+        .iter()
+        .find(|permanent| permanent.definition == CardDefinitionId(1))
+        .unwrap()
+        .id;
     game.apply(
         PlayerId::One,
         Action::ActivateManaAbility {
@@ -363,6 +500,58 @@ fn unspent_mana_burns_at_the_end_of_a_phase() {
 }
 
 #[test]
+fn mana_emptying_and_burn_follow_the_games_format() {
+    let catalog = catalog();
+    let deck = Deck {
+        main: vec![CardDefinitionId(1); 60],
+        sideboard: Vec::new(),
+    };
+
+    for (format, expected_mana) in [(Format::OldSchool9394, 1), (Format::IsdRtrStandard, 0)] {
+        let mut game =
+            Game::new_with_format(format, catalog.clone(), [deck.clone(), deck.clone()], 0)
+                .unwrap();
+        assert_eq!(game.format(), format);
+        keep_both(&mut game);
+        advance_to_first_main(&mut game);
+
+        let mountain = game.observe(PlayerId::One).hand[0].0;
+        game.apply(
+            PlayerId::One,
+            Action::PlayLand {
+                card: mountain,
+                option: PlayOptionId::DEFAULT,
+            },
+        )
+        .unwrap();
+        let mountain = game.observe(PlayerId::One).battlefield.first().unwrap().id;
+        pass_priority_pair(&mut game);
+        assert_eq!(game.observe(PlayerId::One).step, Step::BeginningOfCombat);
+
+        game.apply(
+            PlayerId::One,
+            Action::ActivateManaAbility {
+                source: mountain,
+                color: penta::ManaColor::Red,
+            },
+        )
+        .unwrap();
+        pass_priority_pair(&mut game);
+
+        let observation = game.observe(PlayerId::One);
+        assert_eq!(observation.step, Step::DeclareAttackers);
+        assert_eq!(observation.mana_pools[0].red, expected_mana);
+        assert_eq!(observation.life_totals, [20, 20]);
+        assert!(
+            !game
+                .events()
+                .iter()
+                .any(|event| matches!(event, GameEvent::ManaBurn { .. }))
+        );
+    }
+}
+
+#[test]
 fn game_validates_decks_against_its_own_catalog() {
     let catalog = catalog();
     let short_deck = Deck {
@@ -374,7 +563,10 @@ fn game_validates_decks_against_its_own_catalog() {
         Game::new(catalog, [short_deck, valid_deck()], 0),
         Err(GameError::InvalidDeck {
             player: PlayerId::One,
-            error: DeckError::MainDeckTooSmall { actual: 59 },
+            error: DeckError::MainDeckTooSmall {
+                actual: 59,
+                minimum: 60,
+            },
         })
     ));
 }
@@ -483,9 +675,11 @@ fn choose_greedy_action(game: &Game, player: PlayerId) -> Option<Action> {
             actions
                 .iter()
                 .filter_map(|action| match action {
-                    Action::CastSpell { x, targets, .. } => {
-                        let attacks_opponent = targets.contains(&Target::Player(player.opponent()));
-                        Some((attacks_opponent, *x, action.clone()))
+                    Action::CastSpell { choices, .. } => {
+                        let attacks_opponent = choices
+                            .iter_targets()
+                            .any(|target| *target == Target::Player(player.opponent()));
+                        Some((attacks_opponent, choices.x(), action.clone()))
                     }
                     _ => None,
                 })

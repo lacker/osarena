@@ -1,4 +1,4 @@
-use crate::{CardDefinitionId, CardInstanceId, PlayerId, Target};
+use crate::{CardDefinitionId, GameObjectId, PlayerId, Target};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Step {
@@ -58,52 +58,70 @@ pub enum GameEvent {
     },
     CardDrawn {
         player: PlayerId,
-        card: CardInstanceId,
+        card: GameObjectId,
     },
     CardsDiscarded {
         player: PlayerId,
-        cards: Vec<(CardInstanceId, CardDefinitionId)>,
+        cards: Vec<(GameObjectId, CardDefinitionId)>,
     },
     LandPlayed {
         player: PlayerId,
-        card: CardInstanceId,
+        card: GameObjectId,
+        /// Immutable identity for logs after the permanent leaves play.
+        definition: CardDefinitionId,
     },
     ManaAdded {
         player: PlayerId,
-        source: CardInstanceId,
+        source: GameObjectId,
     },
     SpellCast {
         player: PlayerId,
-        card: CardInstanceId,
+        /// The spell's game object on the stack.
+        card: GameObjectId,
+        /// Immutable identity for logs after the spell leaves the stack.
+        definition: CardDefinitionId,
         targets: Vec<Target>,
     },
     SpellResolved {
-        card: CardInstanceId,
+        /// The spell's former game object on the stack.
+        card: GameObjectId,
+        definition: CardDefinitionId,
     },
     /// A targeted spell resolved with every target gone, so it did nothing.
     SpellFizzled {
-        card: CardInstanceId,
+        /// The spell's former game object on the stack.
+        card: GameObjectId,
+        definition: CardDefinitionId,
     },
     AbilityActivated {
         player: PlayerId,
-        source: CardInstanceId,
-        chosen_permanents: Vec<CardInstanceId>,
+        /// The activated ability's own game object on the stack.
+        object: GameObjectId,
+        /// The permanent object that created the ability.
+        source: GameObjectId,
+        /// Immutable source definition for logs after the source leaves play.
+        definition: CardDefinitionId,
+        chosen_permanents: Vec<GameObjectId>,
     },
     AbilityResolved {
-        source: CardInstanceId,
+        /// The activated ability's former game object on the stack.
+        object: GameObjectId,
+        /// The permanent object that created the ability.
+        source: GameObjectId,
+        definition: CardDefinitionId,
     },
     AttackDeclared {
         player: PlayerId,
-        attackers: Vec<CardInstanceId>,
+        attackers: Vec<GameObjectId>,
     },
     BlockDeclared {
         player: PlayerId,
-        assignments: Vec<(CardInstanceId, CardInstanceId)>,
+        assignments: Vec<(GameObjectId, GameObjectId)>,
     },
     ErhnamForestwalkGranted {
         player: PlayerId,
-        source: CardInstanceId,
-        target: CardInstanceId,
+        source: GameObjectId,
+        target: GameObjectId,
     },
     DamageDealt {
         player: PlayerId,
@@ -124,7 +142,7 @@ pub enum GameEvent {
     /// the observing player may not be able to read.
     PermanentLeftBattlefield {
         controller: PlayerId,
-        card: CardInstanceId,
+        card: GameObjectId,
         definition: CardDefinitionId,
         destination: BattlefieldExit,
     },

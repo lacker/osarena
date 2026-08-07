@@ -1,0 +1,35 @@
+# SCG Open Atlanta — 6th place, Phillip Lorren (663 players, 2013-09-15).
+# MTGTop8 records the tournament as 2013-09-14.
+# Source: https://www.mtgtop8.com/event?e=5640&d=232702&f=ST
+# Contemporary source: https://articles.starcitygames.com/articles/putting-the-cap-on-standard/
+main:
+  Cavern of Souls: 1
+  Encroaching Wastes: 1
+  Glacial Fortress: 4
+  Hallowed Fountain: 4
+  Island: 8
+  Moorland Haunt: 1
+  Plains: 6
+  Aetherling: 1
+  Augur of Bolas: 4
+  Restoration Angel: 4
+  Azorius Charm: 4
+  Detention Sphere: 3
+  Dissipate: 2
+  Essence Scatter: 1
+  Quicken: 1
+  Sphinx's Revelation: 4
+  Supreme Verdict: 4
+  Syncopate: 3
+  Think Twice: 4
+sideboard:
+  Aetherling: 1
+  Archangel of Thune: 2
+  Blind Obedience: 2
+  Cavern of Souls: 1
+  Celestial Flare: 1
+  Dispel: 1
+  Negate: 2
+  Pithing Needle: 1
+  Rhox Faithmender: 3
+  Urgent Exorcism: 1

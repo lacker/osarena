@@ -1,5 +1,12 @@
 use super::*;
 use crate::poc::{self, cards};
+use crate::{
+    AdditionalCostDef, AdditionalCostId, AlternativeCostDef, AlternativeCostId, CardComposition,
+    CardDefinition, CardEffectStatus, CardInstanceId, CardPart, CardPartId, CardPrinting,
+    CardRules, CardStructure, CastChoices, DoubleFacedKind, LandEntry, ModeDef, ModeSetDef,
+    PlayOptionDef, PlayOptionId, SpellForm, StackObjectId, TargetPredicate, TargetSelection,
+    TargetSlotDef, TargetSlotId,
+};
 
 fn ready_game() -> Game {
     let deck = poc::mono_red_atog();
@@ -27,12 +34,15 @@ fn card(id: u32, definition: CardDefinitionId, owner: PlayerId) -> CardInstance 
         id: CardInstanceId(id),
         definition,
         owner,
+        backing: ObjectBacking::Cards(vec![PhysicalCardId(id)]),
+        characteristics: CharacteristicSource::Card(definition),
     }
 }
 
 fn creature(id: u32, definition: CardDefinitionId, controller: PlayerId) -> Permanent {
     Permanent {
         card: card(id, definition, controller),
+        presented: CardPartId::PRIMARY,
         controller,
         tapped: false,
         entered_controller_turn: 0,
@@ -57,23 +67,216 @@ fn creature(id: u32, definition: CardDefinitionId, controller: PlayerId) -> Perm
     }
 }
 
+fn cast_choices(targets: Vec<Target>, x: u16) -> CastChoices {
+    let choices = CastChoices::default().with_x(x);
+    if targets.is_empty() {
+        choices
+    } else {
+        choices.with_targets(vec![TargetSelection::new(TargetSlotId(0), targets)])
+    }
+}
+
+fn cast_action(
+    card: GameObjectId,
+    targets: Vec<Target>,
+    sacrifices: Vec<GameObjectId>,
+    x: u16,
+) -> Action {
+    Action::CastSpell {
+        card,
+        choices: cast_choices(targets, x),
+        sacrifices,
+    }
+}
+
+fn synchronize_single_part_definition(definition: &mut CardDefinition) {
+    let composition = CardComposition::single(definition.name.clone(), definition.rules);
+    definition.parts = composition.parts;
+    definition.structure = composition.structure;
+    definition.play_options = composition.play_options;
+}
+
 fn spell(id: u32, definition: CardDefinitionId, controller: PlayerId, x: u16) -> StackObject {
     StackObject {
         id: StackObjectId(id),
         kind: StackObjectKind::Spell,
         card: card(id, definition, controller),
+        source: None,
         controller,
-        targets: Vec::new(),
+        signature: Some(CastSignature::from_validated_choices(
+            SpellForm::Part(CardPartId::PRIMARY),
+            cast_choices(Vec::new(), x),
+        )),
+        ability_targets: Vec::new(),
         chosen_permanents: Vec::new(),
-        x,
         is_copy: false,
     }
+}
+
+fn spell_with_targets(
+    id: u32,
+    definition: CardDefinitionId,
+    controller: PlayerId,
+    targets: Vec<Target>,
+    x: u16,
+) -> StackObject {
+    let mut object = spell(id, definition, controller, x);
+    object.signature = Some(CastSignature::from_validated_choices(
+        SpellForm::Part(CardPartId::PRIMARY),
+        cast_choices(targets, x),
+    ));
+    object
 }
 
 fn pass_priority_pair(game: &mut Game) {
     let first = game.priority;
     game.apply(first, Action::PassPriority).unwrap();
     game.apply(first.opponent(), Action::PassPriority).unwrap();
+}
+
+#[test]
+fn a_physical_card_gets_new_object_identity_in_each_cast_zone() {
+    let mut game = ready_game();
+    let card = card(10_000, cards::TRISKELION, PlayerId::One);
+    let hand_id = card.id;
+    let physical = backing_cards(&card.backing);
+    game.players[0].hand.push(card);
+    game.players[0].mana_pool.colorless = 6;
+
+    game.apply(
+        PlayerId::One,
+        cast_action(hand_id, Vec::new(), Vec::new(), 0),
+    )
+    .unwrap();
+    let spell_id = game.stack[0].id;
+    assert_ne!(spell_id, hand_id);
+    assert_eq!(backing_cards(&game.stack[0].card.backing), physical);
+
+    pass_priority_pair(&mut game);
+    let permanent = game
+        .battlefield
+        .iter()
+        .find(|permanent| permanent.card.definition == cards::TRISKELION)
+        .unwrap();
+    assert_ne!(permanent.card.id, spell_id);
+    assert_ne!(permanent.card.id, hand_id);
+    assert_eq!(backing_cards(&permanent.card.backing), physical);
+}
+
+#[test]
+fn a_forked_spell_has_new_identity_and_no_physical_backing() {
+    let mut game = ready_game();
+    let original = spell(77, cards::LIGHTNING_BOLT, PlayerId::Two, 0);
+    let original_id = original.id;
+
+    game.push_copy(original, PlayerId::One, Vec::new());
+
+    let copied = game.stack.last().unwrap();
+    assert_ne!(copied.id, original_id);
+    assert_eq!(copied.card.backing, ObjectBacking::None);
+    assert_eq!(
+        copied.card.characteristics,
+        CharacteristicSource::Copy(cards::LIGHTNING_BOLT)
+    );
+    assert_eq!(copied.card.owner, PlayerId::One);
+    assert!(copied.is_copy);
+}
+
+#[test]
+fn physical_card_metadata_is_separate_from_live_objects() {
+    let game = ready_game();
+    let physical = game.physical_cards[0].clone();
+    assert_eq!(
+        game.physical_card_definition(physical.id),
+        Some(physical.definition)
+    );
+    assert_eq!(game.physical_card_owner(physical.id), Some(physical.owner));
+}
+
+#[test]
+fn spell_events_keep_stack_identity_and_definition_after_the_card_moves() {
+    let mut game = ready_game();
+    let bolt = card(10_000, cards::LIGHTNING_BOLT, PlayerId::One);
+    let hand_id = bolt.id;
+    game.players[0].hand.push(bolt);
+    game.players[0].mana_pool.red = 1;
+    let event_start = game.events.len();
+
+    game.apply(
+        PlayerId::One,
+        cast_action(hand_id, vec![Target::Player(PlayerId::Two)], Vec::new(), 0),
+    )
+    .unwrap();
+    let stack_id = game.stack[0].id;
+    assert_ne!(stack_id, hand_id);
+    assert!(game.events[event_start..].contains(&GameEvent::SpellCast {
+        player: PlayerId::One,
+        card: stack_id,
+        definition: cards::LIGHTNING_BOLT,
+        targets: vec![Target::Player(PlayerId::Two)],
+    }));
+
+    pass_priority_pair(&mut game);
+    assert!(
+        game.events[event_start..].contains(&GameEvent::SpellResolved {
+            card: stack_id,
+            definition: cards::LIGHTNING_BOLT,
+        })
+    );
+    assert!(
+        game.players[0]
+            .graveyard
+            .iter()
+            .any(|card| card.definition == cards::LIGHTNING_BOLT && card.id != stack_id),
+        "the event still names the former stack object after the card became a new object",
+    );
+}
+
+#[test]
+fn ability_events_distinguish_the_stack_object_from_a_source_that_left_play() {
+    let mut game = ready_game();
+    let strip = creature(10_000, cards::STRIP_MINE, PlayerId::One);
+    let target = creature(10_001, cards::MOUNTAIN, PlayerId::Two);
+    let source_id = strip.card.id;
+    let target_id = target.card.id;
+    game.battlefield = vec![strip, target];
+    let event_start = game.events.len();
+
+    game.apply(
+        PlayerId::One,
+        Action::ActivateAbility {
+            source: source_id,
+            target: Some(Target::Permanent(target_id)),
+            sacrifice: Some(source_id),
+        },
+    )
+    .unwrap();
+    let ability_id = game.stack[0].id;
+    assert_ne!(ability_id, source_id);
+    assert!(
+        game.battlefield
+            .iter()
+            .all(|permanent| permanent.card.id != source_id),
+        "the source has already left play when its activation is logged",
+    );
+    assert!(
+        game.events[event_start..].contains(&GameEvent::AbilityActivated {
+            player: PlayerId::One,
+            object: ability_id,
+            source: source_id,
+            definition: cards::STRIP_MINE,
+            chosen_permanents: vec![target_id],
+        })
+    );
+
+    pass_priority_pair(&mut game);
+    assert!(
+        game.events[event_start..].contains(&GameEvent::AbilityResolved {
+            object: ability_id,
+            source: source_id,
+            definition: cards::STRIP_MINE,
+        })
+    );
 }
 
 #[test]
@@ -97,6 +300,656 @@ fn recall_charges_two_generic_mana_for_each_x() {
         cost,
         3,
     ));
+}
+
+#[test]
+fn white_red_hybrid_symbols_accept_either_color_but_not_colorless() {
+    let cost = ManaCost::white_red_hybrid(3);
+    assert!(can_pay(
+        ManaPool {
+            white: 2,
+            red: 1,
+            ..ManaPool::default()
+        },
+        cost,
+        0,
+    ));
+    assert!(can_pay(
+        ManaPool {
+            red: 3,
+            ..ManaPool::default()
+        },
+        cost,
+        0,
+    ));
+    assert!(!can_pay(
+        ManaPool {
+            colorless: 3,
+            ..ManaPool::default()
+        },
+        cost,
+        0,
+    ));
+
+    let mut pool = ManaPool {
+        white: 2,
+        red: 1,
+        ..ManaPool::default()
+    };
+    pay_cost(&mut pool, cost, 0);
+    assert_eq!(pool, ManaPool::default());
+}
+
+#[test]
+fn declarative_mana_production_drives_generic_mana_sources() {
+    let definition_id = CardDefinitionId(10_000);
+    let mut definition = CardDefinition::new(
+        definition_id,
+        "Test dual land",
+        CardSet::Magic2014,
+        false,
+        CardBehavior::Unsupported,
+    );
+    definition.rules = CardRules::new(CardKind::Land, ManaCost::default(), "Tap: Add U or R.")
+        .produces([false, true, false, true, false, false]);
+    synchronize_single_part_definition(&mut definition);
+
+    let mut game = ready_game();
+    game.catalog = CardCatalog::new([definition]).unwrap();
+    game.battlefield
+        .push(creature(10_000, definition_id, PlayerId::One));
+
+    assert_eq!(
+        game.mana_colors(&game.battlefield[0]),
+        vec![ManaColor::Blue, ManaColor::Red]
+    );
+    game.activate_mana_source(PlayerId::One, CardInstanceId(10_000), ManaColor::Blue);
+    assert_eq!(game.players[0].mana_pool.blue, 1);
+    assert!(game.battlefield[0].tapped);
+}
+
+#[test]
+fn declarative_land_entry_handles_check_tapped_and_shock_lands() {
+    let check_id = CardDefinitionId(10_000);
+    let gate_id = CardDefinitionId(10_001);
+    let shock_id = CardDefinitionId(10_002);
+    let mut check = CardDefinition::new(
+        check_id,
+        "Test check land",
+        CardSet::Magic2013,
+        false,
+        CardBehavior::Unsupported,
+    );
+    check.rules = CardRules::new(CardKind::Land, ManaCost::default(), "").land_entry(
+        LandEntry::TappedUnlessControlsLandType([true, false, false, false, false]),
+    );
+    synchronize_single_part_definition(&mut check);
+    let mut gate = CardDefinition::new(
+        gate_id,
+        "Test gate",
+        CardSet::Gatecrash,
+        false,
+        CardBehavior::Unsupported,
+    );
+    gate.rules =
+        CardRules::new(CardKind::Land, ManaCost::default(), "").land_entry(LandEntry::Tapped);
+    synchronize_single_part_definition(&mut gate);
+    let mut shock = CardDefinition::new(
+        shock_id,
+        "Test shock land",
+        CardSet::Gatecrash,
+        false,
+        CardBehavior::Unsupported,
+    );
+    shock.rules = CardRules::new(CardKind::Land, ManaCost::default(), "")
+        .land_types([true, false, true, false, false])
+        .land_entry(LandEntry::PayLifeOrTapped(2));
+    synchronize_single_part_definition(&mut shock);
+
+    let plains = CardDefinition::new(
+        cards::PLAINS,
+        "Plains",
+        CardSet::Alpha,
+        true,
+        CardBehavior::Plains,
+    );
+    let mut test_game = ready_game();
+    test_game.catalog = CardCatalog::new([check, gate, shock, plains]).unwrap();
+    test_game
+        .battlefield
+        .push(creature(9_999, cards::PLAINS, PlayerId::One));
+
+    for (instance, definition) in [(10_000, check_id), (10_001, gate_id), (10_002, shock_id)] {
+        test_game.players[0]
+            .hand
+            .push(card(instance, definition, PlayerId::One));
+        test_game.play_land(
+            PlayerId::One,
+            CardInstanceId(instance),
+            PlayOptionId::DEFAULT,
+        );
+    }
+
+    assert!(!test_game.battlefield[1].tapped);
+    assert!(test_game.battlefield[2].tapped);
+    assert!(test_game.battlefield[3].tapped);
+    assert_eq!(test_game.players[0].life, 20);
+}
+
+#[test]
+fn a_land_play_option_locks_the_presented_part_on_the_permanent() {
+    let definition_id = CardDefinitionId(10_100);
+    let land_part = CardPartId(1);
+    let land_option = PlayOptionId(1);
+    let front_rules = CardRules::new(CardKind::Sorcery, ManaCost::new(1, 0), "Test front");
+    let land_rules = CardRules::new(CardKind::Land, ManaCost::default(), "Test back")
+        .land_entry(LandEntry::Tapped);
+    let mut definition = CardDefinition::new(
+        definition_id,
+        "Test modal card",
+        CardSet::Magic2014,
+        false,
+        CardBehavior::Unsupported,
+    );
+    definition.rules = front_rules;
+    definition.parts = vec![
+        CardPart::new(CardPartId::PRIMARY, "Test front", front_rules),
+        CardPart::new(land_part, "Test back", land_rules).without_mana_cost(),
+    ];
+    definition.structure = CardStructure::DoubleFaced {
+        front: CardPartId::PRIMARY,
+        back: land_part,
+        kind: DoubleFacedKind::Modal,
+    };
+    definition.play_options = vec![
+        PlayOptionDef::cast(
+            PlayOptionId::DEFAULT,
+            "Cast Test front",
+            SpellForm::Part(CardPartId::PRIMARY),
+            front_rules.mana_cost,
+            CardEffectStatus::MetadataOnly,
+        ),
+        PlayOptionDef::play_land(
+            land_option,
+            "Play Test back",
+            land_part,
+            CardEffectStatus::Implemented,
+        ),
+    ];
+
+    let mut game = ready_game();
+    game.catalog = CardCatalog::new([definition]).unwrap();
+    let card = card(10_100, definition_id, PlayerId::One);
+    let action = Action::PlayLand {
+        card: card.id,
+        option: land_option,
+    };
+    game.players[0].hand.push(card);
+
+    assert!(game.legal_actions(PlayerId::One).contains(&action));
+    game.apply(PlayerId::One, action).unwrap();
+
+    assert_eq!(game.battlefield[0].presented, land_part);
+    assert!(game.battlefield[0].tapped);
+}
+
+#[test]
+fn a_modal_spell_resolves_by_its_locked_part_instead_of_the_canonical_front() {
+    let definition_id = CardDefinitionId(10_150);
+    let creature_part = CardPartId(1);
+    let creature_option = PlayOptionId(1);
+    let front_rules = CardRules::new(CardKind::Instant, ManaCost::new(1, 1), "Test front");
+    let creature_rules = CardRules::new(
+        CardKind::Creature,
+        ManaCost::new(0, 0),
+        "Test creature back",
+    )
+    .creature(3, 4)
+    .flying();
+    let mut definition = CardDefinition::new(
+        definition_id,
+        "Test modal spell",
+        CardSet::Magic2014,
+        false,
+        CardBehavior::LightningBolt,
+    );
+    definition.rules = front_rules;
+    definition.parts = vec![
+        CardPart::new(CardPartId::PRIMARY, "Test front", front_rules),
+        CardPart::new(creature_part, "Test creature back", creature_rules),
+    ];
+    definition.structure = CardStructure::DoubleFaced {
+        front: CardPartId::PRIMARY,
+        back: creature_part,
+        kind: DoubleFacedKind::Modal,
+    };
+    definition.play_options = vec![
+        PlayOptionDef::cast(
+            PlayOptionId::DEFAULT,
+            "Cast Test front",
+            SpellForm::Part(CardPartId::PRIMARY),
+            front_rules.mana_cost,
+            CardEffectStatus::MetadataOnly,
+        ),
+        PlayOptionDef::cast(
+            creature_option,
+            "Cast Test creature back",
+            SpellForm::Part(creature_part),
+            creature_rules.mana_cost,
+            CardEffectStatus::Implemented,
+        ),
+    ];
+
+    let mut game = ready_game();
+    game.catalog = CardCatalog::new([definition]).unwrap();
+    let card = card(10_150, definition_id, PlayerId::One);
+    let hand_id = card.id;
+    game.players[0].hand.push(card);
+    let action = Action::CastSpell {
+        card: hand_id,
+        choices: CastChoices::new(creature_option),
+        sacrifices: Vec::new(),
+    };
+
+    assert!(game.legal_actions(PlayerId::One).contains(&action));
+    game.apply(PlayerId::One, action).unwrap();
+    let spell_id = game.stack[0].id;
+    pass_priority_pair(&mut game);
+
+    let permanent = &game.battlefield[0];
+    assert_ne!(permanent.card.id, spell_id);
+    assert_eq!(permanent.presented, creature_part);
+    assert_eq!(game.power(permanent), Some(3));
+    assert_eq!(game.toughness(permanent), Some(4));
+    assert!(game.has_flying(permanent));
+}
+
+#[test]
+fn changing_a_permanents_presented_face_keeps_its_object_identity() {
+    let definition_id = CardDefinitionId(10_101);
+    let back = CardPartId(1);
+    let front_rules =
+        CardRules::new(CardKind::Creature, ManaCost::new(2, 0), "Front-face rules.").creature(2, 2);
+    let back_rules = CardRules::new(CardKind::Creature, ManaCost::default(), "Back-face rules.")
+        .creature(4, 5)
+        .flying()
+        .trample();
+    let mut definition = CardDefinition::new(
+        definition_id,
+        "Test Werewolf",
+        CardSet::Innistrad,
+        false,
+        CardBehavior::Unsupported,
+    );
+    definition.rules = front_rules;
+    definition.parts = vec![
+        CardPart::new(CardPartId::PRIMARY, "Test Werewolf", front_rules),
+        CardPart::new(back, "Test Ravager", back_rules).without_mana_cost(),
+    ];
+    definition.structure = CardStructure::DoubleFaced {
+        front: CardPartId::PRIMARY,
+        back,
+        kind: DoubleFacedKind::Transforming,
+    };
+    definition.play_options = vec![PlayOptionDef::cast(
+        PlayOptionId::DEFAULT,
+        "Cast Test Werewolf",
+        SpellForm::Part(CardPartId::PRIMARY),
+        front_rules.mana_cost,
+        CardEffectStatus::MetadataOnly,
+    )];
+
+    let mut game = ready_game();
+    game.catalog = CardCatalog::new([definition]).unwrap();
+    let permanent_id = GameObjectId(10_101);
+    game.battlefield
+        .push(creature(permanent_id.0, definition_id, PlayerId::One));
+
+    let front = &game.observe(PlayerId::One).battlefield[0];
+    assert_eq!(front.id, permanent_id);
+    assert_eq!(front.presented, CardPartId::PRIMARY);
+    assert_eq!(
+        (front.power, front.toughness, front.flying),
+        (Some(2), Some(2), false)
+    );
+
+    game.battlefield[0].presented = back;
+
+    let transformed = &game.observe(PlayerId::One).battlefield[0];
+    assert_eq!(transformed.id, permanent_id);
+    assert_eq!(transformed.presented, back);
+    assert_eq!(
+        (transformed.power, transformed.toughness, transformed.flying),
+        (Some(4), Some(5), true),
+    );
+    assert!(game.has_trample(&game.battlefield[0]));
+
+    game.return_permanent_to_hand(permanent_id);
+    let returned_id = game.players[0].hand[0].id;
+    assert_ne!(returned_id, permanent_id);
+}
+
+#[test]
+fn city_in_a_bottle_uses_canonical_origin_even_when_a_reprint_exists() {
+    let city = CardDefinition::new(
+        CardDefinitionId(10_000),
+        "City in a Bottle",
+        CardSet::ArabianNights,
+        false,
+        CardBehavior::CityInABottle,
+    );
+    let kird_ape = CardDefinition::new(
+        CardDefinitionId(10_001),
+        "Kird Ape",
+        CardSet::ArabianNights,
+        false,
+        CardBehavior::KirdApe,
+    );
+    let mut game = ready_game();
+    game.catalog = CardCatalog::with_additional_printings(
+        [city, kird_ape],
+        [CardPrinting::new(
+            CardDefinitionId(10_001),
+            CardSet::Magic2014,
+        )],
+    )
+    .unwrap();
+    game.battlefield
+        .push(creature(10_000, CardDefinitionId(10_000), PlayerId::One));
+    game.battlefield
+        .push(creature(10_001, CardDefinitionId(10_001), PlayerId::Two));
+
+    game.handle_upkeep_triggers();
+
+    assert_eq!(game.battlefield.len(), 1);
+    assert_eq!(
+        game.battlefield[0].card.definition,
+        CardDefinitionId(10_000)
+    );
+    assert_eq!(game.players[1].graveyard.len(), 1);
+    assert_eq!(
+        game.players[1].graveyard[0].definition,
+        CardDefinitionId(10_001)
+    );
+}
+
+#[test]
+fn metadata_only_noncreature_spells_are_hidden_but_baseline_cards_remain_playable() {
+    let mut game = ready_game();
+    game.catalog = crate::card::catalog().unwrap();
+    game.players[0].hand.extend([
+        card(10_000, crate::card::cards::DOOM_BLADE, PlayerId::One),
+        card(10_001, crate::card::cards::PITHING_NEEDLE, PlayerId::One),
+        card(10_002, crate::card::cards::DOMRI_RADE, PlayerId::One),
+        card(10_003, crate::card::cards::LOXODON_SMITER, PlayerId::One),
+        card(10_004, crate::card::cards::CLIFFTOP_RETREAT, PlayerId::One),
+        card(10_005, crate::card::cards::IZZET_CHARM, PlayerId::One),
+        card(10_006, crate::card::cards::TURN_BURN, PlayerId::One),
+    ]);
+    game.players[0].mana_pool = ManaPool {
+        white: 4,
+        blue: 4,
+        black: 4,
+        red: 4,
+        green: 4,
+        colorless: 4,
+    };
+
+    let actions = game.legal_actions(PlayerId::One);
+    let cast_cards = actions
+        .iter()
+        .filter_map(|action| match action {
+            Action::CastSpell { card, .. } => Some(*card),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(cast_cards, vec![CardInstanceId(10_003)]);
+    assert!(actions.contains(&Action::PlayLand {
+        card: CardInstanceId(10_004),
+        option: PlayOptionId::DEFAULT,
+    }));
+}
+
+#[test]
+#[allow(clippy::too_many_lines)]
+fn cast_validation_rejects_unrecognized_structured_choices() {
+    let definition_id = CardDefinitionId(10_200);
+    let option_id = PlayOptionId(7);
+    let implemented_mode = ModeId(2);
+    let metadata_mode = ModeId(3);
+    let slot_id = TargetSlotId(5);
+    let alternative_id = AlternativeCostId(11);
+    let additional_id = AdditionalCostId(13);
+    let mut definition = CardDefinition::new(
+        definition_id,
+        "Structured Bolt",
+        CardSet::Alpha,
+        false,
+        CardBehavior::LightningBolt,
+    );
+    let mut option = PlayOptionDef::cast(
+        option_id,
+        "Cast Structured Bolt",
+        SpellForm::Part(CardPartId::PRIMARY),
+        ManaCost::new(0, 1),
+        CardEffectStatus::Implemented,
+    )
+    .with_modes(ModeSetDef {
+        minimum: 1,
+        maximum: 2,
+        may_repeat: false,
+        modes: vec![
+            ModeDef {
+                id: implemented_mode,
+                label: "Target a player".into(),
+                targets: vec![TargetSlotDef::exactly_one(
+                    slot_id,
+                    "target player",
+                    TargetPredicate::Player,
+                )],
+                effect_status: CardEffectStatus::Implemented,
+            },
+            ModeDef {
+                id: metadata_mode,
+                label: "Not implemented".into(),
+                targets: Vec::new(),
+                effect_status: CardEffectStatus::MetadataOnly,
+            },
+        ],
+    });
+    option.alternative_costs = vec![AlternativeCostDef {
+        id: alternative_id,
+        label: "Alternative cost".into(),
+        mana_cost: ManaCost::new(1, 0),
+    }];
+    option.additional_costs = vec![AdditionalCostDef {
+        id: additional_id,
+        label: "Additional cost".into(),
+        mana_cost: Some(ManaCost::new(2, 0)),
+    }];
+    definition.play_options = vec![option];
+
+    let mut game = ready_game();
+    game.catalog = CardCatalog::new([definition]).unwrap();
+    let card = card(10_200, definition_id, PlayerId::One);
+    let card_id = card.id;
+    game.players[0].hand.push(card);
+    game.players[0].mana_pool.colorless = 20;
+
+    let valid = CastChoices::new(option_id)
+        .with_modes(vec![implemented_mode])
+        .with_costs(CostConfiguration::new(
+            Some(alternative_id),
+            vec![additional_id],
+        ))
+        .with_targets(vec![TargetSelection::single(
+            slot_id,
+            Target::Player(PlayerId::Two),
+        )]);
+    let (signature, cost, _) = game
+        .validated_cast_signature(PlayerId::One, card_id, &valid)
+        .expect("all structured choices are recognized and payable");
+    assert_eq!(signature.play_option(), option_id);
+    assert_eq!(signature.form(), &SpellForm::Part(CardPartId::PRIMARY));
+    assert_eq!(signature.modes(), &[implemented_mode]);
+    assert_eq!(signature.costs(), valid.costs());
+    assert_eq!(signature.targets(), valid.targets());
+    assert_eq!(cost, ManaCost::new(3, 0));
+
+    let invalid = [
+        CastChoices::new(PlayOptionId(99)),
+        CastChoices::new(option_id),
+        CastChoices::new(option_id).with_modes(vec![metadata_mode]),
+        CastChoices::new(option_id).with_modes(vec![implemented_mode, implemented_mode]),
+        CastChoices::new(option_id)
+            .with_modes(vec![implemented_mode])
+            .with_costs(CostConfiguration::new(
+                Some(AlternativeCostId(99)),
+                Vec::new(),
+            )),
+        CastChoices::new(option_id)
+            .with_modes(vec![implemented_mode])
+            .with_costs(CostConfiguration::new(None, vec![AdditionalCostId(99)])),
+        CastChoices::new(option_id)
+            .with_modes(vec![implemented_mode])
+            .with_x(1),
+        CastChoices::new(option_id)
+            .with_modes(vec![implemented_mode])
+            .with_targets(vec![TargetSelection::single(
+                TargetSlotId(99),
+                Target::Player(PlayerId::Two),
+            )]),
+        CastChoices::new(option_id)
+            .with_modes(vec![implemented_mode])
+            .with_targets(vec![TargetSelection::single(
+                slot_id,
+                Target::Permanent(GameObjectId(99_999)),
+            )]),
+    ];
+    for choices in invalid {
+        assert!(
+            game.validated_cast_signature(PlayerId::One, card_id, &choices)
+                .is_none(),
+            "invalid structured choices were accepted: {choices:?}",
+        );
+    }
+}
+
+#[test]
+fn declarative_dual_lands_cast_and_resolve_a_hybrid_creature() {
+    let mut game = ready_game();
+    game.catalog = crate::card::catalog().unwrap();
+    game.battlefield.extend([
+        creature(10_000, crate::card::cards::CLIFFTOP_RETREAT, PlayerId::One),
+        creature(10_001, crate::card::cards::SACRED_FOUNDRY, PlayerId::One),
+        creature(10_002, crate::card::cards::SUNPETAL_GROVE, PlayerId::One),
+    ]);
+    game.players[0].hand.push(card(
+        10_003,
+        crate::card::cards::BOROS_RECKONER,
+        PlayerId::One,
+    ));
+
+    let cast = game
+        .legal_actions(PlayerId::One)
+        .into_iter()
+        .find(|action| {
+            matches!(
+                action,
+                Action::CastSpell {
+                    card: CardInstanceId(10_003),
+                    ..
+                }
+            )
+        })
+        .expect("three declarative dual lands can pay {R/W}{R/W}{R/W}");
+    assert_eq!(game.mana_sources_for_action(PlayerId::One, &cast).len(), 3);
+
+    game.apply(PlayerId::One, cast).unwrap();
+    assert!(game.battlefield.iter().all(|permanent| permanent.tapped));
+    assert_eq!(game.players[0].mana_pool, ManaPool::default());
+    pass_priority_pair(&mut game);
+
+    let reckoner = game
+        .battlefield
+        .iter()
+        .find(|permanent| permanent.card.definition == crate::card::cards::BOROS_RECKONER)
+        .unwrap();
+    assert_eq!(game.power(reckoner), Some(3));
+    assert_eq!(game.toughness(reckoner), Some(3));
+}
+
+#[test]
+fn flexible_mana_plan_reserves_the_only_green_source_for_a_multicolor_spell() {
+    let mut game = ready_game();
+    game.catalog = crate::card::catalog().unwrap();
+    game.battlefield.extend([
+        creature(10_000, crate::card::cards::TEMPLE_GARDEN, PlayerId::One),
+        creature(10_001, crate::card::cards::GODLESS_SHRINE, PlayerId::One),
+        creature(
+            10_002,
+            crate::card::cards::ENCROACHING_WASTES,
+            PlayerId::One,
+        ),
+    ]);
+    game.players[0].hand.push(card(
+        10_003,
+        crate::card::cards::LOXODON_SMITER,
+        PlayerId::One,
+    ));
+
+    let cast = game
+        .legal_actions(PlayerId::One)
+        .into_iter()
+        .find(|action| {
+            matches!(
+                action,
+                Action::CastSpell {
+                    card: CardInstanceId(10_003),
+                    ..
+                }
+            )
+        })
+        .expect("Godless Shrine can make white while Temple Garden makes green");
+    assert_eq!(
+        game.mana_sources_for_action(PlayerId::One, &cast),
+        vec![
+            CardInstanceId(10_001),
+            CardInstanceId(10_000),
+            CardInstanceId(10_002),
+        ],
+    );
+
+    game.apply(PlayerId::One, cast).unwrap();
+    assert!(game.battlefield.iter().all(|permanent| permanent.tapped));
+    assert_eq!(game.players[0].mana_pool, ManaPool::default());
+}
+
+#[test]
+fn metadata_only_flash_creatures_keep_their_printed_cast_timing() {
+    let mut game = ready_game();
+    game.catalog = crate::card::catalog().unwrap();
+    game.step = Step::End;
+    game.players[0].mana_pool = ManaPool {
+        white: 1,
+        colorless: 3,
+        ..ManaPool::default()
+    };
+    game.players[0].hand.extend([
+        card(10_000, crate::card::cards::RESTORATION_ANGEL, PlayerId::One),
+        card(10_001, crate::card::cards::LOXODON_SMITER, PlayerId::One),
+    ]);
+
+    let cast_cards = game
+        .legal_actions(PlayerId::One)
+        .into_iter()
+        .filter_map(|action| match action {
+            Action::CastSpell { card, .. } => Some(card),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(cast_cards, vec![CardInstanceId(10_000)]);
 }
 
 #[test]
@@ -178,7 +1031,12 @@ fn recall_uses_cancellable_cost_and_return_decisions() {
         ..ManaPool::default()
     };
 
-    game.cast_spell(PlayerId::One, CardInstanceId(10_000), Vec::new(), &[], 2);
+    game.cast_spell(
+        PlayerId::One,
+        CardInstanceId(10_000),
+        cast_choices(Vec::new(), 2),
+        &[],
+    );
     let cost_decision = game.observe(PlayerId::One).decision.unwrap();
     assert!(cost_decision.cancellable);
     assert_eq!(cost_decision.minimum, 2);
@@ -265,7 +1123,7 @@ fn balance_requests_public_sacrifices_and_private_discards() {
             .iter()
             .filter(|permanent| {
                 permanent.controller == player
-                    && game.kind(permanent.card.definition) == Some(CardKind::Land)
+                    && game.permanent_kind(permanent) == Some(CardKind::Land)
             })
             .count()
     });
@@ -464,27 +1322,23 @@ fn triskelion_enters_with_counters_and_spends_one_to_deal_damage() {
 
     game.apply(
         PlayerId::One,
-        Action::CastSpell {
-            card: triskelion_id,
-            targets: Vec::new(),
-            sacrifices: Vec::new(),
-            x: 0,
-        },
+        cast_action(triskelion_id, Vec::new(), Vec::new(), 0),
     )
     .unwrap();
     pass_priority_pair(&mut game);
     let permanent = game
         .battlefield
         .iter()
-        .find(|permanent| permanent.card.id == triskelion_id)
+        .find(|permanent| permanent.card.definition == cards::TRISKELION)
         .unwrap();
+    let permanent_id = permanent.card.id;
     assert_eq!(game.power(permanent), Some(4));
     assert_eq!(game.toughness(permanent), Some(4));
 
     game.apply(
         PlayerId::One,
         Action::ActivateAbility {
-            source: triskelion_id,
+            source: permanent_id,
             target: Some(Target::Player(PlayerId::Two)),
             sacrifice: None,
         },
@@ -493,7 +1347,7 @@ fn triskelion_enters_with_counters_and_spends_one_to_deal_damage() {
     let permanent = game
         .battlefield
         .iter()
-        .find(|permanent| permanent.card.id == triskelion_id)
+        .find(|permanent| permanent.card.id == permanent_id)
         .unwrap();
     assert_eq!(game.power(permanent), Some(3));
     pass_priority_pair(&mut game);
@@ -516,24 +1370,19 @@ fn tundras_pay_counterspells_double_blue_cost() {
 
     game.apply(
         PlayerId::Two,
-        Action::CastSpell {
-            card: bolt.id,
-            targets: vec![Target::Player(PlayerId::One)],
-            sacrifices: Vec::new(),
-            x: 0,
-        },
+        cast_action(bolt.id, vec![Target::Player(PlayerId::One)], Vec::new(), 0),
     )
     .unwrap();
     game.apply(PlayerId::Two, Action::PassPriority).unwrap();
     let bolt_on_stack = game.stack[0].id;
     game.apply(
         PlayerId::One,
-        Action::CastSpell {
-            card: counterspell.id,
-            targets: vec![Target::Spell(bolt_on_stack)],
-            sacrifices: Vec::new(),
-            x: 0,
-        },
+        cast_action(
+            counterspell.id,
+            vec![Target::Spell(bolt_on_stack)],
+            Vec::new(),
+            0,
+        ),
     )
     .unwrap();
     pass_priority_pair(&mut game);
@@ -559,12 +1408,7 @@ fn swords_exiles_a_creature_and_grants_life_equal_to_power() {
 
     game.apply(
         PlayerId::One,
-        Action::CastSpell {
-            card: swords.id,
-            targets: vec![Target::Permanent(serra_id)],
-            sacrifices: Vec::new(),
-            x: 0,
-        },
+        cast_action(swords.id, vec![Target::Permanent(serra_id)], Vec::new(), 0),
     )
     .unwrap();
     pass_priority_pair(&mut game);
@@ -584,12 +1428,7 @@ fn swords_cannot_target_order_of_the_ebon_hand() {
     game.players[0].hand.push(swords.clone());
     game.players[0].mana_pool.white = 1;
 
-    let swords_action = Action::CastSpell {
-        card: swords.id,
-        targets: vec![Target::Permanent(order_id)],
-        sacrifices: Vec::new(),
-        x: 0,
-    };
+    let swords_action = cast_action(swords.id, vec![Target::Permanent(order_id)], Vec::new(), 0);
     assert!(!game.legal_actions(PlayerId::One).contains(&swords_action));
 }
 
@@ -624,12 +1463,12 @@ fn ancestral_recall_draws_three_and_time_walk_queues_an_extra_turn() {
     let hand_before = game.players[0].hand.len();
     game.apply(
         PlayerId::One,
-        Action::CastSpell {
-            card: ancestral.id,
-            targets: vec![Target::Player(PlayerId::One)],
-            sacrifices: Vec::new(),
-            x: 0,
-        },
+        cast_action(
+            ancestral.id,
+            vec![Target::Player(PlayerId::One)],
+            Vec::new(),
+            0,
+        ),
     )
     .unwrap();
     pass_priority_pair(&mut game);
@@ -641,12 +1480,7 @@ fn ancestral_recall_draws_three_and_time_walk_queues_an_extra_turn() {
     game.players[0].mana_pool.colorless = 1;
     game.apply(
         PlayerId::One,
-        Action::CastSpell {
-            card: time_walk.id,
-            targets: Vec::new(),
-            sacrifices: Vec::new(),
-            x: 0,
-        },
+        cast_action(time_walk.id, Vec::new(), Vec::new(), 0),
     )
     .unwrap();
     pass_priority_pair(&mut game);
@@ -721,15 +1555,15 @@ fn fireball_pays_for_multiple_targets_and_divides_x_evenly() {
     game.players[0].mana_pool.red = 6;
     game.battlefield.push(creature);
 
-    let action = Action::CastSpell {
-        card: fireball.id,
-        targets: vec![
+    let action = cast_action(
+        fireball.id,
+        vec![
             Target::Player(PlayerId::Two),
             Target::Permanent(creature_id),
         ],
-        sacrifices: Vec::new(),
-        x: 4,
-    };
+        Vec::new(),
+        4,
+    );
     assert!(game.legal_actions(PlayerId::One).contains(&action));
 
     game.apply(PlayerId::One, action).unwrap();
@@ -760,16 +1594,16 @@ fn fireball_x_three_can_hit_three_targets_for_six_mana() {
     game.battlefield.push(first_creature);
     game.battlefield.push(second_creature);
 
-    let action = Action::CastSpell {
-        card: fireball.id,
-        targets: vec![
+    let action = cast_action(
+        fireball.id,
+        vec![
             Target::Player(PlayerId::Two),
             Target::Permanent(first_creature_id),
             Target::Permanent(second_creature_id),
         ],
-        sacrifices: Vec::new(),
-        x: 3,
-    };
+        Vec::new(),
+        3,
+    );
     assert!(game.legal_actions(PlayerId::One).contains(&action));
 
     game.apply(PlayerId::One, action).unwrap();
@@ -795,25 +1629,22 @@ fn fork_controller_can_retarget_the_copied_spell() {
     let fork = card(10_000, cards::FORK, PlayerId::One);
     game.players[0].hand.push(fork.clone());
     game.players[0].mana_pool.red = 2;
-    game.stack.push(StackObject {
-        id: StackObjectId(77),
-        kind: StackObjectKind::Spell,
-        card: card(10_001, cards::LIGHTNING_BOLT, PlayerId::Two),
-        controller: PlayerId::Two,
-        targets: vec![Target::Player(PlayerId::One)],
-        chosen_permanents: Vec::new(),
-        x: 0,
-        is_copy: false,
-    });
+    game.stack.push(spell_with_targets(
+        77,
+        cards::LIGHTNING_BOLT,
+        PlayerId::Two,
+        vec![Target::Player(PlayerId::One)],
+        0,
+    ));
 
     game.apply(
         PlayerId::One,
-        Action::CastSpell {
-            card: fork.id,
-            targets: vec![Target::Spell(StackObjectId(77))],
-            sacrifices: Vec::new(),
-            x: 0,
-        },
+        cast_action(
+            fork.id,
+            vec![Target::Spell(StackObjectId(77))],
+            Vec::new(),
+            0,
+        ),
     )
     .unwrap();
     pass_priority_pair(&mut game);
@@ -838,7 +1669,23 @@ fn fork_controller_can_retarget_the_copied_spell() {
     assert_eq!(game.players[0].life, 20);
     assert_eq!(game.players[1].life, 17);
     assert_eq!(game.stack.len(), 1);
-    assert_eq!(game.stack[0].targets, vec![Target::Player(PlayerId::One)]);
+    assert_eq!(game.stack[0].targets(), vec![Target::Player(PlayerId::One)]);
+}
+
+#[test]
+fn fork_copies_a_targetless_spell_immediately_and_preserves_its_signature() {
+    let mut game = ready_game();
+    let original = spell(77, cards::DARK_RITUAL, PlayerId::Two, 0);
+    let signature = original.signature.clone().unwrap();
+
+    game.queue_fork_decision(PlayerId::One, original);
+
+    assert!(game.pending_decisions.is_empty());
+    let copied = game.stack.last().expect("the targetless copy is immediate");
+    assert!(copied.is_copy);
+    assert_eq!(copied.controller, PlayerId::One);
+    assert_eq!(copied.card.backing, ObjectBacking::None);
+    assert_eq!(copied.signature.as_ref(), Some(&signature));
 }
 
 #[test]
@@ -847,16 +1694,7 @@ fn fork_can_keep_an_original_target_that_has_become_illegal() {
     let stale_target = Target::Permanent(CardInstanceId(99_999));
     game.queue_fork_decision(
         PlayerId::One,
-        StackObject {
-            id: StackObjectId(77),
-            kind: StackObjectKind::Spell,
-            card: card(10_001, cards::SHATTER, PlayerId::Two),
-            controller: PlayerId::Two,
-            targets: vec![stale_target],
-            chosen_permanents: Vec::new(),
-            x: 0,
-            is_copy: false,
-        },
+        spell_with_targets(77, cards::SHATTER, PlayerId::Two, vec![stale_target], 0),
     );
     let decision = game.observe(PlayerId::One).decision.unwrap();
     assert!(
@@ -865,6 +1703,28 @@ fn fork_can_keep_an_original_target_that_has_become_illegal() {
             .iter()
             .any(|option| option.label == "Keep original targets")
     );
+}
+
+#[test]
+fn structured_target_predicates_are_rechecked_when_the_spell_resolves() {
+    let mut game = ready_game();
+    game.catalog = crate::card::catalog().unwrap();
+    let mut factory = creature(10_000, cards::MISHRA_S_FACTORY, PlayerId::Two);
+    factory.factory_animated = true;
+    let factory_id = factory.card.id;
+    game.battlefield.push(factory);
+    let mut turn = spell(77, crate::card::cards::TURN_BURN, PlayerId::One, 0);
+    turn.signature = Some(CastSignature::from_validated_choices(
+        SpellForm::Part(CardPartId::PRIMARY),
+        CastChoices::new(PlayOptionId::DEFAULT).with_targets(vec![TargetSelection::single(
+            TargetSlotId(0),
+            Target::Permanent(factory_id),
+        )]),
+    ));
+
+    assert!(!game.spell_fizzles(&turn));
+    game.battlefield[0].factory_animated = false;
+    assert!(game.spell_fizzles(&turn));
 }
 
 #[test]
@@ -887,7 +1747,12 @@ fn black_lotus_sacrifices_for_three_red_mana() {
             .iter()
             .all(|permanent| permanent.card.id != lotus_id)
     );
-    assert_eq!(game.players[0].graveyard.last().unwrap().id, lotus_id);
+    let graveyard_lotus = game.players[0].graveyard.last().unwrap();
+    assert_ne!(graveyard_lotus.id, lotus_id);
+    assert_eq!(
+        backing_cards(&graveyard_lotus.backing),
+        vec![PhysicalCardId(10_000)]
+    );
 }
 
 #[test]
@@ -907,6 +1772,7 @@ fn the_legend_rule_keeps_one_pendelhaven_per_player() {
         PlayerId::One,
         Action::PlayLand {
             card: CardInstanceId(10_001),
+            option: PlayOptionId::DEFAULT,
         },
     )
     .unwrap();
@@ -920,8 +1786,8 @@ fn the_legend_rule_keeps_one_pendelhaven_per_player() {
         .collect();
     assert_eq!(mine.len(), 1, "only one Pendelhaven survives");
     assert_eq!(
-        mine[0].card.id,
-        CardInstanceId(10_001),
+        backing_cards(&mine[0].card.backing),
+        vec![PhysicalCardId(10_001)],
         "the untapped newcomer is kept over the tapped original",
     );
     assert!(!mine[0].tapped, "the survivor is the untapped one");
@@ -947,12 +1813,7 @@ fn black_vise_needs_no_target_and_still_squeezes_the_opponent() {
 
     // With two players "choose an opponent" has one answer, so the cast
     // carries no target and offers the player nothing to pick.
-    let cast = Action::CastSpell {
-        card: vise.id,
-        targets: Vec::new(),
-        sacrifices: Vec::new(),
-        x: 0,
-    };
+    let cast = cast_action(vise.id, Vec::new(), Vec::new(), 0);
     let casts: Vec<_> = game
         .legal_actions(PlayerId::One)
         .into_iter()
@@ -965,7 +1826,7 @@ fn black_vise_needs_no_target_and_still_squeezes_the_opponent() {
     let resolved = game
         .battlefield
         .iter()
-        .find(|permanent| permanent.card.id == vise.id)
+        .find(|permanent| permanent.card.definition == cards::BLACK_VISE)
         .expect("Black Vise resolved onto the battlefield");
     assert_eq!(
         resolved.chosen_player,
@@ -996,12 +1857,7 @@ fn mox_ruby_can_pay_black_vises_generic_cost() {
     game.battlefield.push(mox);
     game.players[0].hand.push(vise.clone());
 
-    let cast_vise = Action::CastSpell {
-        card: vise.id,
-        targets: Vec::new(),
-        sacrifices: Vec::new(),
-        x: 0,
-    };
+    let cast_vise = cast_action(vise.id, Vec::new(), Vec::new(), 0);
     assert!(game.legal_actions(PlayerId::One).contains(&cast_vise));
     game.apply(PlayerId::One, cast_vise).unwrap();
     assert_eq!(game.players[0].mana_pool, ManaPool::default());
@@ -1025,12 +1881,7 @@ fn mana_preview_uses_existing_pool_before_tapping_sources() {
     game.players[0].mana_pool.colorless = 1;
     game.players[0].hand.push(vise.clone());
 
-    let action = Action::CastSpell {
-        card: vise.id,
-        targets: Vec::new(),
-        sacrifices: Vec::new(),
-        x: 0,
-    };
+    let action = cast_action(vise.id, Vec::new(), Vec::new(), 0);
     assert_eq!(
         game.mana_sources_for_action(PlayerId::One, &action),
         Vec::<CardInstanceId>::new(),
@@ -1084,7 +1935,7 @@ fn orcish_mechanics_can_sacrifice_an_artifact_to_damage_a_creature() {
             .all(|permanent| permanent.card.id != artifact_id)
     );
     assert_eq!(game.stack.len(), 1);
-    assert_eq!(game.stack[0].targets, vec![Target::Permanent(target_id)]);
+    assert_eq!(game.stack[0].targets(), vec![Target::Permanent(target_id)]);
     assert_eq!(
         game.battlefield
             .iter()
@@ -1142,16 +1993,13 @@ fn chain_lightning_copy_payment_can_use_untapped_mountains() {
     game.battlefield = vec![first, second];
     game.queue_chain_lightning_decision(
         PlayerId::Two,
-        StackObject {
-            id: StackObjectId(77),
-            kind: StackObjectKind::Spell,
-            card: card(10_002, cards::CHAIN_LIGHTNING, PlayerId::One),
-            controller: PlayerId::One,
-            targets: vec![Target::Player(PlayerId::Two)],
-            chosen_permanents: Vec::new(),
-            x: 0,
-            is_copy: false,
-        },
+        spell_with_targets(
+            77,
+            cards::CHAIN_LIGHTNING,
+            PlayerId::One,
+            vec![Target::Player(PlayerId::Two)],
+            0,
+        ),
     );
     let decision = game.observe(PlayerId::Two).decision.unwrap();
     let copy = decision
@@ -1177,7 +2025,7 @@ fn chain_lightning_copy_payment_can_use_untapped_mountains() {
             .all(|permanent| permanent.tapped)
     );
     assert_eq!(game.stack.len(), 1);
-    assert_eq!(game.stack[0].targets, vec![Target::Player(PlayerId::One)]);
+    assert_eq!(game.stack[0].targets(), vec![Target::Player(PlayerId::One)]);
     assert!(game.stack[0].is_copy);
 }
 
@@ -1190,12 +2038,12 @@ fn goblin_grenade_requires_and_sacrifices_a_goblin() {
     game.players[0].hand.push(grenade.clone());
     game.players[0].mana_pool.red = 1;
     game.battlefield.push(goblin);
-    let action = Action::CastSpell {
-        card: grenade.id,
-        targets: vec![Target::Player(PlayerId::Two)],
-        sacrifices: vec![goblin_id],
-        x: 0,
-    };
+    let action = cast_action(
+        grenade.id,
+        vec![Target::Player(PlayerId::Two)],
+        vec![goblin_id],
+        0,
+    );
     assert!(game.legal_actions(PlayerId::One).contains(&action));
 
     game.apply(PlayerId::One, action).unwrap();
@@ -1237,12 +2085,12 @@ fn goblin_grenade_eats_exactly_one_of_two_identical_goblins() {
 
     game.apply(
         PlayerId::One,
-        Action::CastSpell {
-            card: grenade.id,
-            targets: vec![Target::Player(PlayerId::Two)],
-            sacrifices: vec![first_id],
-            x: 0,
-        },
+        cast_action(
+            grenade.id,
+            vec![Target::Player(PlayerId::Two)],
+            vec![first_id],
+            0,
+        ),
     )
     .unwrap();
 
@@ -1332,7 +2180,10 @@ fn factory_animates_and_strip_mine_destroys_lands() {
     .unwrap();
     assert_eq!(game.stack.len(), 1);
     assert_eq!(game.stack[0].kind, StackObjectKind::ActivatedAbility);
-    assert_eq!(game.stack[0].targets, vec![Target::Permanent(opposing_id)]);
+    assert_eq!(
+        game.stack[0].targets(),
+        vec![Target::Permanent(opposing_id)]
+    );
     assert!(
         game.battlefield
             .iter()
@@ -1380,15 +2231,12 @@ fn mishras_factory_can_use_its_own_mana_to_animate() {
     game.players[1].hand.push(shatter.clone());
     game.players[1].mana_pool.red = 2;
     game.priority = PlayerId::Two;
-    assert!(
-        game.legal_actions(PlayerId::Two)
-            .contains(&Action::CastSpell {
-                card: shatter.id,
-                targets: vec![Target::Permanent(factory_id)],
-                sacrifices: Vec::new(),
-                x: 0,
-            })
-    );
+    assert!(game.legal_actions(PlayerId::Two).contains(&cast_action(
+        shatter.id,
+        vec![Target::Permanent(factory_id)],
+        Vec::new(),
+        0,
+    )));
 }
 
 #[test]
@@ -1590,12 +2438,7 @@ fn removing_chaos_orb_in_response_nullifies_its_flip() {
     game.apply(PlayerId::One, Action::PassPriority).unwrap();
     game.apply(
         PlayerId::Two,
-        Action::CastSpell {
-            card: shatter.id,
-            targets: vec![Target::Permanent(orb_id)],
-            sacrifices: Vec::new(),
-            x: 0,
-        },
+        cast_action(shatter.id, vec![Target::Permanent(orb_id)], Vec::new(), 0),
     )
     .unwrap();
     pass_priority_pair(&mut game);
@@ -1697,12 +2540,7 @@ fn wheel_discards_both_hands_and_draws_seven() {
 
     game.apply(
         PlayerId::One,
-        Action::CastSpell {
-            card: wheel.id,
-            targets: Vec::new(),
-            sacrifices: Vec::new(),
-            x: 0,
-        },
+        cast_action(wheel.id, Vec::new(), Vec::new(), 0),
     )
     .unwrap();
     pass_priority_pair(&mut game);
@@ -1713,7 +2551,7 @@ fn wheel_discards_both_hands_and_draws_seven() {
         game.players[0]
             .graveyard
             .iter()
-            .any(|card| card.id == CardInstanceId(10_001))
+            .any(|card| backing_cards(&card.backing) == vec![PhysicalCardId(10_001)])
     );
 }
 
@@ -1958,23 +2796,28 @@ fn copy_artifact_copies_an_artifact_creature() {
     game.players[0].hand.push(copy.clone());
     game.players[0].mana_pool.blue = 1;
     game.players[0].mana_pool.colorless = 1;
-    let action = Action::CastSpell {
-        card: copy.id,
-        targets: vec![Target::Permanent(CardInstanceId(10_000))],
-        sacrifices: Vec::new(),
-        x: 0,
-    };
+    let action = cast_action(
+        copy.id,
+        vec![Target::Permanent(CardInstanceId(10_000))],
+        Vec::new(),
+        0,
+    );
     assert!(game.legal_actions(PlayerId::One).contains(&action));
     game.apply(PlayerId::One, action).unwrap();
     pass_priority_pair(&mut game);
     let copied = game
         .battlefield
         .iter()
-        .find(|permanent| permanent.card.id == copy.id)
+        .find(|permanent| permanent.card.definition == cards::COPY_ARTIFACT)
         .unwrap();
     assert_eq!(
         game.effective_behavior(copied),
         Some(CardBehavior::Tetravus)
+    );
+    assert_eq!(copied.presented, CardPartId::PRIMARY);
+    assert_eq!(
+        game.effective_rules(copied),
+        Some(CardBehavior::Tetravus.rules())
     );
     assert_eq!(game.power(copied), Some(4));
     assert!(game.has_flying(copied));
@@ -1997,18 +2840,29 @@ fn dust_to_dust_exiles_two_artifacts_and_hurkyls_recall_returns_them() {
         creature(10_000, cards::SOL_RING, PlayerId::Two),
         creature(10_001, cards::BLACK_VISE, PlayerId::Two),
     ]);
-    let mut recall = spell(10_002, cards::HURKYLS_RECALL, PlayerId::One, 0);
-    recall.targets = vec![Target::Player(PlayerId::Two)];
+    let recall = spell_with_targets(
+        10_002,
+        cards::HURKYLS_RECALL,
+        PlayerId::One,
+        vec![Target::Player(PlayerId::Two)],
+        0,
+    );
     game.resolve_spell_effect(&recall, CardBehavior::HurkylsRecall);
     assert_eq!(game.players[1].hand.len(), 2);
     assert!(game.battlefield.is_empty());
 }
 
 fn dust_to_dust_targets(game: &mut Game, mut spell: StackObject) {
-    spell.targets = vec![
-        Target::Permanent(CardInstanceId(10_000)),
-        Target::Permanent(CardInstanceId(10_001)),
-    ];
+    spell.signature = Some(CastSignature::from_validated_choices(
+        SpellForm::Part(CardPartId::PRIMARY),
+        cast_choices(
+            vec![
+                Target::Permanent(CardInstanceId(10_000)),
+                Target::Permanent(CardInstanceId(10_001)),
+            ],
+            0,
+        ),
+    ));
     game.resolve_spell_effect(&spell, CardBehavior::DustToDust);
 }
 

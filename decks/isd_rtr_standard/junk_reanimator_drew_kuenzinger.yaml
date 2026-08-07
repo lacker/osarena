@@ -1,0 +1,39 @@
+# SCG Open Atlanta — 8th place, Drew Kuenzinger (663 players, 2013-09-15).
+# MTGTop8 records the tournament as 2013-09-14.
+# Source: https://www.mtgtop8.com/event?e=5640&d=232704&f=ST
+# Contemporary source: https://articles.starcitygames.com/articles/putting-the-cap-on-standard/
+main:
+  Cavern of Souls: 1
+  Forest: 2
+  Godless Shrine: 3
+  Isolated Chapel: 2
+  Overgrown Tomb: 4
+  Sunpetal Grove: 3
+  Temple Garden: 4
+  Vault of the Archangel: 1
+  Woodland Cemetery: 3
+  Angel of Serenity: 2
+  Arbor Elf: 2
+  Avacyn's Pilgrim: 3
+  Disciple of Bolas: 2
+  Elvish Mystic: 1
+  Loxodon Smiter: 4
+  Obzedat, Ghost Council: 2
+  Restoration Angel: 3
+  Shadowborn Demon: 2
+  Thragtusk: 3
+  Vampire Nighthawk: 2
+  Grisly Salvage: 4
+  Mulch: 2
+  Putrefy: 2
+  Unburial Rites: 3
+sideboard:
+  Blood Baron of Vizkopa: 2
+  Doom Blade: 2
+  Gaze of Granite: 1
+  Sepulchral Primordial: 1
+  Sigarda, Host of Herons: 1
+  Sin Collector: 1
+  Underworld Connections: 2
+  Vampire Nighthawk: 2
+  War Priest of Thune: 3

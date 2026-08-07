@@ -1,0 +1,36 @@
+# SCG Open Atlanta — 5th place, Korey McDuffie (663 players, 2013-09-15).
+# MTGTop8 records the tournament as 2013-09-14.
+# Source: https://www.mtgtop8.com/event?e=5640&d=232701&f=ST
+# Contemporary source: https://articles.starcitygames.com/articles/putting-the-cap-on-standard/
+main:
+  Clifftop Retreat: 3
+  Glacial Fortress: 4
+  Hallowed Fountain: 4
+  Island: 2
+  Moorland Haunt: 1
+  Sacred Foundry: 4
+  Steam Vents: 4
+  Sulfur Falls: 4
+  Augur of Bolas: 3
+  Restoration Angel: 4
+  Snapcaster Mage: 3
+  Azorius Charm: 3
+  Counterflux: 2
+  Izzet Charm: 2
+  Pillar of Flame: 3
+  Sphinx's Revelation: 3
+  Supreme Verdict: 2
+  Syncopate: 3
+  Think Twice: 4
+  Warleader's Helix: 2
+sideboard:
+  Aetherling: 1
+  Celestial Flare: 1
+  Counterflux: 1
+  Detention Sphere: 2
+  Dispel: 2
+  Izzet Staticaster: 2
+  Jace, Architect of Thought: 1
+  Negate: 2
+  Ratchet Bomb: 1
+  Turn // Burn: 2

@@ -1,4 +1,4 @@
-use crate::{CardDefinitionId, CardInstanceId, PlayerId};
+use crate::{CardDefinitionId, GameObjectId, PlayerId};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum DecisionVisibility {
@@ -27,7 +27,7 @@ pub enum DecisionZone {
 pub struct DecisionOption {
     pub id: u32,
     pub label: String,
-    pub card: Option<(CardInstanceId, CardDefinitionId)>,
+    pub card: Option<(GameObjectId, CardDefinitionId)>,
     pub zone: DecisionZone,
 }
 

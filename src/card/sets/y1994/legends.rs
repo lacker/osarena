@@ -1,7 +1,8 @@
-use super::CardRecord;
+use super::{CardRecord, PrintingRecord};
 use crate::card::{CardBehavior, CardKind, CardRules, CardSet, ManaCost, cards};
 
-pub(super) static CHAIN_LIGHTNING: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static CHAIN_LIGHTNING: CardRecord = CardRecord::new(
     cards::CHAIN_LIGHTNING,
     "Chain Lightning",
     CardSet::Legends,
@@ -14,7 +15,8 @@ pub(super) static CHAIN_LIGHTNING: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static DIVINE_OFFERING: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static DIVINE_OFFERING: CardRecord = CardRecord::new(
     cards::DIVINE_OFFERING,
     "Divine Offering",
     CardSet::Legends,
@@ -27,7 +29,8 @@ pub(super) static DIVINE_OFFERING: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static MANA_DRAIN: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static MANA_DRAIN: CardRecord = CardRecord::new(
     cards::MANA_DRAIN,
     "Mana Drain",
     CardSet::Legends,
@@ -40,7 +43,8 @@ pub(super) static MANA_DRAIN: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static RECALL: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static RECALL: CardRecord = CardRecord::new(
     cards::RECALL,
     "Recall",
     CardSet::Legends,
@@ -53,7 +57,8 @@ pub(super) static RECALL: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static SYLVAN_LIBRARY: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static SYLVAN_LIBRARY: CardRecord = CardRecord::new(
     cards::SYLVAN_LIBRARY,
     "Sylvan Library",
     CardSet::Legends,
@@ -66,7 +71,8 @@ pub(super) static SYLVAN_LIBRARY: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static THUNDER_SPIRIT: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static THUNDER_SPIRIT: CardRecord = CardRecord::new(
     cards::THUNDER_SPIRIT,
     "Thunder Spirit",
     CardSet::Legends,
@@ -81,7 +87,8 @@ pub(super) static THUNDER_SPIRIT: CardRecord = CardRecord::new(
     .flying(),
 );
 
-pub(super) static WHIRLING_DERVISH: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static WHIRLING_DERVISH: CardRecord = CardRecord::new(
     cards::WHIRLING_DERVISH,
     "Whirling Dervish",
     CardSet::Legends,
@@ -95,7 +102,8 @@ pub(super) static WHIRLING_DERVISH: CardRecord = CardRecord::new(
     .creature(2, 2),
 );
 
-pub(super) static ENERGY_FLUX: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static ENERGY_FLUX: CardRecord = CardRecord::new(
     cards::ENERGY_FLUX,
     "Energy Flux",
     CardSet::Legends,
@@ -108,7 +116,8 @@ pub(super) static ENERGY_FLUX: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static MOAT: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static MOAT: CardRecord = CardRecord::new(
     cards::MOAT,
     "Moat",
     CardSet::Legends,
@@ -121,7 +130,8 @@ pub(super) static MOAT: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static PENDELHAVEN: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static PENDELHAVEN: CardRecord = CardRecord::new(
     cards::PENDELHAVEN,
     "Pendelhaven",
     CardSet::Legends,
@@ -139,7 +149,8 @@ pub(super) static PENDELHAVEN: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static RELIC_BARRIER: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static RELIC_BARRIER: CardRecord = CardRecord::new(
     cards::RELIC_BARRIER,
     "Relic Barrier",
     CardSet::Legends,
@@ -153,7 +164,8 @@ pub(super) static RELIC_BARRIER: CardRecord = CardRecord::new(
     .activated("Tap {} with Relic Barrier", "Tap an artifact"),
 );
 
-pub(super) static SEDGE_TROLL: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static SEDGE_TROLL: CardRecord = CardRecord::new(
     cards::SEDGE_TROLL,
     "Sedge Troll",
     CardSet::Legends,
@@ -167,7 +179,8 @@ pub(super) static SEDGE_TROLL: CardRecord = CardRecord::new(
     .creature(2, 2),
 );
 
-pub(super) static THE_ABYSS: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static THE_ABYSS: CardRecord = CardRecord::new(
     cards::THE_ABYSS,
     "The Abyss",
     CardSet::Legends,
@@ -180,7 +193,7 @@ pub(super) static THE_ABYSS: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static CARDS: &[&CardRecord] = &[
+pub(in crate::card::sets) static CARDS: &[&CardRecord] = &[
     &CHAIN_LIGHTNING,
     &DIVINE_OFFERING,
     &MANA_DRAIN,
@@ -195,3 +208,5 @@ pub(super) static CARDS: &[&CardRecord] = &[
     &SEDGE_TROLL,
     &THE_ABYSS,
 ];
+
+pub(in crate::card::sets) static ADDITIONAL_PRINTINGS: &[PrintingRecord] = &[];

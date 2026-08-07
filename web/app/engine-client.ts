@@ -1,9 +1,11 @@
 import initWasm, { WebGame as RustWebGame } from "./wasm/penta_wasm.js";
 import type { GameState } from "./game-types";
+import type { FormatId } from "./game-config";
 
 export type EngineGame = RustWebGame;
 
 export type EngineConfig = {
+  format: FormatId;
   humanDeck: string;
   botDeck: string;
   policy: string;
@@ -23,6 +25,7 @@ export function createEngineGame(config: EngineConfig): EngineGame {
     config.policy,
     config.humanFirst,
     config.seed,
+    config.format,
   );
 }
 

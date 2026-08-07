@@ -1,7 +1,8 @@
-use super::CardRecord;
+use super::{CardRecord, PrintingRecord};
 use crate::card::{CardBehavior, CardKind, CardRules, CardSet, ManaCost, cards};
 
-pub(super) static GOBLIN_GRENADE: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static GOBLIN_GRENADE: CardRecord = CardRecord::new(
     cards::GOBLIN_GRENADE,
     "Goblin Grenade",
     CardSet::FallenEmpires,
@@ -14,7 +15,8 @@ pub(super) static GOBLIN_GRENADE: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static HYMN_TO_TOURACH: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static HYMN_TO_TOURACH: CardRecord = CardRecord::new(
     cards::HYMN_TO_TOURACH,
     "Hymn to Tourach",
     CardSet::FallenEmpires,
@@ -27,7 +29,8 @@ pub(super) static HYMN_TO_TOURACH: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static ICATIAN_JAVELINEERS: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static ICATIAN_JAVELINEERS: CardRecord = CardRecord::new(
     cards::ICATIAN_JAVELINEERS,
     "Icatian Javelineers",
     CardSet::FallenEmpires,
@@ -45,7 +48,8 @@ pub(super) static ICATIAN_JAVELINEERS: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static ORDER_OF_LEITBUR: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static ORDER_OF_LEITBUR: CardRecord = CardRecord::new(
     cards::ORDER_OF_LEITBUR,
     "Order of Leitbur",
     CardSet::FallenEmpires,
@@ -59,7 +63,8 @@ pub(super) static ORDER_OF_LEITBUR: CardRecord = CardRecord::new(
     .creature(2, 2),
 );
 
-pub(super) static ORDER_OF_THE_EBON_HAND: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static ORDER_OF_THE_EBON_HAND: CardRecord = CardRecord::new(
     cards::ORDER_OF_THE_EBON_HAND,
     "Order of the Ebon Hand",
     CardSet::FallenEmpires,
@@ -73,10 +78,12 @@ pub(super) static ORDER_OF_THE_EBON_HAND: CardRecord = CardRecord::new(
     .creature(2, 1),
 );
 
-pub(super) static CARDS: &[&CardRecord] = &[
+pub(in crate::card::sets) static CARDS: &[&CardRecord] = &[
     &GOBLIN_GRENADE,
     &HYMN_TO_TOURACH,
     &ICATIAN_JAVELINEERS,
     &ORDER_OF_LEITBUR,
     &ORDER_OF_THE_EBON_HAND,
 ];
+
+pub(in crate::card::sets) static ADDITIONAL_PRINTINGS: &[PrintingRecord] = &[];

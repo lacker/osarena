@@ -7,7 +7,7 @@ use crate::card::{CardBehavior, CardCatalog};
 use crate::game::{
     DecisionObservation, DecisionPreference, Game, GameResult, PlayerObservation, Step,
 };
-use crate::{Action, ActionError, CardDefinitionId, CardInstanceId, PlayerId, Target};
+use crate::{Action, ActionError, CardDefinitionId, CastChoices, GameObjectId, PlayerId, Target};
 
 /// Chooses one of the actions in a player's current observation.
 pub trait Policy {
@@ -107,7 +107,7 @@ impl HandcraftedPolicy {
 
     fn hand_definition(
         observation: &PlayerObservation,
-        id: CardInstanceId,
+        id: GameObjectId,
     ) -> Option<CardDefinitionId> {
         observation
             .hand
@@ -117,7 +117,7 @@ impl HandcraftedPolicy {
 
     fn permanent_definition(
         observation: &PlayerObservation,
-        id: CardInstanceId,
+        id: GameObjectId,
     ) -> Option<CardDefinitionId> {
         observation
             .battlefield
@@ -128,7 +128,7 @@ impl HandcraftedPolicy {
     /// Spells whose whole purpose is to remove something the opponent
     /// controls. Pump and recursion also take a permanent target, so they are
     /// deliberately excluded — those want a friendly target.
-    fn is_already_a_creature(observation: &PlayerObservation, id: CardInstanceId) -> bool {
+    fn is_already_a_creature(observation: &PlayerObservation, id: GameObjectId) -> bool {
         observation
             .battlefield
             .iter()
@@ -311,22 +311,22 @@ impl HandcraftedPolicy {
     fn score_cast(
         &self,
         observation: &PlayerObservation,
-        card: CardInstanceId,
-        targets: &[Target],
-        x: u16,
+        card: GameObjectId,
+        choices: &CastChoices,
     ) -> i32 {
         let behavior = Self::hand_definition(observation, card).and_then(|id| self.behavior(id));
+        let x = choices.x();
         let damage = match behavior {
             Some(CardBehavior::LightningBolt | CardBehavior::ChainLightning) => Some(3),
             Some(CardBehavior::GoblinGrenade) => Some(5),
             Some(CardBehavior::Fireball) => Some(
-                x.checked_div(u16::try_from(targets.len()).unwrap_or(u16::MAX))
+                x.checked_div(u16::try_from(choices.iter_targets().count()).unwrap_or(u16::MAX))
                     .unwrap_or(0),
             ),
             _ => None,
         };
-        let target_score: i32 = targets
-            .iter()
+        let target_score: i32 = choices
+            .iter_targets()
             .map(|target| {
                 if matches!(
                     behavior,
@@ -393,9 +393,9 @@ impl HandcraftedPolicy {
     fn score_ability(
         &self,
         observation: &PlayerObservation,
-        source: CardInstanceId,
+        source: GameObjectId,
         target: Option<Target>,
-        sacrifice: Option<CardInstanceId>,
+        sacrifice: Option<GameObjectId>,
     ) -> i32 {
         let behavior =
             Self::permanent_definition(observation, source).and_then(|id| self.behavior(id));
@@ -456,7 +456,7 @@ impl HandcraftedPolicy {
     fn atog_can_attack_for_lethal(
         &self,
         observation: &PlayerObservation,
-        source: CardInstanceId,
+        source: GameObjectId,
     ) -> bool {
         let Some(atog) = observation
             .battlefield
@@ -490,7 +490,7 @@ impl HandcraftedPolicy {
         potential_power >= observation.life_totals[observation.viewer.opponent().index()]
     }
 
-    fn score_attack(&self, observation: &PlayerObservation, attacker: CardInstanceId) -> i32 {
+    fn score_attack(&self, observation: &PlayerObservation, attacker: GameObjectId) -> i32 {
         let Some(attacker) = observation
             .battlefield
             .iter()
@@ -536,8 +536,8 @@ impl HandcraftedPolicy {
 
     fn score_block(
         observation: &PlayerObservation,
-        blocker: CardInstanceId,
-        attacker: CardInstanceId,
+        blocker: GameObjectId,
+        attacker: GameObjectId,
     ) -> i32 {
         let blocker = observation
             .battlefield
@@ -650,7 +650,7 @@ impl HandcraftedPolicy {
         !(2..=5).contains(&mana_sources)
     }
 
-    fn mana_action_score(&self, observation: &PlayerObservation, source: CardInstanceId) -> i32 {
+    fn mana_action_score(&self, observation: &PlayerObservation, source: GameObjectId) -> i32 {
         let needs_factory_mana = observation.active_player == observation.viewer
             && matches!(
                 observation.step,
@@ -674,7 +674,7 @@ impl HandcraftedPolicy {
         }
     }
 
-    fn score_land(&self, observation: &PlayerObservation, card: CardInstanceId) -> i32 {
+    fn score_land(&self, observation: &PlayerObservation, card: GameObjectId) -> i32 {
         let definition = Self::hand_definition(observation, card);
         let behavior = definition.and_then(|id| self.behavior(id));
         // The legend rule bins a duplicate on arrival. Replacing a tapped copy
@@ -698,7 +698,7 @@ impl HandcraftedPolicy {
         }
     }
 
-    fn score_untap(&self, observation: &PlayerObservation, permanents: &[CardInstanceId]) -> i32 {
+    fn score_untap(&self, observation: &PlayerObservation, permanents: &[GameObjectId]) -> i32 {
         8_000
             + permanents
                 .iter()
@@ -751,14 +751,12 @@ impl HandcraftedPolicy {
             }
             Action::CancelDecision { .. } => -1_000,
             Action::ChooseUntap { permanents } => self.score_untap(observation, permanents),
-            Action::PlayLand { card } => self.score_land(observation, *card),
+            Action::PlayLand { card, .. } => self.score_land(observation, *card),
             Action::ActivateManaAbility { source, .. } => {
                 self.mana_action_score(observation, *source)
             }
             Action::PayLifeForMana => 5,
-            Action::CastSpell {
-                card, targets, x, ..
-            } => self.score_cast(observation, *card, targets, *x),
+            Action::CastSpell { card, choices, .. } => self.score_cast(observation, *card, choices),
             Action::ActivateAbility {
                 source,
                 target,
@@ -825,7 +823,7 @@ impl Policy for HandcraftedPolicy {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PlayError {
     PolicyReturnedNoAction(PlayerId),
-    IllegalAction(ActionError),
+    IllegalAction(Box<ActionError>),
     ActionLimitExceeded(usize),
 }
 
@@ -848,7 +846,7 @@ impl fmt::Display for PlayError {
 impl Error for PlayError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::IllegalAction(error) => Some(error),
+            Self::IllegalAction(error) => Some(error.as_ref()),
             Self::PolicyReturnedNoAction(_) | Self::ActionLimitExceeded(_) => None,
         }
     }
@@ -882,7 +880,7 @@ pub fn play_game(
         }
         .ok_or(PlayError::PolicyReturnedNoAction(player))?;
         game.apply(player, action)
-            .map_err(PlayError::IllegalAction)?;
+            .map_err(|error| PlayError::IllegalAction(Box::new(error)))?;
     }
     game.result()
         .ok_or(PlayError::ActionLimitExceeded(action_limit))

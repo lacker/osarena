@@ -1,7 +1,8 @@
-use super::CardRecord;
+use super::{CardRecord, PrintingRecord};
 use crate::card::{CardBehavior, CardKind, CardRules, CardSet, ManaCost, cards};
 
-pub(super) static ANKH_OF_MISHRA: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static ANKH_OF_MISHRA: CardRecord = CardRecord::new(
     cards::ANKH_OF_MISHRA,
     "Ankh of Mishra",
     CardSet::Alpha,
@@ -14,7 +15,8 @@ pub(super) static ANKH_OF_MISHRA: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static BLACK_VISE: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static BLACK_VISE: CardRecord = CardRecord::new(
     cards::BLACK_VISE,
     "Black Vise",
     CardSet::Alpha,
@@ -27,7 +29,8 @@ pub(super) static BLACK_VISE: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static COPPER_TABLET: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static COPPER_TABLET: CardRecord = CardRecord::new(
     cards::COPPER_TABLET,
     "Copper Tablet",
     CardSet::Alpha,
@@ -40,7 +43,8 @@ pub(super) static COPPER_TABLET: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static FIREBALL: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static FIREBALL: CardRecord = CardRecord::new(
     cards::FIREBALL,
     "Fireball",
     CardSet::Alpha,
@@ -53,7 +57,8 @@ pub(super) static FIREBALL: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static FORK: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static FORK: CardRecord = CardRecord::new(
     cards::FORK,
     "Fork",
     CardSet::Alpha,
@@ -66,7 +71,8 @@ pub(super) static FORK: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static GLASSES_OF_URZA: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static GLASSES_OF_URZA: CardRecord = CardRecord::new(
     cards::GLASSES_OF_URZA,
     "Glasses of Urza",
     CardSet::Alpha,
@@ -83,7 +89,8 @@ pub(super) static GLASSES_OF_URZA: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static IRON_STAR: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static IRON_STAR: CardRecord = CardRecord::new(
     cards::IRON_STAR,
     "Iron Star",
     CardSet::Alpha,
@@ -96,7 +103,8 @@ pub(super) static IRON_STAR: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static LIGHTNING_BOLT: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static LIGHTNING_BOLT: CardRecord = CardRecord::new(
     cards::LIGHTNING_BOLT,
     "Lightning Bolt",
     CardSet::Alpha,
@@ -109,7 +117,8 @@ pub(super) static LIGHTNING_BOLT: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static MOUNTAIN: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static MOUNTAIN: CardRecord = CardRecord::new(
     cards::MOUNTAIN,
     "Mountain",
     CardSet::Alpha,
@@ -118,7 +127,8 @@ pub(super) static MOUNTAIN: CardRecord = CardRecord::new(
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add R."),
 );
 
-pub(super) static RED_ELEMENTAL_BLAST: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static RED_ELEMENTAL_BLAST: CardRecord = CardRecord::new(
     cards::RED_ELEMENTAL_BLAST,
     "Red Elemental Blast",
     CardSet::Alpha,
@@ -131,7 +141,8 @@ pub(super) static RED_ELEMENTAL_BLAST: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static SHATTER: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static SHATTER: CardRecord = CardRecord::new(
     cards::SHATTER,
     "Shatter",
     CardSet::Alpha,
@@ -144,7 +155,8 @@ pub(super) static SHATTER: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static SMOKE: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static SMOKE: CardRecord = CardRecord::new(
     cards::SMOKE,
     "Smoke",
     CardSet::Alpha,
@@ -157,7 +169,8 @@ pub(super) static SMOKE: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static STONE_GIANT: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static STONE_GIANT: CardRecord = CardRecord::new(
     cards::STONE_GIANT,
     "Stone Giant",
     CardSet::Alpha,
@@ -172,7 +185,8 @@ pub(super) static STONE_GIANT: CardRecord = CardRecord::new(
     .activated("Give {} flying with Stone Giant", "Give a smaller creature flying"),
 );
 
-pub(super) static WINTER_ORB: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static WINTER_ORB: CardRecord = CardRecord::new(
     cards::WINTER_ORB,
     "Winter Orb",
     CardSet::Alpha,
@@ -185,7 +199,8 @@ pub(super) static WINTER_ORB: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static BLACK_LOTUS: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static BLACK_LOTUS: CardRecord = CardRecord::new(
     cards::BLACK_LOTUS,
     "Black Lotus",
     CardSet::Alpha,
@@ -198,7 +213,8 @@ pub(super) static BLACK_LOTUS: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static CHAOS_ORB: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static CHAOS_ORB: CardRecord = CardRecord::new(
     cards::CHAOS_ORB,
     "Chaos Orb",
     CardSet::Alpha,
@@ -212,7 +228,8 @@ pub(super) static CHAOS_ORB: CardRecord = CardRecord::new(
     .activated("Flip Chaos Orb onto {}", "Flip Chaos Orb onto a permanent"),
 );
 
-pub(super) static DRAGON_WHELP: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static DRAGON_WHELP: CardRecord = CardRecord::new(
     cards::DRAGON_WHELP,
     "Dragon Whelp",
     CardSet::Alpha,
@@ -227,7 +244,8 @@ pub(super) static DRAGON_WHELP: CardRecord = CardRecord::new(
     .flying(),
 );
 
-pub(super) static GOBLIN_BALLOON_BRIGADE: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static GOBLIN_BALLOON_BRIGADE: CardRecord = CardRecord::new(
     cards::GOBLIN_BALLOON_BRIGADE,
     "Goblin Balloon Brigade",
     CardSet::Alpha,
@@ -242,7 +260,8 @@ pub(super) static GOBLIN_BALLOON_BRIGADE: CardRecord = CardRecord::new(
     .goblin(),
 );
 
-pub(super) static GOBLIN_KING: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static GOBLIN_KING: CardRecord = CardRecord::new(
     cards::GOBLIN_KING,
     "Goblin King",
     CardSet::Alpha,
@@ -257,7 +276,8 @@ pub(super) static GOBLIN_KING: CardRecord = CardRecord::new(
     .goblin(),
 );
 
-pub(super) static GRANITE_GARGOYLE: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static GRANITE_GARGOYLE: CardRecord = CardRecord::new(
     cards::GRANITE_GARGOYLE,
     "Granite Gargoyle",
     CardSet::Alpha,
@@ -272,7 +292,8 @@ pub(super) static GRANITE_GARGOYLE: CardRecord = CardRecord::new(
     .flying(),
 );
 
-pub(super) static IRONCLAW_ORCS: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static IRONCLAW_ORCS: CardRecord = CardRecord::new(
     cards::IRONCLAW_ORCS,
     "Ironclaw Orcs",
     CardSet::Alpha,
@@ -286,7 +307,8 @@ pub(super) static IRONCLAW_ORCS: CardRecord = CardRecord::new(
     .creature(2, 2),
 );
 
-pub(super) static MOX_EMERALD: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static MOX_EMERALD: CardRecord = CardRecord::new(
     cards::MOX_EMERALD,
     "Mox Emerald",
     CardSet::Alpha,
@@ -295,7 +317,8 @@ pub(super) static MOX_EMERALD: CardRecord = CardRecord::new(
     CardRules::new(CardKind::Artifact, ManaCost::new(0, 0), "Tap: Add 1."),
 );
 
-pub(super) static MOX_JET: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static MOX_JET: CardRecord = CardRecord::new(
     cards::MOX_JET,
     "Mox Jet",
     CardSet::Alpha,
@@ -304,7 +327,8 @@ pub(super) static MOX_JET: CardRecord = CardRecord::new(
     CardRules::new(CardKind::Artifact, ManaCost::new(0, 0), "Tap: Add 1."),
 );
 
-pub(super) static MOX_PEARL: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static MOX_PEARL: CardRecord = CardRecord::new(
     cards::MOX_PEARL,
     "Mox Pearl",
     CardSet::Alpha,
@@ -313,7 +337,8 @@ pub(super) static MOX_PEARL: CardRecord = CardRecord::new(
     CardRules::new(CardKind::Artifact, ManaCost::new(0, 0), "Tap: Add 1."),
 );
 
-pub(super) static MOX_RUBY: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static MOX_RUBY: CardRecord = CardRecord::new(
     cards::MOX_RUBY,
     "Mox Ruby",
     CardSet::Alpha,
@@ -322,7 +347,8 @@ pub(super) static MOX_RUBY: CardRecord = CardRecord::new(
     CardRules::new(CardKind::Artifact, ManaCost::new(0, 0), "Tap: Add R."),
 );
 
-pub(super) static MOX_SAPPHIRE: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static MOX_SAPPHIRE: CardRecord = CardRecord::new(
     cards::MOX_SAPPHIRE,
     "Mox Sapphire",
     CardSet::Alpha,
@@ -331,7 +357,8 @@ pub(super) static MOX_SAPPHIRE: CardRecord = CardRecord::new(
     CardRules::new(CardKind::Artifact, ManaCost::new(0, 0), "Tap: Add 1."),
 );
 
-pub(super) static SOL_RING: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static SOL_RING: CardRecord = CardRecord::new(
     cards::SOL_RING,
     "Sol Ring",
     CardSet::Alpha,
@@ -340,7 +367,8 @@ pub(super) static SOL_RING: CardRecord = CardRecord::new(
     CardRules::new(CardKind::Artifact, ManaCost::new(1, 0), "Tap: Add 2."),
 );
 
-pub(super) static WHEEL_OF_FORTUNE: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static WHEEL_OF_FORTUNE: CardRecord = CardRecord::new(
     cards::WHEEL_OF_FORTUNE,
     "Wheel of Fortune",
     CardSet::Alpha,
@@ -353,7 +381,8 @@ pub(super) static WHEEL_OF_FORTUNE: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static JUGGERNAUT: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static JUGGERNAUT: CardRecord = CardRecord::new(
     cards::JUGGERNAUT,
     "Juggernaut",
     CardSet::Alpha,
@@ -367,7 +396,8 @@ pub(super) static JUGGERNAUT: CardRecord = CardRecord::new(
     .creature(5, 3),
 );
 
-pub(super) static MANA_VAULT: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static MANA_VAULT: CardRecord = CardRecord::new(
     cards::MANA_VAULT,
     "Mana Vault",
     CardSet::Alpha,
@@ -380,7 +410,8 @@ pub(super) static MANA_VAULT: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static ANCESTRAL_RECALL: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static ANCESTRAL_RECALL: CardRecord = CardRecord::new(
     cards::ANCESTRAL_RECALL,
     "Ancestral Recall",
     CardSet::Alpha,
@@ -393,7 +424,8 @@ pub(super) static ANCESTRAL_RECALL: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static BRAINGEYSER: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static BRAINGEYSER: CardRecord = CardRecord::new(
     cards::BRAINGEYSER,
     "Braingeyser",
     CardSet::Alpha,
@@ -406,7 +438,8 @@ pub(super) static BRAINGEYSER: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static COUNTERSPELL: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static COUNTERSPELL: CardRecord = CardRecord::new(
     cards::COUNTERSPELL,
     "Counterspell",
     CardSet::Alpha,
@@ -419,7 +452,8 @@ pub(super) static COUNTERSPELL: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static DISENCHANT: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static DISENCHANT: CardRecord = CardRecord::new(
     cards::DISENCHANT,
     "Disenchant",
     CardSet::Alpha,
@@ -432,7 +466,8 @@ pub(super) static DISENCHANT: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static ISLAND: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static ISLAND: CardRecord = CardRecord::new(
     cards::ISLAND,
     "Island",
     CardSet::Alpha,
@@ -441,7 +476,8 @@ pub(super) static ISLAND: CardRecord = CardRecord::new(
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add U."),
 );
 
-pub(super) static JAYEMDAE_TOME: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static JAYEMDAE_TOME: CardRecord = CardRecord::new(
     cards::JAYEMDAE_TOME,
     "Jayemdae Tome",
     CardSet::Alpha,
@@ -454,7 +490,8 @@ pub(super) static JAYEMDAE_TOME: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static PLAINS: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static PLAINS: CardRecord = CardRecord::new(
     cards::PLAINS,
     "Plains",
     CardSet::Alpha,
@@ -463,7 +500,8 @@ pub(super) static PLAINS: CardRecord = CardRecord::new(
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add W."),
 );
 
-pub(super) static SERRA_ANGEL: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static SERRA_ANGEL: CardRecord = CardRecord::new(
     cards::SERRA_ANGEL,
     "Serra Angel",
     CardSet::Alpha,
@@ -479,7 +517,8 @@ pub(super) static SERRA_ANGEL: CardRecord = CardRecord::new(
     .vigilance(),
 );
 
-pub(super) static SWORDS_TO_PLOWSHARES: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static SWORDS_TO_PLOWSHARES: CardRecord = CardRecord::new(
     cards::SWORDS_TO_PLOWSHARES,
     "Swords to Plowshares",
     CardSet::Alpha,
@@ -492,7 +531,8 @@ pub(super) static SWORDS_TO_PLOWSHARES: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static TIME_WALK: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static TIME_WALK: CardRecord = CardRecord::new(
     cards::TIME_WALK,
     "Time Walk",
     CardSet::Alpha,
@@ -505,7 +545,8 @@ pub(super) static TIME_WALK: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static TUNDRA: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static TUNDRA: CardRecord = CardRecord::new(
     cards::TUNDRA,
     "Tundra",
     CardSet::Alpha,
@@ -514,16 +555,8 @@ pub(super) static TUNDRA: CardRecord = CardRecord::new(
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add W or U."),
 );
 
-pub(super) static VOLCANIC_ISLAND: CardRecord = CardRecord::new(
-    cards::VOLCANIC_ISLAND,
-    "Volcanic Island",
-    CardSet::Alpha,
-    false,
-    CardBehavior::VolcanicIsland,
-    CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add U or R."),
-);
-
-pub(super) static ARMAGEDDON: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static ARMAGEDDON: CardRecord = CardRecord::new(
     cards::ARMAGEDDON,
     "Armageddon",
     CardSet::Alpha,
@@ -536,7 +569,8 @@ pub(super) static ARMAGEDDON: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static BADLANDS: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static BADLANDS: CardRecord = CardRecord::new(
     cards::BADLANDS,
     "Badlands",
     CardSet::Alpha,
@@ -545,7 +579,8 @@ pub(super) static BADLANDS: CardRecord = CardRecord::new(
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add B or R."),
 );
 
-pub(super) static BALANCE: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static BALANCE: CardRecord = CardRecord::new(
     cards::BALANCE,
     "Balance",
     CardSet::Alpha,
@@ -558,7 +593,8 @@ pub(super) static BALANCE: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static BAYOU: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static BAYOU: CardRecord = CardRecord::new(
     cards::BAYOU,
     "Bayou",
     CardSet::Alpha,
@@ -567,7 +603,8 @@ pub(super) static BAYOU: CardRecord = CardRecord::new(
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add B or G."),
 );
 
-pub(super) static BLACK_KNIGHT: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static BLACK_KNIGHT: CardRecord = CardRecord::new(
     cards::BLACK_KNIGHT,
     "Black Knight",
     CardSet::Alpha,
@@ -581,7 +618,8 @@ pub(super) static BLACK_KNIGHT: CardRecord = CardRecord::new(
     .creature(2, 2),
 );
 
-pub(super) static BIRDS_OF_PARADISE: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static BIRDS_OF_PARADISE: CardRecord = CardRecord::new(
     cards::BIRDS_OF_PARADISE,
     "Birds of Paradise",
     CardSet::Alpha,
@@ -596,7 +634,8 @@ pub(super) static BIRDS_OF_PARADISE: CardRecord = CardRecord::new(
     .flying(),
 );
 
-pub(super) static BLUE_ELEMENTAL_BLAST: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static BLUE_ELEMENTAL_BLAST: CardRecord = CardRecord::new(
     cards::BLUE_ELEMENTAL_BLAST,
     "Blue Elemental Blast",
     CardSet::Alpha,
@@ -609,7 +648,8 @@ pub(super) static BLUE_ELEMENTAL_BLAST: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static CHANNEL: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static CHANNEL: CardRecord = CardRecord::new(
     cards::CHANNEL,
     "Channel",
     CardSet::Alpha,
@@ -622,7 +662,8 @@ pub(super) static CHANNEL: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static CRUSADE: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static CRUSADE: CardRecord = CardRecord::new(
     cards::CRUSADE,
     "Crusade",
     CardSet::Alpha,
@@ -635,7 +676,8 @@ pub(super) static CRUSADE: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static DARK_RITUAL: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static DARK_RITUAL: CardRecord = CardRecord::new(
     cards::DARK_RITUAL,
     "Dark Ritual",
     CardSet::Alpha,
@@ -648,7 +690,8 @@ pub(super) static DARK_RITUAL: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static DEMONIC_TUTOR: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static DEMONIC_TUTOR: CardRecord = CardRecord::new(
     cards::DEMONIC_TUTOR,
     "Demonic Tutor",
     CardSet::Alpha,
@@ -661,7 +704,8 @@ pub(super) static DEMONIC_TUTOR: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static DRAIN_LIFE: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static DRAIN_LIFE: CardRecord = CardRecord::new(
     cards::DRAIN_LIFE,
     "Drain Life",
     CardSet::Alpha,
@@ -674,7 +718,8 @@ pub(super) static DRAIN_LIFE: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static EARTHQUAKE: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static EARTHQUAKE: CardRecord = CardRecord::new(
     cards::EARTHQUAKE,
     "Earthquake",
     CardSet::Alpha,
@@ -687,7 +732,8 @@ pub(super) static EARTHQUAKE: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static FOREST: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static FOREST: CardRecord = CardRecord::new(
     cards::FOREST,
     "Forest",
     CardSet::Alpha,
@@ -696,7 +742,8 @@ pub(super) static FOREST: CardRecord = CardRecord::new(
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add G."),
 );
 
-pub(super) static HYPNOTIC_SPECTER: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static HYPNOTIC_SPECTER: CardRecord = CardRecord::new(
     cards::HYPNOTIC_SPECTER,
     "Hypnotic Specter",
     CardSet::Alpha,
@@ -711,7 +758,8 @@ pub(super) static HYPNOTIC_SPECTER: CardRecord = CardRecord::new(
     .flying(),
 );
 
-pub(super) static MIND_TWIST: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static MIND_TWIST: CardRecord = CardRecord::new(
     cards::MIND_TWIST,
     "Mind Twist",
     CardSet::Alpha,
@@ -724,7 +772,8 @@ pub(super) static MIND_TWIST: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static NEVINYRRALS_DISK: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static NEVINYRRALS_DISK: CardRecord = CardRecord::new(
     cards::NEVINYRRALS_DISK,
     "Nevinyrral's Disk",
     CardSet::Alpha,
@@ -737,7 +786,8 @@ pub(super) static NEVINYRRALS_DISK: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static PLATEAU: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static PLATEAU: CardRecord = CardRecord::new(
     cards::PLATEAU,
     "Plateau",
     CardSet::Alpha,
@@ -746,7 +796,8 @@ pub(super) static PLATEAU: CardRecord = CardRecord::new(
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add R or W."),
 );
 
-pub(super) static PSIONIC_BLAST: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static PSIONIC_BLAST: CardRecord = CardRecord::new(
     cards::PSIONIC_BLAST,
     "Psionic Blast",
     CardSet::Alpha,
@@ -759,7 +810,8 @@ pub(super) static PSIONIC_BLAST: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static REGROWTH: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static REGROWTH: CardRecord = CardRecord::new(
     cards::REGROWTH,
     "Regrowth",
     CardSet::Alpha,
@@ -772,7 +824,8 @@ pub(super) static REGROWTH: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static SAVANNAH: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static SAVANNAH: CardRecord = CardRecord::new(
     cards::SAVANNAH,
     "Savannah",
     CardSet::Alpha,
@@ -781,7 +834,8 @@ pub(super) static SAVANNAH: CardRecord = CardRecord::new(
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add G or W."),
 );
 
-pub(super) static SAVANNAH_LIONS: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static SAVANNAH_LIONS: CardRecord = CardRecord::new(
     cards::SAVANNAH_LIONS,
     "Savannah Lions",
     CardSet::Alpha,
@@ -795,7 +849,8 @@ pub(super) static SAVANNAH_LIONS: CardRecord = CardRecord::new(
     .creature(2, 1),
 );
 
-pub(super) static SCRUBLAND: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static SCRUBLAND: CardRecord = CardRecord::new(
     cards::SCRUBLAND,
     "Scrubland",
     CardSet::Alpha,
@@ -804,7 +859,8 @@ pub(super) static SCRUBLAND: CardRecord = CardRecord::new(
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add W or B."),
 );
 
-pub(super) static SENGIR_VAMPIRE: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static SENGIR_VAMPIRE: CardRecord = CardRecord::new(
     cards::SENGIR_VAMPIRE,
     "Sengir Vampire",
     CardSet::Alpha,
@@ -819,7 +875,8 @@ pub(super) static SENGIR_VAMPIRE: CardRecord = CardRecord::new(
     .flying(),
 );
 
-pub(super) static SINKHOLE: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static SINKHOLE: CardRecord = CardRecord::new(
     cards::SINKHOLE,
     "Sinkhole",
     CardSet::Alpha,
@@ -832,7 +889,8 @@ pub(super) static SINKHOLE: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static SWAMP: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static SWAMP: CardRecord = CardRecord::new(
     cards::SWAMP,
     "Swamp",
     CardSet::Alpha,
@@ -841,7 +899,8 @@ pub(super) static SWAMP: CardRecord = CardRecord::new(
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add B."),
 );
 
-pub(super) static TAIGA: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static TAIGA: CardRecord = CardRecord::new(
     cards::TAIGA,
     "Taiga",
     CardSet::Alpha,
@@ -850,7 +909,8 @@ pub(super) static TAIGA: CardRecord = CardRecord::new(
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add R or G."),
 );
 
-pub(super) static TERROR: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static TERROR: CardRecord = CardRecord::new(
     cards::TERROR,
     "Terror",
     CardSet::Alpha,
@@ -863,7 +923,8 @@ pub(super) static TERROR: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static TIME_VAULT: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static TIME_VAULT: CardRecord = CardRecord::new(
     cards::TIME_VAULT,
     "Time Vault",
     CardSet::Alpha,
@@ -876,7 +937,8 @@ pub(super) static TIME_VAULT: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static TIMETWISTER: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static TIMETWISTER: CardRecord = CardRecord::new(
     cards::TIMETWISTER,
     "Timetwister",
     CardSet::Alpha,
@@ -889,7 +951,8 @@ pub(super) static TIMETWISTER: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static TROPICAL_ISLAND: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static TROPICAL_ISLAND: CardRecord = CardRecord::new(
     cards::TROPICAL_ISLAND,
     "Tropical Island",
     CardSet::Alpha,
@@ -898,7 +961,8 @@ pub(super) static TROPICAL_ISLAND: CardRecord = CardRecord::new(
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add U or G."),
 );
 
-pub(super) static UNDERGROUND_SEA: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static UNDERGROUND_SEA: CardRecord = CardRecord::new(
     cards::UNDERGROUND_SEA,
     "Underground Sea",
     CardSet::Alpha,
@@ -907,7 +971,8 @@ pub(super) static UNDERGROUND_SEA: CardRecord = CardRecord::new(
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add U or B."),
 );
 
-pub(super) static WHITE_KNIGHT: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static WHITE_KNIGHT: CardRecord = CardRecord::new(
     cards::WHITE_KNIGHT,
     "White Knight",
     CardSet::Alpha,
@@ -921,7 +986,8 @@ pub(super) static WHITE_KNIGHT: CardRecord = CardRecord::new(
     .creature(2, 2),
 );
 
-pub(super) static BERSERK: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static BERSERK: CardRecord = CardRecord::new(
     cards::BERSERK,
     "Berserk",
     CardSet::Alpha,
@@ -934,7 +1000,8 @@ pub(super) static BERSERK: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static COPY_ARTIFACT: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static COPY_ARTIFACT: CardRecord = CardRecord::new(
     cards::COPY_ARTIFACT,
     "Copy Artifact",
     CardSet::Alpha,
@@ -947,7 +1014,8 @@ pub(super) static COPY_ARTIFACT: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static GIANT_GROWTH: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static GIANT_GROWTH: CardRecord = CardRecord::new(
     cards::GIANT_GROWTH,
     "Giant Growth",
     CardSet::Alpha,
@@ -960,7 +1028,8 @@ pub(super) static GIANT_GROWTH: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static ICY_MANIPULATOR: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static ICY_MANIPULATOR: CardRecord = CardRecord::new(
     cards::ICY_MANIPULATOR,
     "Icy Manipulator",
     CardSet::Alpha,
@@ -977,7 +1046,8 @@ pub(super) static ICY_MANIPULATOR: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static LLANOWAR_ELVES: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static LLANOWAR_ELVES: CardRecord = CardRecord::new(
     cards::LLANOWAR_ELVES,
     "Llanowar Elves",
     CardSet::Alpha,
@@ -991,7 +1061,8 @@ pub(super) static LLANOWAR_ELVES: CardRecord = CardRecord::new(
     .creature(1, 1),
 );
 
-pub(super) static SCRYB_SPRITES: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static SCRYB_SPRITES: CardRecord = CardRecord::new(
     cards::SCRYB_SPRITES,
     "Scryb Sprites",
     CardSet::Alpha,
@@ -1006,7 +1077,8 @@ pub(super) static SCRYB_SPRITES: CardRecord = CardRecord::new(
     .flying(),
 );
 
-pub(super) static STONE_RAIN: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static STONE_RAIN: CardRecord = CardRecord::new(
     cards::STONE_RAIN,
     "Stone Rain",
     CardSet::Alpha,
@@ -1019,7 +1091,8 @@ pub(super) static STONE_RAIN: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static WRATH_OF_GOD: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static WRATH_OF_GOD: CardRecord = CardRecord::new(
     cards::WRATH_OF_GOD,
     "Wrath of God",
     CardSet::Alpha,
@@ -1032,7 +1105,7 @@ pub(super) static WRATH_OF_GOD: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static CARDS: &[&CardRecord] = &[
+pub(in crate::card::sets) static CARDS: &[&CardRecord] = &[
     &ANKH_OF_MISHRA,
     &BLACK_VISE,
     &COPPER_TABLET,
@@ -1074,7 +1147,6 @@ pub(super) static CARDS: &[&CardRecord] = &[
     &SWORDS_TO_PLOWSHARES,
     &TIME_WALK,
     &TUNDRA,
-    &VOLCANIC_ISLAND,
     &ARMAGEDDON,
     &BADLANDS,
     &BALANCE,
@@ -1116,4 +1188,12 @@ pub(super) static CARDS: &[&CardRecord] = &[
     &SCRYB_SPRITES,
     &STONE_RAIN,
     &WRATH_OF_GOD,
+];
+
+pub(in crate::card::sets) static ADDITIONAL_PRINTINGS: &[PrintingRecord] = &[
+    PrintingRecord::alternate(&PLAINS, 1),
+    PrintingRecord::alternate(&ISLAND, 1),
+    PrintingRecord::alternate(&SWAMP, 1),
+    PrintingRecord::alternate(&MOUNTAIN, 1),
+    PrintingRecord::alternate(&FOREST, 1),
 ];

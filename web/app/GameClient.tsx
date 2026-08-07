@@ -18,16 +18,20 @@ import type {
 } from "./game-types";
 import {
   deckChoiceNote,
-  deckChoices,
-  deckNotes,
+  deckChoicesForFormat,
+  deckNamesForFormat,
   defaultBotDeck,
+  defaultFormat,
   defaultHumanDeck,
   drawBeatDurationMs,
+  formatConfigs,
+  isFormatId,
   opponentActionDurationMs,
-  placeholderDeck,
+  placeholderDeckForFormat,
   turnBannerDurationMs,
   randomDeck,
   turnPhases,
+  type FormatId,
 } from "./game-config";
 
 const randomSeed = () => crypto.getRandomValues(new Uint32Array(1))[0];
@@ -43,16 +47,22 @@ const initialSeed = () => {
 
 /// Turns a setup choice into a deck the engine can build. Every choice but
 /// `randomDeck` is already one.
-const resolveDeck = (choice: string) => {
+const resolveDeck = (format: FormatId, choice: string) => {
   if (choice !== randomDeck) return choice;
-  const deckNames = Object.keys(deckNotes);
+  const deckNames = deckNamesForFormat(format);
   return deckNames[randomSeed() % deckNames.length];
 };
 
-const initialDeckPair = () => {
+const initialFormat = () => {
+  const requested = new URLSearchParams(window.location.search).get("format");
+  return isFormatId(requested) ? requested : defaultFormat;
+};
+
+const initialDeckPair = (format: FormatId) => {
   const requested = new URLSearchParams(window.location.search).get("deck");
+  const deckNotes = formatConfigs[format].deckNotes;
   return {
-    humanDeck: requested && requested in deckNotes ? requested : defaultHumanDeck,
+    humanDeck: requested && Object.hasOwn(deckNotes, requested) ? requested : defaultHumanDeck,
     botDeck: defaultBotDeck,
   };
 };
@@ -81,6 +91,27 @@ const singleTargetKey = (action: Action) => {
 const sameTargets = (left: string[], right: string[]) =>
   left.length === right.length && left.every((target) => right.includes(target));
 
+type CardPresentationRect = {
+  rect: DOMRect;
+  owner: Owner;
+  name: string;
+  zone: string;
+};
+
+const isPlausibleVisibleZoneTransition = (from: string, to: string) => {
+  if (from === "hand") return to === "stack" || to === "battlefield";
+  if (from === "stack") return to === "battlefield" || to === "hand";
+  return from === "battlefield" && to === "hand";
+};
+
+const isPresentationPredecessor = (
+  before: CardPresentationRect,
+  after: CardPresentationRect,
+) =>
+  before.owner === after.owner &&
+  before.name === after.name &&
+  isPlausibleVisibleZoneTransition(before.zone, after.zone);
+
 export function GameClient() {
   const game = useRef<EngineGame | null>(null);
   const tableRef = useRef<HTMLElement | null>(null);
@@ -89,12 +120,14 @@ export function GameClient() {
   const [state, setState] = useState<GameState | null>(null);
   // What the player picked, which may be "Random", versus the deck that
   // pick actually became for the game now on the table.
+  const [format, setFormat] = useState<FormatId>(defaultFormat);
   const [humanDeckChoice, setHumanDeckChoice] = useState(defaultHumanDeck);
   const [botDeckChoice, setBotDeckChoice] = useState(defaultBotDeck);
-  const [humanDeck, setHumanDeck] = useState(placeholderDeck);
-  const [botDeck, setBotDeck] = useState(placeholderDeck);
+  const [humanDeck, setHumanDeck] = useState(placeholderDeckForFormat(defaultFormat));
+  const [botDeck, setBotDeck] = useState(placeholderDeckForFormat(defaultFormat));
   const [policy, setPolicy] = useState("Handcrafted");
   const [humanFirst, setHumanFirst] = useState(true);
+  const [draftFormat, setDraftFormat] = useState<FormatId>(defaultFormat);
   const [draftHumanDeck, setDraftHumanDeck] = useState(defaultHumanDeck);
   const [draftBotDeck, setDraftBotDeck] = useState(defaultBotDeck);
   const [draftPolicy, setDraftPolicy] = useState("Handcrafted");
@@ -136,8 +169,9 @@ export function GameClient() {
   // What the player is currently looking at; the queue builder diffs against
   // this so every popup and animation runs from the state actually on screen.
   const displayedState = useRef<GameState | null>(null);
-  // Card positions from the last presented state, keyed by card instance id.
-  const flipRects = useRef<Map<number, { rect: DOMRect; owner: string; name: string; zone: string }>>(new Map());
+  // Card positions from the last presented state, keyed strictly by current
+  // game-object id. Cross-zone continuity is inferred for one paint only.
+  const flipRects = useRef<Map<number, CardPresentationRect>>(new Map());
   const suppressFlip = useRef(false);
   const currentStep = presentationQueue[0] ?? null;
   const currentOpponentAction = currentStep?.kind === "action" ? currentStep.action : null;
@@ -148,6 +182,7 @@ export function GameClient() {
   const actionStepsRemaining = presentationQueue.filter(
     (step) => step.kind === "action" && step.action.kind !== "draw",
   ).length;
+  const draftDeckChoices = deckChoicesForFormat(draftFormat);
 
   // What the phase strip describes. A turn banner is the gap between two
   // turns: the board still shows the one that ended, so the strip names the
@@ -285,37 +320,49 @@ export function GameClient() {
       nextBotDeck = botDeckChoice,
       nextPolicy = policy,
       nextHumanFirst = humanFirst,
+      nextFormat = format,
     ) => {
-      if (!wasmReady.current) return;
-      // A fresh game replaces the whole board; nothing should glide between
-      // unrelated games, and no stale beats should keep playing. Forgetting
-      // the last board matters most: presenting against a finished game would
-      // hold its result card up over the new one.
-      suppressFlip.current = true;
-      setPresentationQueue([]);
-      displayedState.current = null;
-      const dealtHumanDeck = resolveDeck(nextHumanDeck);
-      const dealtBotDeck = resolveDeck(nextBotDeck);
+      if (!wasmReady.current) return false;
+      const dealtHumanDeck = resolveDeck(nextFormat, nextHumanDeck);
+      const dealtBotDeck = resolveDeck(nextFormat, nextBotDeck);
       try {
-        setSeed(nextSeed);
-        setHumanDeck(dealtHumanDeck);
-        setBotDeck(dealtBotDeck);
-        finalStateAfterOpponentActions.current = null;
-        game.current?.free();
-        game.current = createEngineGame({
+        // Build before replacing the live game. A bad format/deck pairing can
+        // then leave the current board intact and the setup dialog open.
+        const replacement = createEngineGame({
+          format: nextFormat,
           humanDeck: dealtHumanDeck,
           botDeck: dealtBotDeck,
           policy: nextPolicy,
           humanFirst: nextHumanFirst,
           seed: nextSeed,
         });
+        // A fresh game replaces the whole board; nothing should glide between
+        // unrelated games, and no stale beats should keep playing.
+        suppressFlip.current = true;
+        setPresentationQueue([]);
+        displayedState.current = null;
+        game.current?.free();
+        game.current = replacement;
+        setSeed(nextSeed);
+        setFormat(nextFormat);
+        setHumanDeck(dealtHumanDeck);
+        setBotDeck(dealtBotDeck);
+        finalStateAfterOpponentActions.current = null;
         setError(null);
         refresh();
+        const matchUrl = new URL(window.location.href);
+        matchUrl.searchParams.set("format", nextFormat);
+        matchUrl.searchParams.set("deck", dealtHumanDeck);
+        matchUrl.searchParams.set("seed", String(nextSeed));
+        matchUrl.searchParams.set("first", String(nextHumanFirst));
+        window.history.replaceState(null, "", matchUrl);
+        return true;
       } catch (cause) {
         setError(String(cause));
+        return false;
       }
     },
-    [botDeckChoice, humanDeckChoice, humanFirst, policy, refresh],
+    [botDeckChoice, format, humanDeckChoice, humanFirst, policy, refresh],
   );
 
   useEffect(() => {
@@ -325,11 +372,14 @@ export function GameClient() {
         await initializeEngine();
         if (!alive) return;
         const startingSeed = initialSeed();
-        const startingChoices = initialDeckPair();
-        const startingHumanDeck = resolveDeck(startingChoices.humanDeck);
-        const startingBotDeck = resolveDeck(startingChoices.botDeck);
+        const startingFormat = initialFormat();
+        const startingChoices = initialDeckPair(startingFormat);
+        const startingHumanDeck = resolveDeck(startingFormat, startingChoices.humanDeck);
+        const startingBotDeck = resolveDeck(startingFormat, startingChoices.botDeck);
         const startingHumanFirst = initialHumanFirst();
         setSeed(startingSeed);
+        setFormat(startingFormat);
+        setDraftFormat(startingFormat);
         setHumanDeckChoice(startingChoices.humanDeck);
         setBotDeckChoice(startingChoices.botDeck);
         setDraftHumanDeck(startingChoices.humanDeck);
@@ -341,6 +391,7 @@ export function GameClient() {
         wasmReady.current = true;
         setEngineReady(true);
         game.current = createEngineGame({
+          format: startingFormat,
           humanDeck: startingHumanDeck,
           botDeck: startingBotDeck,
           policy: "Handcrafted",
@@ -403,7 +454,7 @@ export function GameClient() {
     const previous = flipRects.current;
     const entries = new Map<
       number,
-      { el: HTMLElement; rect: DOMRect; owner: string; name: string; zone: string }
+      CardPresentationRect & { el: HTMLElement }
     >();
     table.querySelectorAll<HTMLElement>("[data-card-id]").forEach((el) => {
       const id = Number(el.dataset.cardId);
@@ -411,12 +462,12 @@ export function GameClient() {
       entries.set(id, {
         el,
         rect: el.getBoundingClientRect(),
-        owner: el.dataset.cardOwner ?? "human",
+        owner: el.dataset.cardOwner === "opponent" ? "opponent" : "human",
         name: el.dataset.cardName ?? "",
         zone: el.dataset.cardZone ?? "",
       });
     });
-    const store = new Map<number, { rect: DOMRect; owner: string; name: string; zone: string }>();
+    const store = new Map<number, CardPresentationRect>();
     entries.forEach((entry, id) =>
       store.set(id, { rect: entry.rect, owner: entry.owner, name: entry.name, zone: entry.zone }),
     );
@@ -456,8 +507,34 @@ export function GameClient() {
       );
     };
 
+    // A true zone change creates a fresh GameObjectId, so exact-id FLIP cannot
+    // connect the two rendered nodes. Infer presentation continuity only from
+    // visible information and only within this layout pass. Each disappearing
+    // predecessor can be consumed once; the correlation is never stored or
+    // sent back to the engine.
+    const disappearing = new Map(
+      Array.from(previous).filter(([id]) => !entries.has(id)),
+    );
+    const presentationPredecessors = new Map<
+      number,
+      { id: number; snapshot: CardPresentationRect }
+    >();
     entries.forEach((entry, id) => {
-      const before = previous.get(id);
+      if (previous.has(id)) return;
+      const match = Array.from(disappearing).find(([, before]) =>
+        isPresentationPredecessor(before, entry),
+      );
+      if (!match) return;
+      const [previousId, snapshot] = match;
+      disappearing.delete(previousId);
+      presentationPredecessors.set(id, { id: previousId, snapshot });
+    });
+    const matchedPredecessorIds = new Set(
+      Array.from(presentationPredecessors.values(), (predecessor) => predecessor.id),
+    );
+
+    entries.forEach((entry, id) => {
+      const before = previous.get(id) ?? presentationPredecessors.get(id)?.snapshot;
       if (before) {
         // The hand re-fans itself whenever a card leaves it, with its own
         // transition on the slot. Gliding the card inside that slot as well
@@ -479,7 +556,7 @@ export function GameClient() {
     });
 
     previous.forEach((before, id) => {
-      if (entries.has(id)) return;
+      if (entries.has(id) || matchedPredecessorIds.has(id)) return;
       const grave = anchorRect(
         before.owner === "opponent"
           ? '.player-opponent .zone-counts span[title="Graveyard"]'
@@ -1115,6 +1192,7 @@ export function GameClient() {
   };
 
   const openSetup = () => {
+    setDraftFormat(format);
     setDraftHumanDeck(humanDeckChoice);
     setDraftBotDeck(botDeckChoice);
     setDraftPolicy(policy);
@@ -1124,17 +1202,19 @@ export function GameClient() {
 
   const startConfiguredGame = () => {
     if (!wasmReady.current) return;
-    setHumanDeckChoice(draftHumanDeck);
-    setBotDeckChoice(draftBotDeck);
-    setPolicy(draftPolicy);
-    setHumanFirst(draftHumanFirst);
-    newGame(
+    const started = newGame(
       setupDismissible ? randomSeed() : seed,
       draftHumanDeck,
       draftBotDeck,
       draftPolicy,
       draftHumanFirst,
+      draftFormat,
     );
+    if (!started) return;
+    setHumanDeckChoice(draftHumanDeck);
+    setBotDeckChoice(draftBotDeck);
+    setPolicy(draftPolicy);
+    setHumanFirst(draftHumanFirst);
     setSetupDismissible(true);
     setSetupOpen(false);
   };
@@ -1169,8 +1249,25 @@ export function GameClient() {
           >
             <span className="setup-kicker">NEW MATCH</span>
             <h1 id="setup-title">Choose your deck</h1>
-            <p>Pick your deck first, then choose what you want to play against.</p>
+            <p>Choose a format, then pick both sides of the matchup.</p>
             {error && <div className="setup-error" role="alert">{error}</div>}
+            <label className="setup-format">
+              <span>Format</span>
+              <select
+                value={draftFormat}
+                onChange={(event) => {
+                  const nextFormat = event.target.value as FormatId;
+                  setDraftFormat(nextFormat);
+                  setDraftHumanDeck(defaultHumanDeck);
+                  setDraftBotDeck(defaultBotDeck);
+                }}
+              >
+                {Object.entries(formatConfigs).map(([id, config]) => (
+                  <option key={id} value={id}>{config.name}</option>
+                ))}
+              </select>
+              <small>{formatConfigs[draftFormat].description}</small>
+            </label>
             <div className="setup-fields">
               <div className="setup-primary-choice">
                 <label>
@@ -1179,11 +1276,11 @@ export function GameClient() {
                     value={draftHumanDeck}
                     onChange={(event) => setDraftHumanDeck(event.target.value)}
                   >
-                    {deckChoices.map((deck) => (
+                    {draftDeckChoices.map((deck) => (
                       <option key={deck}>{deck}</option>
                     ))}
                   </select>
-                  <small>{deckChoiceNote(draftHumanDeck)}</small>
+                  <small>{deckChoiceNote(draftFormat, draftHumanDeck)}</small>
                 </label>
                 <label className="setup-seat">
                   <input
@@ -1201,11 +1298,11 @@ export function GameClient() {
                     value={draftBotDeck}
                     onChange={(event) => setDraftBotDeck(event.target.value)}
                   >
-                    {deckChoices.map((deck) => (
+                    {draftDeckChoices.map((deck) => (
                       <option key={deck}>{deck}</option>
                     ))}
                   </select>
-                  <small>{deckChoiceNote(draftBotDeck)}</small>
+                  <small>{deckChoiceNote(draftFormat, draftBotDeck)}</small>
                 </label>
                 <label className="setup-policy">
                   <span>Opponent style</span>
@@ -1218,7 +1315,7 @@ export function GameClient() {
                   </select>
                   <small>
                     {draftPolicy === "Handcrafted"
-                      ? "Purposeful Old School play."
+                      ? "Purposeful, card-aware play."
                       : "Chooses randomly from legal actions."}
                   </small>
                 </label>
@@ -1353,13 +1450,13 @@ export function GameClient() {
                 <span className="brand-mark" aria-hidden="true">P</span>
                 <div>
                   <strong>PENTA</strong>
-                  <small>OLD SCHOOL · 93/94</small>
+                  <small>{formatConfigs[format].shortName}</small>
                 </div>
               </div>
               <div className="opponent-hand" aria-label={`${state.opponent.handSize} hidden cards`}>
                 {Array.from({ length: state.opponent.handSize }, (_, index) => (
                   <span className="card-back" key={index}>
-                    <i>93</i>
+                    <i>{formatConfigs[format].cardBackMark}</i>
                   </span>
                 ))}
               </div>
@@ -1434,9 +1531,11 @@ export function GameClient() {
                 <div className="stack-card-slot" key={item.id}>
                   <GameCard
                     card={{
-                      id: item.cardId,
+                      id: item.id,
                       name: item.name,
                       kind: item.cardKind,
+                      typeLine: item.typeLine,
+                      metadataOnly: item.metadataOnly,
                       isLand: item.isLand,
                       manaCost: item.manaCost,
                       rulesText: item.rulesText,
@@ -2008,7 +2107,7 @@ function StackTargetArrows({
       const next: Array<{ key: string; x1: number; y1: number; x2: number; y2: number }> = [];
       for (const item of stack) {
         const source = table.querySelector<HTMLElement>(
-          `.stack-zone [data-card-id="${item.cardId}"]`,
+          `.stack-zone [data-card-id="${item.id}"]`,
         );
         if (!source) continue;
         const from = center(source);
@@ -2028,7 +2127,7 @@ function StackTargetArrows({
             return {
               key: `stack:${stackId}`,
               el: targetItem
-                ? table.querySelector(`.stack-zone [data-card-id="${targetItem.cardId}"]`)
+                ? table.querySelector(`.stack-zone [data-card-id="${targetItem.id}"]`)
                 : null,
             };
           }),
@@ -2495,12 +2594,15 @@ function GameCard({
     left: number;
     top: number;
   } | null>(null);
-  const currentType = card.kind.replace("artifactcreature", "artifact creature");
-  const type = card.isLand && card.kind !== "land" ? `land · ${currentType}` : currentType;
+  const currentKind = card.kind.replace("artifactcreature", "artifact creature");
+  const type =
+    card.isLand && card.kind !== "land"
+      ? `Land · ${currentKind}`
+      : (card.typeLine || currentKind);
   const isRed =
     !card.kind.includes("artifact") &&
     !card.isLand &&
-    (card.manaCost?.red ?? 0) > 0;
+    ((card.manaCost?.red ?? 0) > 0 || (card.manaCost?.whiteRedHybrid ?? 0) > 0);
   const showZeroCost =
     !card.isLand &&
     card.manaCost?.generic === 0 &&
@@ -2509,6 +2611,7 @@ function GameCard({
     card.manaCost.black === 0 &&
     card.manaCost.red === 0 &&
     card.manaCost.green === 0 &&
+    card.manaCost.whiteRedHybrid === 0 &&
     !card.manaCost.x;
   const manaSymbolCount = card.manaCost
     ? (card.manaCost.x ? 1 : 0) +
@@ -2517,7 +2620,8 @@ function GameCard({
       card.manaCost.blue +
       card.manaCost.black +
       card.manaCost.red +
-      card.manaCost.green
+      card.manaCost.green +
+      card.manaCost.whiteRedHybrid
     : 0;
   const manaCost = formatManaCost(card);
   const battlefieldState = [
@@ -2531,7 +2635,7 @@ function GameCard({
   const showPreview = (element: HTMLButtonElement) => {
     const bounds = element.getBoundingClientRect();
     const previewWidth = 260;
-    const previewHeight = 220;
+    const previewHeight = 320;
     const gutter = 10;
     let left = bounds.right + gutter;
     if (left + previewWidth > window.innerWidth - gutter) {
@@ -2651,6 +2755,9 @@ function GameCard({
               {Array.from({ length: card.manaCost.green }, (_, index) => (
                 <i className="mana-green-symbol" key={`g${index}`}>G</i>
               ))}
+              {Array.from({ length: card.manaCost.whiteRedHybrid }, (_, index) => (
+                <i className="mana-white-red-symbol" key={`rw${index}`}>R/W</i>
+              ))}
             </span>
           )}
         </span>
@@ -2658,9 +2765,7 @@ function GameCard({
           <i>{card.kind.includes("land") ? "▲" : card.kind.includes("artifact") ? "◇" : "●"}</i>
         </span>
         <span className="card-type">{type}</span>
-        <span className="card-text">
-          {card.attacking ? "Attacking" : card.flying ? "Flying" : "Old School 93/94"}
-        </span>
+        <span className="card-text">{card.attacking ? "Attacking" : card.rulesText}</span>
         {card.power !== null && card.power !== undefined && (
           <strong className="card-stats">
             {card.power}/{card.toughness}
@@ -2679,6 +2784,11 @@ function GameCard({
             <strong>{card.name}</strong>
             <span className="card-hover-type">{type}</span>
             <span className="card-hover-rules">{card.rulesText}</span>
+            {card.metadataOnly && (
+              <span className="card-hover-support">
+                Staged support: only baseline creature and land/mana behavior is active.
+              </span>
+            )}
             <span className="card-hover-details">
               <span><b>Cost</b> {manaCost}</span>
               {card.xValue !== null && card.xValue !== undefined && (
@@ -2709,6 +2819,7 @@ function formatManaCost(card: Card) {
     "B".repeat(card.manaCost.black),
     "R".repeat(card.manaCost.red),
     "G".repeat(card.manaCost.green),
+    "{R/W}".repeat(card.manaCost.whiteRedHybrid),
   ].filter(Boolean);
   return parts.length > 0 ? parts.join(" ") : "0";
 }

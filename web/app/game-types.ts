@@ -1,9 +1,37 @@
+import type { FormatId } from "./game-config";
+
 export type Owner = "human" | "opponent";
 
+export type SpellFormMetadata =
+  | { kind: "part"; partId: number }
+  | { kind: "combined"; partIds: number[] };
+
+export type CastTargetSelectionMetadata = {
+  slotId: number;
+  targetCardIds: number[];
+  targetPlayers: Owner[];
+  targetStackIds: number[];
+};
+
+export type CastSignatureMetadata = {
+  playOptionId: number;
+  form: SpellFormMetadata;
+  modeIds: number[];
+  alternativeCostId?: number | null;
+  additionalCostIds: number[];
+  x: number;
+  targetSelections: CastTargetSelectionMetadata[];
+};
+
 export type Card = {
+  /** Current-zone GameObjectId used by actions, targets, and DOM identity. */
   id: number;
+  /** Logical card part supplying this permanent's visible characteristics. */
+  partId?: number;
   name: string;
   kind: string;
+  typeLine?: string;
+  metadataOnly?: boolean;
   isLand?: boolean;
   rulesText: string;
   manaCost?: {
@@ -13,6 +41,7 @@ export type Card = {
     black: number;
     red: number;
     green: number;
+    whiteRedHybrid: number;
     x: boolean;
   } | null;
   owner?: Owner;
@@ -32,6 +61,7 @@ export type Action = {
   index: number;
   label: string;
   kind: "primary" | "combat" | "pass" | "danger";
+  /** Current source GameObjectId, despite the legacy JSON field name. */
   cardId?: number | null;
   targetCardId?: number | null;
   targetPlayer?: Owner | null;
@@ -43,6 +73,8 @@ export type Action = {
   abilitySummary?: string | null;
   manaAbility?: boolean;
   spellAction?: boolean;
+  playOptionId?: number | null;
+  modeIds?: number[] | null;
   sacrificeCardIds?: number[];
   combatDamageAttacker?: number | null;
   x?: number | null;
@@ -98,6 +130,7 @@ export type DecisionState = {
 };
 
 export type GameState = {
+  format: FormatId;
   turn: number;
   gameTurn: number;
   step: string;
@@ -110,11 +143,17 @@ export type GameState = {
   battlefield: Card[];
   stack: Array<{
     id: number;
-    cardId: number;
+    /** Deprecated JSON compatibility alias for `id`; never use for targeting. */
+    cardId?: number;
+    /** Historical source game-object ID for an ability. */
+    sourceId?: number | null;
+    signature?: CastSignatureMetadata | null;
     name: string;
     owner: Owner;
     kind: string;
     cardKind: string;
+    typeLine?: string;
+    metadataOnly?: boolean;
     isLand?: boolean;
     manaCost?: Card["manaCost"];
     rulesText: string;

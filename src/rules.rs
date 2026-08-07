@@ -1,59 +1,26 @@
-//! Fixed Eternal Central Old School 93/94 format rules.
+//! Backwards-compatible constants for Eternal Central Old School 93/94.
+//!
+//! New code that can run more than one format should use [`crate::Format`]
+//! instead of these fixed-format aliases.
 
-pub const STARTING_LIFE: u8 = 20;
-pub const OPENING_HAND_SIZE: usize = 7;
-pub const MINIMUM_MAIN_DECK_SIZE: usize = 60;
-pub const MAXIMUM_SIDEBOARD_SIZE: usize = 15;
-pub const MAXIMUM_COPIES: usize = 4;
+use crate::Format;
 
-pub const BANNED_CARDS: &[&str] = &[
-    "Bronze Tablet",
-    "Contract from Below",
-    "Darkpact",
-    "Demonic Attorney",
-    "Jeweled Bird",
-    "Rebirth",
-    "Tempest Efreet",
-];
+pub use crate::format::{
+    OLD_SCHOOL_BANNED_CARDS as BANNED_CARDS, OLD_SCHOOL_RESTRICTED_CARDS as RESTRICTED_CARDS,
+};
 
-pub const RESTRICTED_CARDS: &[&str] = &[
-    "Ancestral Recall",
-    "Balance",
-    "Black Lotus",
-    "Braingeyser",
-    "Chaos Orb",
-    "Channel",
-    "Demonic Tutor",
-    "Library of Alexandria",
-    "Mana Drain",
-    "Mind Twist",
-    "Mox Emerald",
-    "Mox Jet",
-    "Mox Pearl",
-    "Mox Ruby",
-    "Mox Sapphire",
-    "Recall",
-    "Regrowth",
-    "Sol Ring",
-    "Time Vault",
-    "Time Walk",
-    "Timetwister",
-    "Wheel of Fortune",
-];
+pub const STARTING_LIFE: u8 = Format::OldSchool9394.rules().starting_life;
+pub const OPENING_HAND_SIZE: usize = Format::OldSchool9394.rules().opening_hand_size;
+pub const MINIMUM_MAIN_DECK_SIZE: usize = Format::OldSchool9394.rules().minimum_main_deck_size;
+pub const MAXIMUM_SIDEBOARD_SIZE: usize = Format::OldSchool9394.rules().maximum_sideboard_size;
+pub const MAXIMUM_COPIES: usize = Format::OldSchool9394.rules().maximum_copies;
 
 #[must_use]
 pub fn is_banned(name: &str) -> bool {
-    contains_name(BANNED_CARDS, name)
+    Format::OldSchool9394.is_banned(name)
 }
 
 #[must_use]
 pub fn is_restricted(name: &str) -> bool {
-    contains_name(RESTRICTED_CARDS, name)
-}
-
-fn contains_name(names: &[&str], candidate: &str) -> bool {
-    let candidate = candidate.trim();
-    names
-        .iter()
-        .any(|name| name.eq_ignore_ascii_case(candidate))
+    Format::OldSchool9394.is_restricted(name)
 }

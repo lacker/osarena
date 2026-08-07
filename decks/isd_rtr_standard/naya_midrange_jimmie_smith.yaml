@@ -1,0 +1,36 @@
+# SCG Open Atlanta — 4th place, Jimmie Smith (663 players, 2013-09-15).
+# MTGTop8 records the tournament as 2013-09-14.
+# Source: https://www.mtgtop8.com/event?e=5640&d=232700&f=ST
+# Contemporary source: https://articles.starcitygames.com/articles/putting-the-cap-on-standard/
+main:
+  Clifftop Retreat: 3
+  Kessig Wolf Run: 2
+  Rootbound Crag: 4
+  Sacred Foundry: 4
+  Stomping Ground: 4
+  Sunpetal Grove: 3
+  Temple Garden: 4
+  Arbor Elf: 1
+  Aurelia, the Warleader: 1
+  Avacyn's Pilgrim: 4
+  Boros Reckoner: 4
+  Ghor-Clan Rampager: 4
+  Huntmaster of the Fells: 2
+  Loxodon Smiter: 2
+  Sigarda, Host of Herons: 2
+  Thundermaw Hellkite: 3
+  Voice of Resurgence: 4
+  Boros Charm: 3
+  Mizzium Mortars: 2
+  Domri Rade: 3
+  Garruk Relentless: 1
+sideboard:
+  Assemble the Legion: 2
+  Aurelia's Fury: 1
+  Blasphemous Act: 2
+  Oblivion Ring: 1
+  Ray of Revelation: 2
+  Rest in Peace: 2
+  Ruric Thar, the Unbowed: 1
+  Selesnya Charm: 2
+  Unflinching Courage: 2

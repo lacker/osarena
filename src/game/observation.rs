@@ -1,22 +1,25 @@
-use crate::{Action, CardDefinitionId, CardInstanceId, PlayerId, StackObjectId, Target};
+use crate::{Action, CardDefinitionId, CardPartId, CastSignature, GameObjectId, PlayerId, Target};
 
 use super::{DecisionObservation, GameResult, ManaPool, StackObjectKind, Step};
 
-pub(super) type PublicCard = (CardInstanceId, CardDefinitionId);
+pub(super) type PublicCard = (GameObjectId, CardDefinitionId);
 pub(super) type LastSeenHand = Option<(PlayerId, Vec<PublicCard>)>;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct PermanentObservation {
-    pub id: CardInstanceId,
+    pub id: GameObjectId,
     pub definition: CardDefinitionId,
+    /// The logical card part currently supplying this permanent's printed
+    /// characteristics. Changing faces does not change `id`.
+    pub presented: CardPartId,
     pub controller: PlayerId,
     pub tapped: bool,
     pub power: Option<i16>,
     pub toughness: Option<i16>,
     pub damage: u16,
     pub attacking: bool,
-    pub blocking: Option<CardInstanceId>,
+    pub blocking: Option<GameObjectId>,
     pub flying: bool,
     pub can_attack: bool,
     pub entered_this_turn: bool,
@@ -24,13 +27,16 @@ pub struct PermanentObservation {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct StackObservation {
-    pub id: StackObjectId,
+    pub id: GameObjectId,
     pub kind: StackObjectKind,
-    pub card: CardInstanceId,
+    pub source: Option<GameObjectId>,
     pub definition: CardDefinitionId,
     pub controller: PlayerId,
+    /// Locked spell form, modes, costs, X, and target slots. Activated
+    /// abilities have no cast signature.
+    pub signature: Option<CastSignature>,
     pub targets: Vec<Target>,
-    pub chosen_permanents: Vec<CardInstanceId>,
+    pub chosen_permanents: Vec<GameObjectId>,
     pub x: u16,
 }
 
@@ -45,12 +51,12 @@ pub struct PlayerObservation {
     pub step: Step,
     pub life_totals: [i16; 2],
     pub mana_pools: [ManaPool; 2],
-    pub hand: Vec<(CardInstanceId, CardDefinitionId)>,
+    pub hand: Vec<(GameObjectId, CardDefinitionId)>,
     pub opponent_hand_size: usize,
-    pub last_seen_hand: Option<(PlayerId, Vec<(CardInstanceId, CardDefinitionId)>)>,
+    pub last_seen_hand: Option<(PlayerId, Vec<(GameObjectId, CardDefinitionId)>)>,
     pub library_sizes: [usize; 2],
-    pub graveyards: [Vec<(CardInstanceId, CardDefinitionId)>; 2],
-    pub exiles: [Vec<(CardInstanceId, CardDefinitionId)>; 2],
+    pub graveyards: [Vec<(GameObjectId, CardDefinitionId)>; 2],
+    pub exiles: [Vec<(GameObjectId, CardDefinitionId)>; 2],
     pub battlefield: Vec<PermanentObservation>,
     pub stack: Vec<StackObservation>,
     pub decision: Option<DecisionObservation>,

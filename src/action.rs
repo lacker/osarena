@@ -1,7 +1,8 @@
 use std::error::Error;
 use std::fmt;
 
-use crate::{CardInstanceId, PlayerId, StackObjectId};
+use crate::casting::CastChoices;
+use crate::{GameObjectId, PlayOptionId, PlayerId};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum ManaColor {
@@ -16,8 +17,8 @@ pub enum ManaColor {
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum Target {
     Player(PlayerId),
-    Permanent(CardInstanceId),
-    Spell(StackObjectId),
+    Permanent(GameObjectId),
+    Spell(GameObjectId),
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -31,10 +32,10 @@ pub enum Action {
     KeepHand,
     TakeMulligan,
     BottomCards {
-        cards: Vec<CardInstanceId>,
+        cards: Vec<GameObjectId>,
     },
     DiscardCards {
-        cards: Vec<CardInstanceId>,
+        cards: Vec<GameObjectId>,
     },
     ChooseDecision {
         decision: u32,
@@ -44,39 +45,39 @@ pub enum Action {
         decision: u32,
     },
     ChooseUntap {
-        permanents: Vec<CardInstanceId>,
+        permanents: Vec<GameObjectId>,
     },
     PassPriority,
     PlayLand {
-        card: CardInstanceId,
+        card: GameObjectId,
+        option: PlayOptionId,
     },
     ActivateManaAbility {
-        source: CardInstanceId,
+        source: GameObjectId,
         color: ManaColor,
     },
     PayLifeForMana,
     CastSpell {
-        card: CardInstanceId,
-        targets: Vec<Target>,
-        sacrifices: Vec<CardInstanceId>,
-        x: u16,
+        card: GameObjectId,
+        choices: CastChoices,
+        sacrifices: Vec<GameObjectId>,
     },
     ActivateAbility {
-        source: CardInstanceId,
+        source: GameObjectId,
         target: Option<Target>,
-        sacrifice: Option<CardInstanceId>,
+        sacrifice: Option<GameObjectId>,
     },
     DeclareAttacker {
-        attacker: CardInstanceId,
+        attacker: GameObjectId,
     },
     FinishDeclaringAttackers,
     DeclareBlocker {
-        blocker: CardInstanceId,
-        attacker: CardInstanceId,
+        blocker: GameObjectId,
+        attacker: GameObjectId,
     },
     FinishDeclaringBlockers,
     AssignCombatDamage {
-        attacker: CardInstanceId,
+        attacker: GameObjectId,
         assignments: Vec<CombatDamageAssignment>,
     },
     Concede,

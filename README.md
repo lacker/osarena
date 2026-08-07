@@ -2,24 +2,34 @@
 
 [![CI](https://github.com/lacker/penta/actions/workflows/ci.yml/badge.svg)](https://github.com/lacker/penta/actions/workflows/ci.yml)
 
-`penta` is a deterministic, headless simulator for two-player Old School
+`penta` is a deterministic, headless simulator for two-player constructed
 Magic: The Gathering, built for writing AI bots against.
 
 **Want to write a bot?** You can drive the engine from Python, C, C++, or
 Rust, play against the included bot algorithms, and train against self-play.
 The instructions are in [BOTS.md](BOTS.md).
 
-## Format
+## Formats
 
-The engine targets **Eternal Central Old School 93/94** as one fixed format.
-That means:
+The engine currently supports two explicit format profiles:
+
+- **Eternal Central Old School 93/94**: the original card pool, EC banned and
+  restricted lists, phase-boundary mana burn, and fifteen powered archetypes.
+- **ISD–RTR Standard (final pre-Theros snapshot)**: Innistrad, Dark Ascension,
+  Avacyn Restored, Magic 2013, Return to Ravnica, Gatecrash, Dragon's Maze,
+  and Magic 2014; no banned or restricted cards; modern mana-pool emptying with
+  no mana burn; and the eight decks from SCG Open Atlanta in September 2013.
+
+Both use 20 starting life, 60-card minimum decks, sideboards of up to 15 cards,
+and a four-copy limit except for basic lands. The simulator currently uses the
+London mulligan for both formats.
+
+The Old School profile includes:
 
 - Alpha, Beta, Unlimited, Collector's Edition, International Collector's
   Edition, Arabian Nights, Antiquities, Revised, Legends, The Dark, Fallen
   Empires, and the three 1994 promotional cards
 - the Eternal Central banned and restricted list
-- 60-card minimum decks and sideboards of up to 15 cards
-- the London mulligan
 - current Magic rules except where Eternal Central explicitly differs,
   notably mana burn
 
@@ -28,15 +38,17 @@ meaning in the simulator.
 
 The canonical format reference is [Eternal Central's 93/94 rules][ec-rules].
 
-The format is intentionally not configurable. If another Old School variant
-is added later, it should be a distinct format implementation rather than a
-bag of switches spread throughout the engine.
+The selected format is stored on each game. Format-specific construction and
+mana rules live in one profile rather than being scattered as global switches,
+so more formats can be added without changing existing games.
 
 ## Engine principles
 
 - Game state changes only through explicit actions.
 - All randomness comes from a recorded seed and a versioned PRNG.
-- Cards have stable numeric definition IDs and per-game instance IDs.
+- Cards have stable canonical definition IDs and exact printing IDs; runtime
+  rules objects use zone-scoped game-object IDs while private physical-card
+  lineage follows the underlying cardboard.
 - A player's observation cannot expose an opponent's hidden cards.
 - Legal actions are enumerated by the engine.
 - The core crate has no UI, network, async runtime, or training dependencies.
@@ -46,22 +58,36 @@ extension boundaries.
 
 ## Repository layout
 
-- `src/card/` owns the card model, catalog, stable IDs, and corpus. Each file
-  under `src/card/sets/` groups cards by first-printing set, with one complete
-  record per card containing its identity, cost, type, text, stats, and traits.
-- `decks/` contains the built-in decklists as YAML mappings from printed card
-  names to copy counts. `src/decks.rs` compiles those files into the binary, so
-  the engine and browser build do not need runtime filesystem access.
+- `src/card/` owns the card model, catalog, stable IDs, and corpus. Files under
+  `src/card/sets/y<year>/<set>.rs` give each set its own module. Its `CARDS`
+  records declare canonical cards whose rules live there, while
+  `ADDITIONAL_PRINTINGS` references those definitions for reprints and
+  alternate-art variants without duplicating their rules. An adjacent status
+  comment says which parts of each canonical card the engine implements today.
+- `decks/<format>/` contains the built-in decklists as YAML mappings from
+  canonical card names to copy counts. `src/decks.rs` compiles those files into
+  the binary, so the engine and browser build do not need runtime filesystem
+  access.
 - `src/game/` keeps the rules state machine together while separating its
   decision, event, mana, observation, and test vocabulary into small modules.
 
 The original `poc` module remains as a compatibility façade. New code should
 prefer `card::catalog()`, `card::cards::*`, and the functions in `decks`.
 
+Format legality is reprint-aware: a canonical card is legal when it is a basic
+land or at least one of its cataloged printings belongs to an allowed set.
+Copy limits, banned lists, and restricted lists still apply to the canonical
+card rather than separately to each printing. Decks and games currently carry
+canonical `CardDefinitionId` values; the set-and-variant `CardPrintingId`
+provides room for future basic-land art selection, but the UI does not select
+art variants today.
+
 ## Current scope
 
 The engine currently supports:
 
+- per-game format profiles with isolated card legality, construction rules,
+  restricted/banned lists, and mana-pool behavior
 - deck validation and seeded, reproducible setup
 - hidden-information-safe observations and deterministic legal actions
 - the priority-bearing turn skeleton, active player, and priority passing
@@ -80,9 +106,13 @@ The engine currently supports:
   restricted untaps
 - staged public/private decisions with bounded multi-selection, cancellation,
   bot preferences, and continuations across costs and effect resolution
-- functional behavior metadata for all 128 catalog cards, with engine support
-  for the shared mana, removal, discard, draw, tutor, and global-effect package
-- fifteen fixed 60-card archetype decks with 15-card sideboards
+- functional behavior for the original 128-card Old School corpus, with engine
+  support for its shared mana, removal, discard, draw, tutor, and global-effect
+  package
+- complete declarative records for every additional card in the Standard Top 8,
+  with common casting, mana, land-entry, creature, flash, and combat metadata
+  already consumed by the engine
+- twenty-three fixed 60-card decks with 15-card sideboards across two formats
 - a small bot API with seeded random and card-aware handcrafted policies
 
 The event log is intentionally omniscient and must not be passed directly to a
@@ -104,6 +134,8 @@ atomically. These constraints are explicit extension points rather than silent
 support for cards outside the POC.
 
 ## Built-in decks
+
+### Old School 93/94
 
 The proof of concept contains fifteen powered EC archetypes:
 
@@ -161,6 +193,33 @@ Abyss, Sedge Troll, Stone Rain, Kird Ape, Scryb Sprites, Llanowar Elves, Giant
 Growth, Berserk, Pendelhaven, Moat, Wrath of God, Dust to Dust, Hurkyl's
 Recall, Energy Flux, and City in a Bottle. It is still intentionally based on
 cards in actual archetypes rather than every card legal in the format.
+
+### ISD–RTR Standard
+
+The Standard profile contains the complete 60-card main deck and 15-card
+sideboard for each member of the [SCG Open Atlanta Top 8][scg-atlanta]:
+
+- Rudy Briksza — Naya Midrange
+- Joseph Greer — G/R Aggro
+- Mike Fyrberg — B/G Midrange
+- Jimmie Smith — Naya Midrange
+- Korey McDuffie — U/W/R Flash
+- Phillip Lorren — U/W Flash
+- Clayton Arch — U/W Flash
+- Drew Kuenzinger — Junk Reanimator
+
+The published Clayton Arch list contains three copies of Celestial Purge, a
+card that was not legal in this Standard pool. Its built-in playable list uses
+Celestial Flare as the likely transcription correction and records that
+inference in the YAML source comments.
+
+The catalog carries the canonical rules identity and every known set-and-
+variant printing, along with the cost, type, rules text, and stats for every
+card used by these lists. Ordinary mana sources and creatures are playable
+now; specialized effects are being implemented incrementally as reusable
+rules primitives are added. Until a metadata-only nonland, noncreature card is
+implemented, the engine withholds it from legal actions instead of silently
+resolving an approximation; card previews label this staged support explicitly.
 
 ## Bot policies
 
@@ -253,3 +312,4 @@ commit instead of a surprise. A fresh clone needs no `rustup` commands.
 [atog-list]: https://tappedout.net/mtg-decks/atog-smash-9394-1/
 [robots-data]: https://www.tcdecks.net/archetype.php?archetype=Artifact+Aggro&format=Old+School&src=all
 [the-deck-data]: https://www.tcdecks.net/archetype.php?archetype=The+Deck&format=Old+School&src=all
+[scg-atlanta]: https://www.mtgtop8.com/event?e=5640&f=ST

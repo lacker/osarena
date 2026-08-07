@@ -1,7 +1,8 @@
-use super::CardRecord;
+use super::{CardRecord, PrintingRecord};
 use crate::card::{CardBehavior, CardKind, CardRules, CardSet, ManaCost, cards};
 
-pub(super) static ATOG: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static ATOG: CardRecord = CardRecord::new(
     cards::ATOG,
     "Atog",
     CardSet::Antiquities,
@@ -15,7 +16,8 @@ pub(super) static ATOG: CardRecord = CardRecord::new(
     .creature(1, 2),
 );
 
-pub(super) static DETONATE: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static DETONATE: CardRecord = CardRecord::new(
     cards::DETONATE,
     "Detonate",
     CardSet::Antiquities,
@@ -28,7 +30,8 @@ pub(super) static DETONATE: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static SU_CHI: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static SU_CHI: CardRecord = CardRecord::new(
     cards::SU_CHI,
     "Su-Chi",
     CardSet::Antiquities,
@@ -42,7 +45,8 @@ pub(super) static SU_CHI: CardRecord = CardRecord::new(
     .creature(4, 4),
 );
 
-pub(super) static MISHRA_S_FACTORY: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static MISHRA_S_FACTORY: CardRecord = CardRecord::new(
     cards::MISHRA_S_FACTORY,
     "Mishra's Factory",
     CardSet::Antiquities,
@@ -56,7 +60,8 @@ pub(super) static MISHRA_S_FACTORY: CardRecord = CardRecord::new(
     .activated("Give {} +1/+1 with Mishra's Factory", "Give an Assembly-Worker +1/+1"),
 );
 
-pub(super) static ORCISH_MECHANICS: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static ORCISH_MECHANICS: CardRecord = CardRecord::new(
     cards::ORCISH_MECHANICS,
     "Orcish Mechanics",
     CardSet::Antiquities,
@@ -71,7 +76,8 @@ pub(super) static ORCISH_MECHANICS: CardRecord = CardRecord::new(
     .activated("Deal 2 damage to {} with Orcish Mechanics", "Deal 2 damage"),
 );
 
-pub(super) static STRIP_MINE: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static STRIP_MINE: CardRecord = CardRecord::new(
     cards::STRIP_MINE,
     "Strip Mine",
     CardSet::Antiquities,
@@ -85,7 +91,8 @@ pub(super) static STRIP_MINE: CardRecord = CardRecord::new(
     .activated("Destroy {} with Strip Mine", "Destroy a land"),
 );
 
-pub(super) static TRISKELION: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static TRISKELION: CardRecord = CardRecord::new(
     cards::TRISKELION,
     "Triskelion",
     CardSet::Antiquities,
@@ -100,7 +107,8 @@ pub(super) static TRISKELION: CardRecord = CardRecord::new(
     .activated("Deal 1 damage to {} with Triskelion", "Deal 1 damage"),
 );
 
-pub(super) static IVORY_TOWER: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static IVORY_TOWER: CardRecord = CardRecord::new(
     cards::IVORY_TOWER,
     "Ivory Tower",
     CardSet::Antiquities,
@@ -113,7 +121,8 @@ pub(super) static IVORY_TOWER: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static MISHRA_S_WORKSHOP: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static MISHRA_S_WORKSHOP: CardRecord = CardRecord::new(
     cards::MISHRA_S_WORKSHOP,
     "Mishra's Workshop",
     CardSet::Antiquities,
@@ -126,7 +135,8 @@ pub(super) static MISHRA_S_WORKSHOP: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static ARGOTHIAN_PIXIES: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static ARGOTHIAN_PIXIES: CardRecord = CardRecord::new(
     cards::ARGOTHIAN_PIXIES,
     "Argothian Pixies",
     CardSet::Antiquities,
@@ -140,7 +150,8 @@ pub(super) static ARGOTHIAN_PIXIES: CardRecord = CardRecord::new(
     .creature(2, 1),
 );
 
-pub(super) static HURKYLS_RECALL: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static HURKYLS_RECALL: CardRecord = CardRecord::new(
     cards::HURKYLS_RECALL,
     "Hurkyl's Recall",
     CardSet::Antiquities,
@@ -153,7 +164,8 @@ pub(super) static HURKYLS_RECALL: CardRecord = CardRecord::new(
     ),
 );
 
-pub(super) static SAGE_OF_LAT_NAM: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static SAGE_OF_LAT_NAM: CardRecord = CardRecord::new(
     cards::SAGE_OF_LAT_NAM,
     "Sage of Lat-Nam",
     CardSet::Antiquities,
@@ -167,7 +179,8 @@ pub(super) static SAGE_OF_LAT_NAM: CardRecord = CardRecord::new(
     .creature(1, 1),
 );
 
-pub(super) static TETRAVUS: CardRecord = CardRecord::new(
+// Implementation status: complete — card rules are executed by the engine.
+pub(in crate::card::sets) static TETRAVUS: CardRecord = CardRecord::new(
     cards::TETRAVUS,
     "Tetravus",
     CardSet::Antiquities,
@@ -182,7 +195,7 @@ pub(super) static TETRAVUS: CardRecord = CardRecord::new(
     .flying(),
 );
 
-pub(super) static CARDS: &[&CardRecord] = &[
+pub(in crate::card::sets) static CARDS: &[&CardRecord] = &[
     &ATOG,
     &DETONATE,
     &SU_CHI,
@@ -197,3 +210,5 @@ pub(super) static CARDS: &[&CardRecord] = &[
     &SAGE_OF_LAT_NAM,
     &TETRAVUS,
 ];
+
+pub(in crate::card::sets) static ADDITIONAL_PRINTINGS: &[PrintingRecord] = &[];

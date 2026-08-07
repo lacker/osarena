@@ -1,8 +1,9 @@
 use penta::game::PermanentObservation;
 use penta::poc;
 use penta::{
-    Action, CardInstanceId, Game, GameResult, HandcraftedPolicy, ManaPool, PlayerId,
-    PlayerObservation, Policy, RandomPolicy, Step, Target, play_game,
+    Action, CardInstanceId, CardPartId, CastChoices, Game, GameResult, HandcraftedPolicy, ManaPool,
+    PlayOptionId, PlayerId, PlayerObservation, Policy, RandomPolicy, Step, Target, TargetSelection,
+    TargetSlotId, play_game,
 };
 
 const ACTION_LIMIT: usize = 50_000;
@@ -44,6 +45,7 @@ fn permanent(
     PermanentObservation {
         id: CardInstanceId(id),
         definition,
+        presented: CardPartId::PRIMARY,
         controller,
         tapped: false,
         power,
@@ -176,15 +178,18 @@ fn handcrafted_deploys_a_creature_before_burning_a_nonlethal_player() {
     let goblin = CardInstanceId(2);
     let cast_bolt = Action::CastSpell {
         card: bolt,
-        targets: vec![Target::Player(PlayerId::Two)],
+        choices: CastChoices::default()
+            .with_x(0)
+            .with_targets(vec![TargetSelection::new(
+                TargetSlotId(0),
+                vec![Target::Player(PlayerId::Two)],
+            )]),
         sacrifices: Vec::new(),
-        x: 0,
     };
     let cast_goblin = Action::CastSpell {
         card: goblin,
-        targets: Vec::new(),
+        choices: CastChoices::default().with_x(0).with_targets(Vec::new()),
         sacrifices: Vec::new(),
-        x: 0,
     };
     let mut observation = policy_observation(
         Vec::new(),
@@ -205,15 +210,23 @@ fn handcrafted_never_burns_itself_when_the_opponent_is_a_legal_target() {
     let bolt = CardInstanceId(1);
     let hit_self = Action::CastSpell {
         card: bolt,
-        targets: vec![Target::Player(PlayerId::One)],
+        choices: CastChoices::default()
+            .with_x(0)
+            .with_targets(vec![TargetSelection::new(
+                TargetSlotId(0),
+                vec![Target::Player(PlayerId::One)],
+            )]),
         sacrifices: Vec::new(),
-        x: 0,
     };
     let hit_opponent = Action::CastSpell {
         card: bolt,
-        targets: vec![Target::Player(PlayerId::Two)],
+        choices: CastChoices::default()
+            .with_x(0)
+            .with_targets(vec![TargetSelection::new(
+                TargetSlotId(0),
+                vec![Target::Player(PlayerId::Two)],
+            )]),
         sacrifices: Vec::new(),
-        x: 0,
     };
     let mut observation = policy_observation(
         Vec::new(),
@@ -233,8 +246,14 @@ fn handcrafted_plays_a_mountain_before_a_colorless_land() {
     let mut observation = policy_observation(
         Vec::new(),
         vec![
-            Action::PlayLand { card: strip },
-            Action::PlayLand { card: mountain },
+            Action::PlayLand {
+                card: strip,
+                option: PlayOptionId::DEFAULT,
+            },
+            Action::PlayLand {
+                card: mountain,
+                option: PlayOptionId::DEFAULT,
+            },
         ],
     );
     observation.hand = vec![
@@ -245,7 +264,10 @@ fn handcrafted_plays_a_mountain_before_a_colorless_land() {
 
     assert_eq!(
         policy.choose_action(&observation),
-        Some(Action::PlayLand { card: mountain })
+        Some(Action::PlayLand {
+            card: mountain,
+            option: PlayOptionId::DEFAULT,
+        })
     );
 }
 
@@ -382,15 +404,23 @@ fn handcrafted_never_aims_removal_at_its_own_permanents() {
             Action::PassPriority,
             Action::CastSpell {
                 card: swords,
-                targets: vec![Target::Permanent(CardInstanceId(1))],
+                choices: CastChoices::default()
+                    .with_x(0)
+                    .with_targets(vec![TargetSelection::new(
+                        TargetSlotId(0),
+                        vec![Target::Permanent(CardInstanceId(1))],
+                    )]),
                 sacrifices: Vec::new(),
-                x: 0,
             },
             Action::CastSpell {
                 card: disenchant,
-                targets: vec![Target::Permanent(CardInstanceId(2))],
+                choices: CastChoices::default()
+                    .with_x(0)
+                    .with_targets(vec![TargetSelection::new(
+                        TargetSlotId(0),
+                        vec![Target::Permanent(CardInstanceId(2))],
+                    )]),
                 sacrifices: Vec::new(),
-                x: 0,
             },
         ],
     );
@@ -417,9 +447,13 @@ fn handcrafted_still_spends_removal_on_the_opponent() {
     let swords = CardInstanceId(10);
     let cast_at_theirs = Action::CastSpell {
         card: swords,
-        targets: vec![Target::Permanent(CardInstanceId(3))],
+        choices: CastChoices::default()
+            .with_x(0)
+            .with_targets(vec![TargetSelection::new(
+                TargetSlotId(0),
+                vec![Target::Permanent(CardInstanceId(3))],
+            )]),
         sacrifices: Vec::new(),
-        x: 0,
     };
     let mut observation = policy_observation(
         vec![own_angel, their_angel],
@@ -427,9 +461,13 @@ fn handcrafted_still_spends_removal_on_the_opponent() {
             Action::PassPriority,
             Action::CastSpell {
                 card: swords,
-                targets: vec![Target::Permanent(CardInstanceId(1))],
+                choices: CastChoices::default()
+                    .with_x(0)
+                    .with_targets(vec![TargetSelection::new(
+                        TargetSlotId(0),
+                        vec![Target::Permanent(CardInstanceId(1))],
+                    )]),
                 sacrifices: Vec::new(),
-                x: 0,
             },
             cast_at_theirs.clone(),
         ],
