@@ -4,7 +4,7 @@ use super::{CardRecord, PrintingRecord};
 use crate::card::{CardBehavior, CardKind, CardRules, CardSet, LandEntry, ManaCost, cards};
 
 // Implementation status: Baseline creature casting/combat and declaratively modeled traits are active; remaining printed abilities are pending.
-pub(in crate::card::sets) static ARCHANGEL_OF_THUNE: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static ARCHANGEL_OF_THUNE: CardRecord = CardRecord::new(
     cards::ARCHANGEL_OF_THUNE,
     "Archangel of Thune",
     "531cba81-afd7-4be4-adec-87edb77ba2a9",
@@ -25,7 +25,7 @@ pub(in crate::card::sets) static ARCHANGEL_OF_THUNE: CardRecord = CardRecord::ne
 );
 
 // Implementation status: Metadata only; this spell is withheld from legal actions.
-pub(in crate::card::sets) static BURNING_EARTH: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static BURNING_EARTH: CardRecord = CardRecord::new(
     cards::BURNING_EARTH,
     "Burning Earth",
     "1df3a7c9-5c8d-438c-a5ad-3c9754c6ea5d",
@@ -43,7 +43,7 @@ pub(in crate::card::sets) static BURNING_EARTH: CardRecord = CardRecord::new_wit
 );
 
 // Implementation status: Metadata only; this spell is withheld from legal actions.
-pub(in crate::card::sets) static CELESTIAL_FLARE: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static CELESTIAL_FLARE: CardRecord = CardRecord::new(
     cards::CELESTIAL_FLARE,
     "Celestial Flare",
     "6c8d1320-0f1a-4c66-86c9-9f8da0f1d9ef",
@@ -61,7 +61,7 @@ pub(in crate::card::sets) static CELESTIAL_FLARE: CardRecord = CardRecord::new_w
 );
 
 // Implementation status: Metadata only; this spell is withheld from legal actions.
-pub(in crate::card::sets) static DOOM_BLADE: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static DOOM_BLADE: CardRecord = CardRecord::new(
     cards::DOOM_BLADE,
     "Doom Blade",
     "75d96a37-bdbe-46ae-926f-8742699a0b20",
@@ -79,7 +79,7 @@ pub(in crate::card::sets) static DOOM_BLADE: CardRecord = CardRecord::new_with_a
 );
 
 // Implementation status: Baseline creature casting/combat and declaratively modeled traits are active; remaining printed abilities are pending.
-pub(in crate::card::sets) static ELVISH_MYSTIC: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static ELVISH_MYSTIC: CardRecord = CardRecord::new(
     cards::ELVISH_MYSTIC,
     "Elvish Mystic",
     "60d0e6a6-629a-45a7-bfcb-25ba7156788b",
@@ -99,7 +99,7 @@ pub(in crate::card::sets) static ELVISH_MYSTIC: CardRecord = CardRecord::new_wit
 );
 
 // Implementation status: Land entry and mana production are active; other printed abilities are pending.
-pub(in crate::card::sets) static ENCROACHING_WASTES: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static ENCROACHING_WASTES: CardRecord = CardRecord::new(
     cards::ENCROACHING_WASTES,
     "Encroaching Wastes",
     "1ad5a84b-ae9b-4ed1-a4de-b91bbf8ed0a5",
@@ -119,7 +119,7 @@ pub(in crate::card::sets) static ENCROACHING_WASTES: CardRecord = CardRecord::ne
 );
 
 // Implementation status: Baseline creature casting/combat and declaratively modeled traits are active; remaining printed abilities are pending.
-pub(in crate::card::sets) static LIFEBANE_ZOMBIE: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static LIFEBANE_ZOMBIE: CardRecord = CardRecord::new(
     cards::LIFEBANE_ZOMBIE,
     "Lifebane Zombie",
     "98370735-5303-40d4-9e80-cdb40dee18e2",
@@ -139,7 +139,7 @@ pub(in crate::card::sets) static LIFEBANE_ZOMBIE: CardRecord = CardRecord::new_w
 );
 
 // Implementation status: Land entry and mana production are active; other printed abilities are pending.
-pub(in crate::card::sets) static MUTAVAULT: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static MUTAVAULT: CardRecord = CardRecord::new(
     cards::MUTAVAULT,
     "Mutavault",
     "927ed667-c228-4b96-a9f6-7cbadade8134",
@@ -159,7 +159,7 @@ pub(in crate::card::sets) static MUTAVAULT: CardRecord = CardRecord::new_with_ar
 );
 
 // Implementation status: Metadata only; this spell is withheld from legal actions.
-pub(in crate::card::sets) static PRIMEVAL_BOUNTY: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static PRIMEVAL_BOUNTY: CardRecord = CardRecord::new(
     cards::PRIMEVAL_BOUNTY,
     "Primeval Bounty",
     "e750d55d-d5e8-4abe-99cf-f6b8ba86cf16",
@@ -177,7 +177,7 @@ pub(in crate::card::sets) static PRIMEVAL_BOUNTY: CardRecord = CardRecord::new_w
 );
 
 // Implementation status: Metadata only; this spell is withheld from legal actions.
-pub(in crate::card::sets) static QUICKEN: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static QUICKEN: CardRecord = CardRecord::new(
     cards::QUICKEN,
     "Quicken",
     "066bef3d-c785-4b25-9b91-8f676aa9906f",
@@ -195,7 +195,7 @@ pub(in crate::card::sets) static QUICKEN: CardRecord = CardRecord::new_with_art(
 );
 
 // Implementation status: Metadata only; this spell is withheld from legal actions.
-pub(in crate::card::sets) static RATCHET_BOMB: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static RATCHET_BOMB: CardRecord = CardRecord::new(
     cards::RATCHET_BOMB,
     "Ratchet Bomb",
     "3e9045df-3eff-4236-9bbb-77537b302e27",
@@ -213,7 +213,7 @@ pub(in crate::card::sets) static RATCHET_BOMB: CardRecord = CardRecord::new_with
 );
 
 // Implementation status: Baseline creature casting/combat and declaratively modeled traits are active; remaining printed abilities are pending.
-pub(in crate::card::sets) static SCAVENGING_OOZE: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static SCAVENGING_OOZE: CardRecord = CardRecord::new(
     cards::SCAVENGING_OOZE,
     "Scavenging Ooze",
     "ec30153a-36b5-42f8-beed-9efab09f1051",
@@ -232,7 +232,7 @@ pub(in crate::card::sets) static SCAVENGING_OOZE: CardRecord = CardRecord::new_w
 );
 
 // Implementation status: Baseline creature casting/combat and declaratively modeled traits are active; remaining printed abilities are pending.
-pub(in crate::card::sets) static SHADOWBORN_DEMON: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static SHADOWBORN_DEMON: CardRecord = CardRecord::new(
     cards::SHADOWBORN_DEMON,
     "Shadowborn Demon",
     "3884c05b-c10e-4f1d-a8bd-8b5118657972",

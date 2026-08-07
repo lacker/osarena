@@ -2,7 +2,7 @@ use super::{CardRecord, PrintingRecord};
 use crate::card::{CardBehavior, CardKind, CardRules, CardSet, ManaCost, cards};
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static GOBLIN_GRENADE: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static GOBLIN_GRENADE: CardRecord = CardRecord::new(
     cards::GOBLIN_GRENADE,
     "Goblin Grenade",
     "8837eaba-9602-4f63-9897-85583fcdcf51",
@@ -18,7 +18,7 @@ pub(in crate::card::sets) static GOBLIN_GRENADE: CardRecord = CardRecord::new_wi
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static HYMN_TO_TOURACH: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static HYMN_TO_TOURACH: CardRecord = CardRecord::new(
     cards::HYMN_TO_TOURACH,
     "Hymn to Tourach",
     "eb9273ea-9a41-42e3-8c9c-0d50b127a818",
@@ -34,7 +34,7 @@ pub(in crate::card::sets) static HYMN_TO_TOURACH: CardRecord = CardRecord::new_w
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static ICATIAN_JAVELINEERS: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static ICATIAN_JAVELINEERS: CardRecord = CardRecord::new(
     cards::ICATIAN_JAVELINEERS,
     "Icatian Javelineers",
     "f04b8356-2384-4743-80dd-f15ca7ec65f7",
@@ -55,7 +55,7 @@ pub(in crate::card::sets) static ICATIAN_JAVELINEERS: CardRecord = CardRecord::n
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static ORDER_OF_LEITBUR: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static ORDER_OF_LEITBUR: CardRecord = CardRecord::new(
     cards::ORDER_OF_LEITBUR,
     "Order of Leitbur",
     "ebd6e51e-f042-4673-a898-291607105829",
@@ -72,7 +72,7 @@ pub(in crate::card::sets) static ORDER_OF_LEITBUR: CardRecord = CardRecord::new_
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static ORDER_OF_THE_EBON_HAND: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static ORDER_OF_THE_EBON_HAND: CardRecord = CardRecord::new(
     cards::ORDER_OF_THE_EBON_HAND,
     "Order of the Ebon Hand",
     "9e51f5d8-a7cc-4720-8af5-e002bcfd78a0",

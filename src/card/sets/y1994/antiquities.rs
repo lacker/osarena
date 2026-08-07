@@ -2,7 +2,7 @@ use super::{CardRecord, PrintingRecord};
 use crate::card::{CardBehavior, CardKind, CardRules, CardSet, ManaCost, cards};
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static ATOG: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static ATOG: CardRecord = CardRecord::new(
     cards::ATOG,
     "Atog",
     "2249fc40-4412-48fd-800a-7ea3678aee3f",
@@ -19,7 +19,7 @@ pub(in crate::card::sets) static ATOG: CardRecord = CardRecord::new_with_art(
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static DETONATE: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static DETONATE: CardRecord = CardRecord::new(
     cards::DETONATE,
     "Detonate",
     "ffd7eb90-ae95-49df-898a-9510187bce1c",
@@ -35,7 +35,7 @@ pub(in crate::card::sets) static DETONATE: CardRecord = CardRecord::new_with_art
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static SU_CHI: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static SU_CHI: CardRecord = CardRecord::new(
     cards::SU_CHI,
     "Su-Chi",
     "a64d4f93-0c04-4078-aec0-7e9de92f260f",
@@ -52,7 +52,7 @@ pub(in crate::card::sets) static SU_CHI: CardRecord = CardRecord::new_with_art(
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static MISHRA_S_FACTORY: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static MISHRA_S_FACTORY: CardRecord = CardRecord::new(
     cards::MISHRA_S_FACTORY,
     "Mishra's Factory",
     "a696c5b6-f216-454d-8029-74e84bbd1428",
@@ -69,7 +69,7 @@ pub(in crate::card::sets) static MISHRA_S_FACTORY: CardRecord = CardRecord::new_
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static ORCISH_MECHANICS: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static ORCISH_MECHANICS: CardRecord = CardRecord::new(
     cards::ORCISH_MECHANICS,
     "Orcish Mechanics",
     "5e34fc6b-5f00-4a22-9ee2-afc1caf99961",
@@ -87,7 +87,7 @@ pub(in crate::card::sets) static ORCISH_MECHANICS: CardRecord = CardRecord::new_
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static STRIP_MINE: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static STRIP_MINE: CardRecord = CardRecord::new(
     cards::STRIP_MINE,
     "Strip Mine",
     "e7880157-7f27-4f1b-9cdc-ab36a6252376",
@@ -104,7 +104,7 @@ pub(in crate::card::sets) static STRIP_MINE: CardRecord = CardRecord::new_with_a
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static TRISKELION: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static TRISKELION: CardRecord = CardRecord::new(
     cards::TRISKELION,
     "Triskelion",
     "a79c99e1-722a-44b6-8fa3-2be3f0c193d8",
@@ -122,7 +122,7 @@ pub(in crate::card::sets) static TRISKELION: CardRecord = CardRecord::new_with_a
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static IVORY_TOWER: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static IVORY_TOWER: CardRecord = CardRecord::new(
     cards::IVORY_TOWER,
     "Ivory Tower",
     "a5f23039-45ca-4c15-af50-bfd40ea26453",
@@ -138,7 +138,7 @@ pub(in crate::card::sets) static IVORY_TOWER: CardRecord = CardRecord::new_with_
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static MISHRA_S_WORKSHOP: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static MISHRA_S_WORKSHOP: CardRecord = CardRecord::new(
     cards::MISHRA_S_WORKSHOP,
     "Mishra's Workshop",
     "135de5c7-6ac9-4b68-8f1a-97f120a4b125",
@@ -154,7 +154,7 @@ pub(in crate::card::sets) static MISHRA_S_WORKSHOP: CardRecord = CardRecord::new
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static ARGOTHIAN_PIXIES: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static ARGOTHIAN_PIXIES: CardRecord = CardRecord::new(
     cards::ARGOTHIAN_PIXIES,
     "Argothian Pixies",
     "5712e87a-2381-4f5b-a853-6973841f9bf1",
@@ -171,7 +171,7 @@ pub(in crate::card::sets) static ARGOTHIAN_PIXIES: CardRecord = CardRecord::new_
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static HURKYLS_RECALL: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static HURKYLS_RECALL: CardRecord = CardRecord::new(
     cards::HURKYLS_RECALL,
     "Hurkyl's Recall",
     "f32373dd-06d8-45d1-8777-3b1411bcb30a",
@@ -187,7 +187,7 @@ pub(in crate::card::sets) static HURKYLS_RECALL: CardRecord = CardRecord::new_wi
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static SAGE_OF_LAT_NAM: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static SAGE_OF_LAT_NAM: CardRecord = CardRecord::new(
     cards::SAGE_OF_LAT_NAM,
     "Sage of Lat-Nam",
     "b4ff60ce-073c-46b8-807c-8b40467b960c",
@@ -204,7 +204,7 @@ pub(in crate::card::sets) static SAGE_OF_LAT_NAM: CardRecord = CardRecord::new_w
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static TETRAVUS: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static TETRAVUS: CardRecord = CardRecord::new(
     cards::TETRAVUS,
     "Tetravus",
     "23eb19f9-2e8f-4bf0-9bf8-868e6da70e2d",
@@ -222,7 +222,7 @@ pub(in crate::card::sets) static TETRAVUS: CardRecord = CardRecord::new_with_art
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static ENERGY_FLUX: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static ENERGY_FLUX: CardRecord = CardRecord::new(
     cards::ENERGY_FLUX,
     "Energy Flux",
     "bd1f624b-e8f2-462f-838a-7cb9e8fda988",

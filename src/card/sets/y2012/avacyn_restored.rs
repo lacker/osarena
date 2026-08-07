@@ -4,7 +4,7 @@ use super::{CardRecord, PrintingRecord};
 use crate::card::{CardBehavior, CardKind, CardRules, CardSet, LandEntry, ManaCost, cards};
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static BONFIRE_OF_THE_DAMNED: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static BONFIRE_OF_THE_DAMNED: CardRecord = CardRecord::new(
     cards::BONFIRE_OF_THE_DAMNED,
     "Bonfire of the Damned",
     "e60610fe-891d-46de-b556-d03b637dccec",
@@ -22,7 +22,7 @@ pub(in crate::card::sets) static BONFIRE_OF_THE_DAMNED: CardRecord = CardRecord:
 );
 
 // Implementation status: Untapped entry and colorless mana production are active; other printed abilities are pending.
-pub(in crate::card::sets) static CAVERN_OF_SOULS: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static CAVERN_OF_SOULS: CardRecord = CardRecord::new(
     cards::CAVERN_OF_SOULS,
     "Cavern of Souls",
     "1381c8f1-a292-4bdf-b20c-a5c2a169ee84",
@@ -42,7 +42,7 @@ pub(in crate::card::sets) static CAVERN_OF_SOULS: CardRecord = CardRecord::new_w
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static DEMONIC_RISING: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static DEMONIC_RISING: CardRecord = CardRecord::new(
     cards::DEMONIC_RISING,
     "Demonic Rising",
     "a2136a82-b535-47f6-9eee-5b7585ac5cf1",
@@ -60,7 +60,7 @@ pub(in crate::card::sets) static DEMONIC_RISING: CardRecord = CardRecord::new_wi
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static PILLAR_OF_FLAME: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static PILLAR_OF_FLAME: CardRecord = CardRecord::new(
     cards::PILLAR_OF_FLAME,
     "Pillar of Flame",
     "c983e879-d9d2-47cc-9958-506711ca80cd",
@@ -78,7 +78,7 @@ pub(in crate::card::sets) static PILLAR_OF_FLAME: CardRecord = CardRecord::new_w
 );
 
 // Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
-pub(in crate::card::sets) static RESTORATION_ANGEL: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static RESTORATION_ANGEL: CardRecord = CardRecord::new(
     cards::RESTORATION_ANGEL,
     "Restoration Angel",
     "c2ad8639-e586-47f4-baca-2a1af5aa281b",
@@ -99,7 +99,7 @@ pub(in crate::card::sets) static RESTORATION_ANGEL: CardRecord = CardRecord::new
 );
 
 // Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
-pub(in crate::card::sets) static SIGARDA_HOST_OF_HERONS: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static SIGARDA_HOST_OF_HERONS: CardRecord = CardRecord::new(
     cards::SIGARDA_HOST_OF_HERONS,
     "Sigarda, Host of Herons",
     "feccd0e2-fae6-4ced-acdf-4252ed5c56e7",
@@ -121,7 +121,7 @@ pub(in crate::card::sets) static SIGARDA_HOST_OF_HERONS: CardRecord = CardRecord
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static TERMINUS: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static TERMINUS: CardRecord = CardRecord::new(
     cards::TERMINUS,
     "Terminus",
     "0982ea7e-05a4-4e40-98ab-ea9aa6c7342e",
@@ -139,7 +139,7 @@ pub(in crate::card::sets) static TERMINUS: CardRecord = CardRecord::new_with_art
 );
 
 // Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
-pub(in crate::card::sets) static ZEALOUS_CONSCRIPTS: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static ZEALOUS_CONSCRIPTS: CardRecord = CardRecord::new(
     cards::ZEALOUS_CONSCRIPTS,
     "Zealous Conscripts",
     "fc027b11-1ecc-430d-a862-586a14bb23c3",

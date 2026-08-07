@@ -4,7 +4,7 @@ use super::{CardRecord, PrintingRecord, alpha};
 use crate::card::{CardBehavior, CardKind, CardRules, CardSet, ManaCost, cards};
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static VOLCANIC_ISLAND: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static VOLCANIC_ISLAND: CardRecord = CardRecord::new(
     cards::VOLCANIC_ISLAND,
     "Volcanic Island",
     "0324641d-af55-4c53-b4dc-c8262e967da5",

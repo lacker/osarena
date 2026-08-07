@@ -2,7 +2,7 @@ use super::{CardRecord, PrintingRecord};
 use crate::card::{CardBehavior, CardKind, CardRules, CardSet, ManaCost, cards};
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static BALL_LIGHTNING: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static BALL_LIGHTNING: CardRecord = CardRecord::new(
     cards::BALL_LIGHTNING,
     "Ball Lightning",
     "c1ba83ab-83f5-421d-bba1-0f925870b5c8",
@@ -21,7 +21,7 @@ pub(in crate::card::sets) static BALL_LIGHTNING: CardRecord = CardRecord::new_wi
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static BLOOD_MOON: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static BLOOD_MOON: CardRecord = CardRecord::new(
     cards::BLOOD_MOON,
     "Blood Moon",
     "78373616-e2d6-4ccf-998f-09f02bea45b4",
@@ -37,7 +37,7 @@ pub(in crate::card::sets) static BLOOD_MOON: CardRecord = CardRecord::new_with_a
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static GOBLIN_DIGGING_TEAM: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static GOBLIN_DIGGING_TEAM: CardRecord = CardRecord::new(
     cards::GOBLIN_DIGGING_TEAM,
     "Goblin Digging Team",
     "8a538b9d-351e-40bb-be11-9ba08c16352b",
@@ -55,7 +55,7 @@ pub(in crate::card::sets) static GOBLIN_DIGGING_TEAM: CardRecord = CardRecord::n
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static GOBLINS_OF_THE_FLARG: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static GOBLINS_OF_THE_FLARG: CardRecord = CardRecord::new(
     cards::GOBLINS_OF_THE_FLARG,
     "Goblins of the Flarg",
     "fd333b18-b896-4ab8-9c46-eed4efdd94f2",
@@ -70,7 +70,7 @@ pub(in crate::card::sets) static GOBLINS_OF_THE_FLARG: CardRecord = CardRecord::
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static FELLWAR_STONE: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static FELLWAR_STONE: CardRecord = CardRecord::new(
     cards::FELLWAR_STONE,
     "Fellwar Stone",
     "dc47e322-f8b8-4685-b035-fda0cc433e6b",
@@ -86,7 +86,7 @@ pub(in crate::card::sets) static FELLWAR_STONE: CardRecord = CardRecord::new_wit
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static MAZE_OF_ITH: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static MAZE_OF_ITH: CardRecord = CardRecord::new(
     cards::MAZE_OF_ITH,
     "Maze of Ith",
     "42dcceee-2a47-4eaa-a6a3-2931b3d50244",
@@ -103,7 +103,7 @@ pub(in crate::card::sets) static MAZE_OF_ITH: CardRecord = CardRecord::new_with_
 );
 
 // Implementation status: complete — card rules are executed by the engine.
-pub(in crate::card::sets) static DUST_TO_DUST: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static DUST_TO_DUST: CardRecord = CardRecord::new(
     cards::DUST_TO_DUST,
     "Dust to Dust",
     "ade075fd-73ee-4d12-a2da-48e5938043af",

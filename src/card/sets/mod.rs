@@ -656,9 +656,7 @@ mod tests {
         let mut scryfall_ids = HashSet::new();
 
         for record in records {
-            let scryfall_id = record
-                .scryfall_id
-                .unwrap_or_else(|| panic!("{} is missing its Scryfall ID", record.name));
+            let scryfall_id = record.scryfall_id;
             assert!(
                 is_uuid(scryfall_id),
                 "{} has an invalid Scryfall ID: {scryfall_id}",
@@ -670,9 +668,7 @@ mod tests {
                 record.name
             );
             assert!(
-                record
-                    .artist
-                    .is_some_and(|artist| !artist.trim().is_empty()),
+                !record.artist.trim().is_empty(),
                 "{} is missing its artist",
                 record.name
             );

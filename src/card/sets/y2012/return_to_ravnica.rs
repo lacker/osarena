@@ -9,7 +9,7 @@ use crate::card::{
 use crate::ids::{CardPartId, ModeId, PlayOptionId, TargetSlotId};
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static ABRUPT_DECAY: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static ABRUPT_DECAY: CardRecord = CardRecord::new(
     cards::ABRUPT_DECAY,
     "Abrupt Decay",
     "3b1e92b4-6e53-4dba-a572-c67e01965ac5",
@@ -27,7 +27,7 @@ pub(in crate::card::sets) static ABRUPT_DECAY: CardRecord = CardRecord::new_with
 );
 
 // Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
-pub(in crate::card::sets) static ANGEL_OF_SERENITY: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static ANGEL_OF_SERENITY: CardRecord = CardRecord::new(
     cards::ANGEL_OF_SERENITY,
     "Angel of Serenity",
     "f10d82f7-7759-457e-a9bb-f9a5bd968f82",
@@ -47,7 +47,7 @@ pub(in crate::card::sets) static ANGEL_OF_SERENITY: CardRecord = CardRecord::new
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static AZORIUS_CHARM: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static AZORIUS_CHARM: CardRecord = CardRecord::new(
     cards::AZORIUS_CHARM,
     "Azorius Charm",
     "26adc211-d089-4102-91e5-225bbeb5f382",
@@ -65,7 +65,7 @@ pub(in crate::card::sets) static AZORIUS_CHARM: CardRecord = CardRecord::new_wit
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static COUNTERFLUX: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static COUNTERFLUX: CardRecord = CardRecord::new(
     cards::COUNTERFLUX,
     "Counterflux",
     "94e4b773-40a4-4272-85dd-f728ada22748",
@@ -83,7 +83,7 @@ pub(in crate::card::sets) static COUNTERFLUX: CardRecord = CardRecord::new_with_
 );
 
 // Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
-pub(in crate::card::sets) static DESECRATION_DEMON: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static DESECRATION_DEMON: CardRecord = CardRecord::new(
     cards::DESECRATION_DEMON,
     "Desecration Demon",
     "8242fade-754c-4404-b3fb-f3cccf84b3b6",
@@ -103,7 +103,7 @@ pub(in crate::card::sets) static DESECRATION_DEMON: CardRecord = CardRecord::new
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static DETENTION_SPHERE: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static DETENTION_SPHERE: CardRecord = CardRecord::new(
     cards::DETENTION_SPHERE,
     "Detention Sphere",
     "afee5464-83b7-4d7a-b407-9ee7de21535b",
@@ -121,7 +121,7 @@ pub(in crate::card::sets) static DETENTION_SPHERE: CardRecord = CardRecord::new_
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static DISPEL: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static DISPEL: CardRecord = CardRecord::new(
     cards::DISPEL,
     "Dispel",
     "08d4a8d7-c136-472f-8146-a1100701ca4f",
@@ -139,7 +139,7 @@ pub(in crate::card::sets) static DISPEL: CardRecord = CardRecord::new_with_art(
 );
 
 // Implementation status: Land entry and mana production are active.
-pub(in crate::card::sets) static GOLGARI_GUILDGATE: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static GOLGARI_GUILDGATE: CardRecord = CardRecord::new(
     cards::GOLGARI_GUILDGATE,
     "Golgari Guildgate",
     "8fe2fd1a-f7d3-48b4-bad8-be5ee45d6121",
@@ -159,7 +159,7 @@ pub(in crate::card::sets) static GOLGARI_GUILDGATE: CardRecord = CardRecord::new
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static GRISLY_SALVAGE: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static GRISLY_SALVAGE: CardRecord = CardRecord::new(
     cards::GRISLY_SALVAGE,
     "Grisly Salvage",
     "dcb5eb2a-ae7a-4416-970c-6e9306689c88",
@@ -177,7 +177,7 @@ pub(in crate::card::sets) static GRISLY_SALVAGE: CardRecord = CardRecord::new_wi
 );
 
 // Implementation status: Land types and mana production are active; entry currently takes the tapped/no-life branch.
-pub(in crate::card::sets) static HALLOWED_FOUNTAIN: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static HALLOWED_FOUNTAIN: CardRecord = CardRecord::new(
     cards::HALLOWED_FOUNTAIN,
     "Hallowed Fountain",
     "af7091c9-5f98-4078-a42b-c9e057346d9b",
@@ -256,7 +256,7 @@ fn izzet_charm_composition() -> CardComposition {
 }
 
 // Implementation status: Spell form, three modes, and their target slots are cataloged; effect execution is pending.
-pub(in crate::card::sets) static IZZET_CHARM: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static IZZET_CHARM: CardRecord = CardRecord::new(
     cards::IZZET_CHARM,
     "Izzet Charm",
     "1e3a5af6-5423-442b-a207-364e97a871d8",
@@ -269,7 +269,7 @@ pub(in crate::card::sets) static IZZET_CHARM: CardRecord = CardRecord::new_with_
 .with_composition(izzet_charm_composition);
 
 // Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
-pub(in crate::card::sets) static IZZET_STATICASTER: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static IZZET_STATICASTER: CardRecord = CardRecord::new(
     cards::IZZET_STATICASTER,
     "Izzet Staticaster",
     "190ac2fe-532d-4d7e-9d74-07ae6850aac8",
@@ -290,7 +290,7 @@ pub(in crate::card::sets) static IZZET_STATICASTER: CardRecord = CardRecord::new
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static JACE_ARCHITECT_OF_THOUGHT: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static JACE_ARCHITECT_OF_THOUGHT: CardRecord = CardRecord::new(
     cards::JACE_ARCHITECT_OF_THOUGHT,
     "Jace, Architect of Thought",
     "d4df3a38-678e-42dc-a3fd-d1d399368f07",
@@ -310,7 +310,7 @@ pub(in crate::card::sets) static JACE_ARCHITECT_OF_THOUGHT: CardRecord = CardRec
 );
 
 // Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
-pub(in crate::card::sets) static LOXODON_SMITER: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static LOXODON_SMITER: CardRecord = CardRecord::new(
     cards::LOXODON_SMITER,
     "Loxodon Smiter",
     "69247168-2bfb-4cce-a2a6-61459a0fbce4",
@@ -329,7 +329,7 @@ pub(in crate::card::sets) static LOXODON_SMITER: CardRecord = CardRecord::new_wi
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static MIZZIUM_MORTARS: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static MIZZIUM_MORTARS: CardRecord = CardRecord::new(
     cards::MIZZIUM_MORTARS,
     "Mizzium Mortars",
     "d4ded88d-2688-4f5e-a8b2-16216cf9c792",
@@ -347,7 +347,7 @@ pub(in crate::card::sets) static MIZZIUM_MORTARS: CardRecord = CardRecord::new_w
 );
 
 // Implementation status: Land types and mana production are active; entry currently takes the tapped/no-life branch.
-pub(in crate::card::sets) static OVERGROWN_TOMB: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static OVERGROWN_TOMB: CardRecord = CardRecord::new(
     cards::OVERGROWN_TOMB,
     "Overgrown Tomb",
     "1c7d50d6-b63a-4d8c-88fa-1d78ae693a45",
@@ -368,7 +368,7 @@ pub(in crate::card::sets) static OVERGROWN_TOMB: CardRecord = CardRecord::new_wi
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static PITHING_NEEDLE: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static PITHING_NEEDLE: CardRecord = CardRecord::new(
     cards::PITHING_NEEDLE,
     "Pithing Needle",
     "786c1e91-9d75-46a3-9e0d-56d29fcb01a7",
@@ -386,7 +386,7 @@ pub(in crate::card::sets) static PITHING_NEEDLE: CardRecord = CardRecord::new_wi
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static REST_IN_PEACE: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static REST_IN_PEACE: CardRecord = CardRecord::new(
     cards::REST_IN_PEACE,
     "Rest in Peace",
     "37c2b1d1-faa0-40fd-82f4-216604ce7635",
@@ -404,7 +404,7 @@ pub(in crate::card::sets) static REST_IN_PEACE: CardRecord = CardRecord::new_wit
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static SELESNYA_CHARM: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static SELESNYA_CHARM: CardRecord = CardRecord::new(
     cards::SELESNYA_CHARM,
     "Selesnya Charm",
     "a9848eab-1d3a-4ab0-adf6-c20858aa3afb",
@@ -422,7 +422,7 @@ pub(in crate::card::sets) static SELESNYA_CHARM: CardRecord = CardRecord::new_wi
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static SPHINXS_REVELATION: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static SPHINXS_REVELATION: CardRecord = CardRecord::new(
     cards::SPHINXS_REVELATION,
     "Sphinx's Revelation",
     "404d9413-ef57-4b6e-8584-48a1dc7fe6f1",
@@ -440,7 +440,7 @@ pub(in crate::card::sets) static SPHINXS_REVELATION: CardRecord = CardRecord::ne
 );
 
 // Implementation status: Land types and mana production are active; entry currently takes the tapped/no-life branch.
-pub(in crate::card::sets) static STEAM_VENTS: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static STEAM_VENTS: CardRecord = CardRecord::new(
     cards::STEAM_VENTS,
     "Steam Vents",
     "de911c88-f5c8-4955-9fa5-1f28a9b17236",
@@ -461,7 +461,7 @@ pub(in crate::card::sets) static STEAM_VENTS: CardRecord = CardRecord::new_with_
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static SUPREME_VERDICT: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static SUPREME_VERDICT: CardRecord = CardRecord::new(
     cards::SUPREME_VERDICT,
     "Supreme Verdict",
     "4e9648f9-7a67-4717-bca1-861d1f7fed43",
@@ -479,7 +479,7 @@ pub(in crate::card::sets) static SUPREME_VERDICT: CardRecord = CardRecord::new_w
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static SYNCOPATE: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static SYNCOPATE: CardRecord = CardRecord::new(
     cards::SYNCOPATE,
     "Syncopate",
     "ba6f218f-83b0-4b68-a00f-0327cd79f32a",
@@ -497,7 +497,7 @@ pub(in crate::card::sets) static SYNCOPATE: CardRecord = CardRecord::new_with_ar
 );
 
 // Implementation status: Land types and mana production are active; entry currently takes the tapped/no-life branch.
-pub(in crate::card::sets) static TEMPLE_GARDEN: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static TEMPLE_GARDEN: CardRecord = CardRecord::new(
     cards::TEMPLE_GARDEN,
     "Temple Garden",
     "b821e604-f9fd-47a4-b5ff-bfb5022834c2",
@@ -518,7 +518,7 @@ pub(in crate::card::sets) static TEMPLE_GARDEN: CardRecord = CardRecord::new_wit
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static ULTIMATE_PRICE: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static ULTIMATE_PRICE: CardRecord = CardRecord::new(
     cards::ULTIMATE_PRICE,
     "Ultimate Price",
     "d2b4912a-83a2-4870-8fac-81fa79da2830",
@@ -536,7 +536,7 @@ pub(in crate::card::sets) static ULTIMATE_PRICE: CardRecord = CardRecord::new_wi
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static UNDERWORLD_CONNECTIONS: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static UNDERWORLD_CONNECTIONS: CardRecord = CardRecord::new(
     cards::UNDERWORLD_CONNECTIONS,
     "Underworld Connections",
     "19c52e3b-b3b8-4243-96fe-fa4c8eea7c59",
@@ -554,7 +554,7 @@ pub(in crate::card::sets) static UNDERWORLD_CONNECTIONS: CardRecord = CardRecord
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
-pub(in crate::card::sets) static VRASKA_THE_UNSEEN: CardRecord = CardRecord::new_with_art(
+pub(in crate::card::sets) static VRASKA_THE_UNSEEN: CardRecord = CardRecord::new(
     cards::VRASKA_THE_UNSEEN,
     "Vraska the Unseen",
     "8971938c-cd26-4b83-96d7-1408cd0b0de6",
