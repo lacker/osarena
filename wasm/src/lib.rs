@@ -1,9 +1,9 @@
+use penta::card;
 use penta::{
     Action, ActivatedAbilityText, BattlefieldExit, CardCatalog, CardDefinitionId, CardInstanceId,
     Format, Game, GameEvent, GameResult, HandcraftedPolicy, ModeId, PlayOptionId, PlayerId,
     PlayerObservation, Policy, RandomPolicy, Step, Target,
 };
-use penta::{card, decks};
 use serde_json::{Value, json};
 use std::fmt::Write as _;
 use wasm_bindgen::prelude::*;
@@ -63,7 +63,10 @@ impl WebGame {
         seed: u32,
         format: Option<String>,
     ) -> Result<WebGame, JsValue> {
-        let format = format_by_slug(format.as_deref())?;
+        let format = penta::protocol::parse_format_slug(
+            format.as_deref().unwrap_or(Format::OldSchool9394.slug()),
+        )
+        .map_err(js_error)?;
         let catalog = card::catalog().map_err(js_error)?;
         let human_deck = deck_by_name(format, human_deck)?;
         let bot_deck = deck_by_name(format, bot_deck)?;
@@ -1029,9 +1032,8 @@ impl WebGame {
                 // Enough card detail for the browser to draw a real card on
                 // the stack rather than a name tag.
                 let card = self.catalog.get(object.definition);
-                let mana_cost = card.map(|card| card.rules.mana_cost);
-                let creature_stats = card.and_then(|card| card.rules.creature_stats);
                 let signature = object.signature.as_ref();
+                let presentation = stack_card_presentation(card, signature);
                 let targets = signature.map_or_else(
                     || object.targets.clone(),
                     |signature| signature.iter_targets().copied().collect(),
@@ -1042,7 +1044,7 @@ impl WebGame {
                     // this is the spell/ability object, not physical lineage.
                     "cardId": object.id.0,
                     "sourceId": object.source.map(|source| source.0),
-                    "name": self.card_name(object.definition),
+                    "name": presentation.name,
                     "owner": if object.controller == self.human { "human" } else { "opponent" },
                     "kind": format!("{:?}", object.kind),
                     "x": signature.map_or(0, penta::CastSignature::x),
@@ -1075,15 +1077,11 @@ impl WebGame {
                             _ => None,
                         })
                         .collect::<Vec<_>>(),
-                    "cardKind": card.map_or("unknown".into(), |card| {
-                        format!("{:?}", card.rules.kind).to_ascii_lowercase()
-                    }),
-                    "typeLine": card.map_or("", |card| card.rules.type_line),
-                    "metadataOnly": card.is_some_and(|card| {
-                        card.rules.effect_status == penta::CardEffectStatus::MetadataOnly
-                    }),
-                    "isLand": card.is_some_and(|card| card.rules.kind == penta::CardKind::Land),
-                    "manaCost": mana_cost.map(|cost| json!({
+                    "cardKind": presentation.kind,
+                    "typeLine": presentation.type_line,
+                    "metadataOnly": presentation.metadata_only,
+                    "isLand": presentation.is_land,
+                    "manaCost": presentation.mana_cost.map(|cost| json!({
                         "generic": cost.generic,
                         "white": cost.white,
                         "blue": cost.blue,
@@ -1093,9 +1091,9 @@ impl WebGame {
                         "whiteRedHybrid": cost.white_red_hybrid,
                         "x": cost.variable_x,
                     })),
-                    "rulesText": card.map_or("", |card| card.rules.text),
-                    "power": creature_stats.map(|stats| stats.power),
-                    "toughness": creature_stats.map(|stats| stats.toughness),
+                    "rulesText": presentation.rules_text,
+                    "power": presentation.power,
+                    "toughness": presentation.toughness,
                 })
             })
             .collect::<Vec<_>>();
@@ -1759,65 +1757,148 @@ fn cast_signature_value(signature: &penta::CastSignature, human: PlayerId) -> Va
     })
 }
 
-fn format_by_slug(slug: Option<&str>) -> Result<Format, JsValue> {
-    match slug
-        .unwrap_or("old-school-93-94")
-        .to_ascii_lowercase()
-        .as_str()
-    {
-        "old-school-93-94" | "old_school_93_94" => Ok(Format::OldSchool9394),
-        "isd-rtr-standard" | "isd_rtr_standard" => Ok(Format::IsdRtrStandard),
-        _ => Err(JsValue::from_str("unknown format")),
+struct StackCardPresentation {
+    name: String,
+    kind: String,
+    type_line: String,
+    metadata_only: bool,
+    is_land: bool,
+    mana_cost: Option<penta::ManaCost>,
+    rules_text: String,
+    power: Option<i16>,
+    toughness: Option<i16>,
+}
+
+impl StackCardPresentation {
+    fn unknown() -> Self {
+        Self {
+            name: "Unknown card".into(),
+            kind: "unknown".into(),
+            type_line: String::new(),
+            metadata_only: false,
+            is_land: false,
+            mana_cost: None,
+            rules_text: String::new(),
+            power: None,
+            toughness: None,
+        }
+    }
+
+    fn from_rules(
+        name: String,
+        rules: &penta::CardRules,
+        mana_cost: Option<penta::ManaCost>,
+    ) -> Self {
+        Self {
+            name,
+            kind: format!("{:?}", rules.kind).to_ascii_lowercase(),
+            type_line: rules.type_line.into(),
+            metadata_only: rules.effect_status == penta::CardEffectStatus::MetadataOnly,
+            is_land: rules.kind == penta::CardKind::Land,
+            mana_cost,
+            rules_text: rules.text.into(),
+            power: rules.creature_stats.map(|stats| stats.power),
+            toughness: rules.creature_stats.map(|stats| stats.toughness),
+        }
     }
 }
 
-fn deck_by_name(format: Format, name: &str) -> Result<penta::Deck, JsValue> {
-    let name = name.to_ascii_lowercase();
-    let deck = match (format, name.as_str()) {
-        (Format::OldSchool9394, "goblins") => decks::goblins(),
-        (Format::OldSchool9394, "sligh") => decks::sligh(),
-        (Format::OldSchool9394, "artifacts") => decks::artifacts(),
-        (Format::OldSchool9394, "robots") => decks::robots(),
-        (Format::OldSchool9394, "the deck") => decks::the_deck(),
-        (Format::OldSchool9394, "mono black") => decks::mono_black(),
-        (Format::OldSchool9394, "white weenie") => decks::white_weenie(),
-        (Format::OldSchool9394, "erhnamgeddon") => decks::erhnamgeddon(),
-        (Format::OldSchool9394, "counterburn") => decks::counterburn(),
-        (Format::OldSchool9394, "lions/dib" | "lions dib") => decks::lions_dib(),
-        (Format::OldSchool9394, "bwr aggro") => decks::bwr_aggro(),
-        (Format::OldSchool9394, "gr aggro") => decks::gr_aggro(),
-        (Format::OldSchool9394, "troll disk") => decks::troll_disk(),
-        (Format::OldSchool9394, "jeskai aggro") => decks::jeskai_aggro(),
-        (Format::OldSchool9394, "lion dib bolt" | "lions/dib bolt" | "lions dib bolt") => {
-            decks::lions_dib_bolt()
-        }
-        (Format::IsdRtrStandard, "briksza naya midrange" | "briksza naya") => {
-            decks::isd_rtr_standard::naya_midrange_rudy_briksza()
-        }
-        (Format::IsdRtrStandard, "greer g/r aggro" | "greer gruul aggro") => {
-            decks::isd_rtr_standard::gr_aggro_joseph_greer()
-        }
-        (Format::IsdRtrStandard, "fyrberg b/g midrange" | "fyrberg golgari control") => {
-            decks::isd_rtr_standard::bg_midrange_mike_fyrberg()
-        }
-        (Format::IsdRtrStandard, "smith naya midrange" | "smith naya") => {
-            decks::isd_rtr_standard::naya_midrange_jimmie_smith()
-        }
-        (Format::IsdRtrStandard, "mcduffie u/w/r flash" | "mcduffie uwr flash") => {
-            decks::isd_rtr_standard::uwr_flash_korey_mcduffie()
-        }
-        (Format::IsdRtrStandard, "lorren u/w flash" | "lorren uw control") => {
-            decks::isd_rtr_standard::uw_flash_phillip_lorren()
-        }
-        (Format::IsdRtrStandard, "arch u/w flash" | "arch uw control") => {
-            decks::isd_rtr_standard::uw_flash_clayton_arch()
-        }
-        (Format::IsdRtrStandard, "kuenzinger junk reanimator" | "kuenzinger reanimator") => {
-            decks::isd_rtr_standard::junk_reanimator_drew_kuenzinger()
-        }
-        _ => return Err(JsValue::from_str("unknown deck for format")),
+fn stack_card_presentation(
+    card: Option<&penta::CardDefinition>,
+    signature: Option<&penta::CastSignature>,
+) -> StackCardPresentation {
+    let Some(card) = card else {
+        return StackCardPresentation::unknown();
     };
-    Ok(deck)
+    let canonical = || {
+        StackCardPresentation::from_rules(
+            card.name.clone(),
+            &card.rules,
+            Some(card.rules.mana_cost),
+        )
+    };
+    let Some(signature) = signature else {
+        return canonical();
+    };
+
+    match signature.form() {
+        penta::SpellForm::Part(part_id) => card.part(*part_id).map_or_else(canonical, |part| {
+            StackCardPresentation::from_rules(part.name.clone(), &part.rules, part.mana_cost)
+        }),
+        penta::SpellForm::Combined(part_ids) => {
+            let Some(parts) = part_ids
+                .iter()
+                .map(|part_id| card.part(*part_id))
+                .collect::<Option<Vec<_>>>()
+            else {
+                return canonical();
+            };
+            if parts.is_empty() {
+                return canonical();
+            }
+
+            let name = parts
+                .iter()
+                .map(|part| part.name.as_str())
+                .collect::<Vec<_>>()
+                .join(" // ");
+            let kind = join_distinct(
+                parts
+                    .iter()
+                    .map(|part| format!("{:?}", part.rules.kind).to_ascii_lowercase()),
+            );
+            let type_line =
+                join_distinct(parts.iter().map(|part| part.rules.type_line.to_string()));
+            let rules_text = parts
+                .iter()
+                .map(|part| format!("{} — {}", part.name, part.rules.text))
+                .collect::<Vec<_>>()
+                .join("\n\n");
+            let stats = parts
+                .iter()
+                .filter_map(|part| part.rules.creature_stats)
+                .collect::<Vec<_>>();
+            let shared_stats = stats
+                .first()
+                .copied()
+                .filter(|first| stats.iter().all(|stats| stats == first));
+            let mana_cost = card
+                .play_option(signature.play_option())
+                .filter(|option| &option.form == signature.form())
+                .and_then(|option| option.mana_cost);
+
+            StackCardPresentation {
+                name,
+                kind,
+                type_line,
+                metadata_only: parts
+                    .iter()
+                    .any(|part| part.rules.effect_status == penta::CardEffectStatus::MetadataOnly),
+                is_land: parts
+                    .iter()
+                    .any(|part| part.rules.kind == penta::CardKind::Land),
+                mana_cost,
+                rules_text,
+                power: shared_stats.map(|stats| stats.power),
+                toughness: shared_stats.map(|stats| stats.toughness),
+            }
+        }
+    }
+}
+
+fn join_distinct(values: impl IntoIterator<Item = String>) -> String {
+    let mut distinct = Vec::new();
+    for value in values {
+        if !distinct.contains(&value) {
+            distinct.push(value);
+        }
+    }
+    distinct.join(" // ")
+}
+
+fn deck_by_name(format: Format, name: &str) -> Result<penta::Deck, JsValue> {
+    penta::protocol::deck_by_name_for_format(format, name)
+        .ok_or_else(|| JsValue::from_str("unknown deck for format"))
 }
 
 /// Describes why the game ended from the browser player's seat.
@@ -2336,6 +2417,45 @@ mod tests {
             cast_signature_value(&part_signature, PlayerId::One)["form"],
             json!({ "kind": "part", "partId": 0 })
         );
+    }
+
+    #[test]
+    fn stack_presentation_uses_the_locked_split_card_form() {
+        let catalog = card::catalog().expect("catalog builds");
+        let turn_burn = catalog
+            .get(penta::card::cards::TURN_BURN)
+            .expect("Turn // Burn is cataloged");
+        let burn_signature = penta::CastSignature::from_validated_choices(
+            penta::SpellForm::Part(penta::CardPartId(1)),
+            penta::CastChoices::new(penta::PlayOptionId(1)),
+        );
+
+        let burn = stack_card_presentation(Some(turn_burn), Some(&burn_signature));
+        assert_eq!(burn.name, "Burn");
+        assert_eq!(burn.kind, "instant");
+        assert_eq!(burn.type_line, "Instant");
+        assert!(burn.metadata_only);
+        assert_eq!(
+            burn.mana_cost,
+            Some(penta::ManaCost::colored(1, 0, 0, 0, 1, 0))
+        );
+        assert!(burn.rules_text.starts_with("Burn deals 2 damage"));
+        assert_eq!((burn.power, burn.toughness), (None, None));
+
+        let fused_signature = penta::CastSignature::from_validated_choices(
+            penta::SpellForm::Combined(vec![penta::CardPartId::PRIMARY, penta::CardPartId(1)]),
+            penta::CastChoices::new(penta::PlayOptionId(2)),
+        );
+        let fused = stack_card_presentation(Some(turn_burn), Some(&fused_signature));
+        assert_eq!(fused.name, "Turn // Burn");
+        assert_eq!(fused.kind, "instant");
+        assert_eq!(fused.type_line, "Instant");
+        assert_eq!(
+            fused.mana_cost,
+            Some(penta::ManaCost::colored(3, 0, 1, 0, 1, 0))
+        );
+        assert!(fused.rules_text.contains("Turn — Until end of turn"));
+        assert!(fused.rules_text.contains("Burn — Burn deals 2 damage"));
     }
 
     #[test]

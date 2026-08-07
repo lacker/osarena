@@ -4,8 +4,8 @@ build-backend = "maturin"
 
 [project]
 name = "penta"
-version = "0.2.0"
-description = "A deterministic Old School 93/94 Magic engine for writing AI bots"
+version = "0.3.0"
+description = "A deterministic multi-format Magic engine for writing AI bots"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.9"
 

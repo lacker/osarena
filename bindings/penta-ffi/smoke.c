@@ -62,6 +62,30 @@ static int play_one(const char *config, int check_json) {
     return 0;
 }
 
+static int check_standard_game(void) {
+    PentaGame *game = penta_new(
+        "{\"format\":\"isd-rtr-standard\","
+        "\"p1Deck\":\"Briksza Naya Midrange\","
+        "\"p2Deck\":\"Greer G/R Aggro\","
+        "\"opponent\":\"external\",\"seed\":17}");
+    if (!game) return fail("penta_new Standard");
+
+    int32_t seat = penta_decision_seat(game);
+    char *observation = penta_observe_json(game, seat);
+    if (!observation) {
+        penta_free(game);
+        return fail("penta_observe_json Standard");
+    }
+    int valid = strstr(observation, "\"format\":\"isd-rtr-standard\"") != NULL;
+    penta_string_free(observation);
+    penta_free(game);
+    if (!valid) {
+        fprintf(stderr, "FAIL: Standard observation has the wrong format\n");
+        return 1;
+    }
+    return 0;
+}
+
 int main(void) {
     printf("engine %s, protocol %u\n", penta_engine_version(),
            penta_protocol_version());
@@ -70,10 +94,26 @@ int main(void) {
     if (!decks || !strstr(decks, "Sligh")) return fail("penta_deck_names_json");
     penta_string_free(decks);
 
+    char *standard_decks =
+        penta_deck_names_for_format_json("isd-rtr-standard");
+    if (!standard_decks || !strstr(standard_decks, "Briksza Naya Midrange"))
+        return fail("penta_deck_names_for_format_json");
+    penta_string_free(standard_decks);
+
     char *catalog = penta_catalog_json();
     if (!catalog || !strstr(catalog, "Lightning Bolt"))
         return fail("penta_catalog_json");
     penta_string_free(catalog);
+
+    char *standard_catalog =
+        penta_catalog_json_for_format("isd-rtr-standard");
+    if (!standard_catalog ||
+        !strstr(standard_catalog, "\"format\":\"isd-rtr-standard\"") ||
+        !strstr(standard_catalog, "Huntmaster of the Fells"))
+        return fail("penta_catalog_json_for_format");
+    penta_string_free(standard_catalog);
+
+    if (check_standard_game()) return 1;
 
     /* Random moves against each built-in opponent, and a self-play game. */
     if (play_one("{\"p1Deck\":\"Sligh\",\"p2Deck\":\"The Deck\","
@@ -95,6 +135,14 @@ int main(void) {
     }
     if (strlen(penta_last_error()) == 0) {
         fprintf(stderr, "FAIL: bad deck left no error message\n");
+        return 1;
+    }
+    if (penta_catalog_json_for_format("not-a-format") != NULL) {
+        fprintf(stderr, "FAIL: bad format accepted\n");
+        return 1;
+    }
+    if (strlen(penta_last_error()) == 0) {
+        fprintf(stderr, "FAIL: bad format left no error message\n");
         return 1;
     }
 

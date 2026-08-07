@@ -109,7 +109,7 @@ impl CardCatalog {
     /// stable listing.
     #[must_use]
     pub fn definitions(&self) -> Vec<&CardDefinition> {
-        let mut definitions: Vec<_> = self.by_id.values().collect();
+        let mut definitions: Vec<_> = self.definitions.values().collect();
         definitions.sort_by_key(|definition| definition.id);
         definitions
     }

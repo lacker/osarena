@@ -13,6 +13,32 @@ assert "Sligh" in penta.deck_names()
 catalog = {c["definition"]: c for c in json.loads(penta.catalog())["cards"]}
 assert any(c["name"] == "Lightning Bolt" for c in catalog.values())
 
+standard_decks = penta.deck_names(format="isd-rtr-standard")
+assert "Briksza Naya Midrange" in standard_decks
+standard_catalog_payload = json.loads(penta.catalog(format="isd-rtr-standard"))
+assert standard_catalog_payload["format"] == "isd-rtr-standard"
+assert any(
+    card["name"] == "Huntmaster of the Fells"
+    for card in standard_catalog_payload["cards"]
+)
+
+standard_game = penta.Game(
+    "Briksza Naya Midrange",
+    "Greer G/R Aggro",
+    opponent="external",
+    format="isd-rtr-standard",
+    seed=17,
+)
+standard_observation = json.loads(standard_game.observe())
+assert standard_observation["format"] == "isd-rtr-standard"
+
+try:
+    penta.deck_names(format="not-a-format")
+except ValueError:
+    pass
+else:
+    raise AssertionError("bad format accepted")
+
 def pass_bot(obs):
     prefer = ["KeepHand", "ChooseDecision", "PassPriority", "FinishDeclaringAttackers",
               "FinishDeclaringBlockers", "AssignCombatDamage", "DiscardCards",

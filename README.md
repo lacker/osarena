@@ -5,6 +5,10 @@
 `penta` is a deterministic, headless simulator for two-player constructed
 Magic: The Gathering, built for writing AI bots against.
 
+The current bot wire contract is protocol 2 and the engine crate is version
+0.3.0. Old School remains the default at compatibility entry points; callers
+select ISD–RTR Standard explicitly with the `"isd-rtr-standard"` format slug.
+
 **Want to write a bot?** You can drive the engine from Python, C, C++, or
 Rust, play against the included bot algorithms, and train against self-play.
 The instructions are in [BOTS.md](BOTS.md).

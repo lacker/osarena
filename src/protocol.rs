@@ -13,19 +13,25 @@
 
 use serde_json::{Value, json};
 
-use crate::card::CardDefinition;
-use crate::game::DecisionObservation;
+use crate::card::{
+    CardDefinition, CardEffectStatus, CardRules, CardSet, CardStructure, ManaCost, ModeDef,
+    PlayActionKind, PlayOptionDef, PlayRestriction, SpellForm, TargetSlotDef,
+};
+use crate::casting::{CastChoices, CastSignature};
+use crate::game::{DecisionObservation, StackObservation};
 use crate::policy::Policy;
 use crate::{
-    Action, CardCatalog, CardInstanceId, Deck, Game, GameResult, HandcraftedPolicy, ManaColor,
-    PlayerId, PlayerObservation, RandomPolicy, StackObjectKind, Target, WinReason, poc,
+    Action, CardCatalog, Deck, Format, Game, GameObjectId, GameResult, HandcraftedPolicy,
+    ManaColor, PlayerId, PlayerObservation, RandomPolicy, StackObjectKind, Target, WinReason,
+    decks, poc,
 };
 
 /// The wire contract: the JSON shapes here and the action space they
 /// describe. Bumped whenever a bot written against the old number could
 /// misread the new output — a renamed field, or a change to what appears in
-/// `legalActions`. Version 1 dropped conceding from the bot's actions.
-pub const PROTOCOL_VERSION: u32 = 1;
+/// `legalActions`. Version 1 dropped conceding from the bot's actions. Version
+/// 2 added formats, game-object identity, and structured casting choices.
+pub const PROTOCOL_VERSION: u32 = 2;
 
 /// The engine crate version. Rules behavior is part of the contract too: a
 /// fix can change what a trained policy sees even when the shapes hold
@@ -36,49 +42,142 @@ pub const ENGINE_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// with a protocol error instead of an engine panic.
 const ACTION_LIMIT: usize = 50_000;
 
-/// The deck names accepted by [`deck_by_name`], in menu order.
-#[must_use]
-pub fn deck_names() -> Vec<&'static str> {
-    vec![
-        "Goblins",
-        "Sligh",
-        "Artifacts",
-        "Robots",
-        "The Deck",
-        "Mono Black",
-        "White Weenie",
-        "Erhnamgeddon",
-        "Counterburn",
-        "Lions DIB",
-        "Lion Dib Bolt",
-        "BWR Aggro",
-        "GR Aggro",
-        "Troll Disk",
-        "Jeskai Aggro",
-    ]
+const OLD_SCHOOL_DECK_NAMES: &[&str] = &[
+    "Goblins",
+    "Sligh",
+    "Artifacts",
+    "Robots",
+    "The Deck",
+    "Mono Black",
+    "White Weenie",
+    "Erhnamgeddon",
+    "Counterburn",
+    "Lions DIB",
+    "Lion Dib Bolt",
+    "BWR Aggro",
+    "GR Aggro",
+    "Troll Disk",
+    "Jeskai Aggro",
+];
+
+const ISD_RTR_STANDARD_DECK_NAMES: &[&str] = &[
+    "Briksza Naya Midrange",
+    "Greer G/R Aggro",
+    "Fyrberg B/G Midrange",
+    "Smith Naya Midrange",
+    "McDuffie U/W/R Flash",
+    "Lorren U/W Flash",
+    "Arch U/W Flash",
+    "Kuenzinger Junk Reanimator",
+];
+
+/// Parses a public protocol format slug.
+///
+/// # Errors
+///
+/// Returns a stable message when the slug does not name a supported format.
+pub fn parse_format_slug(slug: &str) -> Result<Format, String> {
+    match slug.trim().to_ascii_lowercase().as_str() {
+        "old-school-93-94" | "old_school_93_94" => Ok(Format::OldSchool9394),
+        "isd-rtr-standard" | "isd_rtr_standard" => Ok(Format::IsdRtrStandard),
+        _ => Err(format!("unknown format: {slug}")),
+    }
 }
 
-/// Looks up a built-in deck by its display name, case-insensitively.
+/// The deck names accepted for `format`, in menu order.
+#[must_use]
+pub fn deck_names_for_format(format: Format) -> Vec<&'static str> {
+    match format {
+        Format::OldSchool9394 => OLD_SCHOOL_DECK_NAMES.to_vec(),
+        Format::IsdRtrStandard => ISD_RTR_STANDARD_DECK_NAMES.to_vec(),
+    }
+}
+
+/// Looks up one built-in deck within `format`, case-insensitively.
+#[must_use]
+pub fn deck_by_name_for_format(format: Format, name: &str) -> Option<Deck> {
+    let name = name.trim().to_ascii_lowercase();
+    match format {
+        Format::OldSchool9394 => match name.as_str() {
+            "goblins" => Some(decks::old_school_93_94::goblins()),
+            "sligh" => Some(decks::old_school_93_94::sligh()),
+            "artifacts" | "mono red atog" | "mono-red atog" => {
+                Some(decks::old_school_93_94::artifacts())
+            }
+            "robots" => Some(decks::old_school_93_94::robots()),
+            "the deck" => Some(decks::old_school_93_94::the_deck()),
+            "mono black" => Some(decks::old_school_93_94::mono_black()),
+            "white weenie" => Some(decks::old_school_93_94::white_weenie()),
+            "erhnamgeddon" => Some(decks::old_school_93_94::erhnamgeddon()),
+            "counterburn" => Some(decks::old_school_93_94::counterburn()),
+            "lions/dib" | "lions dib" => Some(decks::old_school_93_94::lions_dib()),
+            "bwr aggro" => Some(decks::old_school_93_94::bwr_aggro()),
+            "gr aggro" | "g/r aggro" => Some(decks::old_school_93_94::gr_aggro()),
+            "troll disk" => Some(decks::old_school_93_94::troll_disk()),
+            "jeskai aggro" => Some(decks::old_school_93_94::jeskai_aggro()),
+            "lion dib bolt" | "lions/dib bolt" | "lions dib bolt" => {
+                Some(decks::old_school_93_94::lions_dib_bolt())
+            }
+            _ => None,
+        },
+        Format::IsdRtrStandard => match name.as_str() {
+            "briksza naya midrange"
+            | "rudy briksza naya midrange"
+            | "naya midrange rudy briksza"
+            | "naya_midrange_rudy_briksza" => {
+                Some(decks::isd_rtr_standard::naya_midrange_rudy_briksza())
+            }
+            "greer g/r aggro"
+            | "joseph greer g/r aggro"
+            | "g/r aggro joseph greer"
+            | "gr_aggro_joseph_greer" => Some(decks::isd_rtr_standard::gr_aggro_joseph_greer()),
+            "fyrberg b/g midrange"
+            | "mike fyrberg b/g midrange"
+            | "b/g midrange mike fyrberg"
+            | "bg_midrange_mike_fyrberg" => {
+                Some(decks::isd_rtr_standard::bg_midrange_mike_fyrberg())
+            }
+            "smith naya midrange"
+            | "jimmie smith naya midrange"
+            | "naya midrange jimmie smith"
+            | "naya_midrange_jimmie_smith" => {
+                Some(decks::isd_rtr_standard::naya_midrange_jimmie_smith())
+            }
+            "mcduffie u/w/r flash"
+            | "korey mcduffie u/w/r flash"
+            | "u/w/r flash korey mcduffie"
+            | "uwr_flash_korey_mcduffie" => {
+                Some(decks::isd_rtr_standard::uwr_flash_korey_mcduffie())
+            }
+            "lorren u/w flash"
+            | "phillip lorren u/w flash"
+            | "u/w flash phillip lorren"
+            | "uw_flash_phillip_lorren" => Some(decks::isd_rtr_standard::uw_flash_phillip_lorren()),
+            "arch u/w flash"
+            | "clayton arch u/w flash"
+            | "u/w flash clayton arch"
+            | "uw_flash_clayton_arch" => Some(decks::isd_rtr_standard::uw_flash_clayton_arch()),
+            "kuenzinger junk reanimator"
+            | "drew kuenzinger junk reanimator"
+            | "junk reanimator drew kuenzinger"
+            | "junk_reanimator_drew_kuenzinger" => {
+                Some(decks::isd_rtr_standard::junk_reanimator_drew_kuenzinger())
+            }
+            _ => None,
+        },
+    }
+}
+
+/// The original Old School deck registry, retained for compatibility.
+#[must_use]
+pub fn deck_names() -> Vec<&'static str> {
+    deck_names_for_format(Format::OldSchool9394)
+}
+
+/// Looks up an Old School deck by display name, case-insensitively.
 #[must_use]
 pub fn deck_by_name(name: &str) -> Option<Deck> {
-    match name.to_ascii_lowercase().as_str() {
-        "goblins" => Some(poc::goblins()),
-        "sligh" => Some(poc::sligh()),
-        "artifacts" => Some(poc::artifacts()),
-        "robots" => Some(poc::robots()),
-        "the deck" => Some(poc::the_deck()),
-        "mono black" => Some(poc::mono_black()),
-        "white weenie" => Some(poc::white_weenie()),
-        "erhnamgeddon" => Some(poc::erhnamgeddon()),
-        "counterburn" => Some(poc::counterburn()),
-        "lions/dib" | "lions dib" => Some(poc::lions_dib()),
-        "bwr aggro" => Some(poc::bwr_aggro()),
-        "gr aggro" => Some(poc::gr_aggro()),
-        "troll disk" => Some(poc::troll_disk()),
-        "jeskai aggro" => Some(poc::jeskai_aggro()),
-        "lion dib bolt" | "lions/dib bolt" | "lions dib bolt" => Some(poc::lions_dib_bolt()),
-        _ => None,
-    }
+    deck_by_name_for_format(Format::OldSchool9394, name)
 }
 
 fn seat_name(player: PlayerId) -> &'static str {
@@ -99,13 +198,84 @@ fn seat_by_name(name: &str) -> Option<PlayerId> {
 fn target_json(target: Target) -> Value {
     match target {
         Target::Player(player) => json!({ "type": "player", "seat": seat_name(player) }),
-        Target::Permanent(id) => json!({ "type": "permanent", "instance": id.0 }),
-        Target::Spell(id) => json!({ "type": "spell", "stackId": id.0 }),
+        Target::Permanent(id) => json!({
+            "type": "permanent",
+            "objectId": id.0,
+            "instance": id.0,
+        }),
+        Target::Spell(id) => json!({
+            "type": "spell",
+            "objectId": id.0,
+            "stackId": id.0,
+        }),
     }
 }
 
-fn instances_json(cards: &[CardInstanceId]) -> Value {
+fn instances_json(cards: &[GameObjectId]) -> Value {
     Value::from(cards.iter().map(|card| card.0).collect::<Vec<_>>())
+}
+
+fn spell_form_json(form: &SpellForm) -> Value {
+    match form {
+        SpellForm::Part(part) => json!({
+            "kind": "part",
+            "partId": part.0,
+        }),
+        SpellForm::Combined(parts) => json!({
+            "kind": "combined",
+            "partIds": parts.iter().map(|part| part.0).collect::<Vec<_>>(),
+        }),
+    }
+}
+
+fn target_selections_json(selections: &[crate::TargetSelection]) -> Vec<Value> {
+    selections
+        .iter()
+        .map(|selection| {
+            json!({
+                "slotId": selection.slot().0,
+                "targets": selection
+                    .targets()
+                    .iter()
+                    .copied()
+                    .map(target_json)
+                    .collect::<Vec<_>>(),
+            })
+        })
+        .collect()
+}
+
+fn cast_choices_json(choices: &CastChoices) -> Value {
+    json!({
+        "playOptionId": choices.play_option().0,
+        "modeIds": choices.modes().iter().map(|mode| mode.0).collect::<Vec<_>>(),
+        "alternativeCostId": choices.costs().alternative().map(|cost| cost.0),
+        "additionalCostIds": choices
+            .costs()
+            .additional()
+            .iter()
+            .map(|cost| cost.0)
+            .collect::<Vec<_>>(),
+        "x": choices.x(),
+        "targetSelections": target_selections_json(choices.targets()),
+    })
+}
+
+fn cast_signature_json(signature: &CastSignature) -> Value {
+    json!({
+        "playOptionId": signature.play_option().0,
+        "form": spell_form_json(signature.form()),
+        "modeIds": signature.modes().iter().map(|mode| mode.0).collect::<Vec<_>>(),
+        "alternativeCostId": signature.costs().alternative().map(|cost| cost.0),
+        "additionalCostIds": signature
+            .costs()
+            .additional()
+            .iter()
+            .map(|cost| cost.0)
+            .collect::<Vec<_>>(),
+        "x": signature.x(),
+        "targetSelections": target_selections_json(signature.targets()),
+    })
 }
 
 const fn mana_color_name(color: ManaColor) -> &'static str {
@@ -142,7 +312,11 @@ pub fn action_json(action: &Action) -> Value {
             json!({ "type": "ChooseUntap", "permanents": instances_json(permanents) })
         }
         Action::PassPriority => json!({ "type": "PassPriority" }),
-        Action::PlayLand { card } => json!({ "type": "PlayLand", "card": card.0 }),
+        Action::PlayLand { card, option } => json!({
+            "type": "PlayLand",
+            "card": card.0,
+            "playOptionId": option.0,
+        }),
         Action::ActivateManaAbility { source, color } => json!({
             "type": "ActivateManaAbility",
             "source": source.0,
@@ -151,15 +325,17 @@ pub fn action_json(action: &Action) -> Value {
         Action::PayLifeForMana => json!({ "type": "PayLifeForMana" }),
         Action::CastSpell {
             card,
-            targets,
+            choices,
             sacrifices,
-            x,
         } => json!({
             "type": "CastSpell",
             "card": card.0,
-            "targets": targets.iter().map(|target| target_json(*target)).collect::<Vec<_>>(),
+            "choices": cast_choices_json(choices),
+            "playOptionId": choices.play_option().0,
+            "modeIds": choices.modes().iter().map(|mode| mode.0).collect::<Vec<_>>(),
+            "targets": choices.iter_targets().copied().map(target_json).collect::<Vec<_>>(),
             "sacrifices": instances_json(sacrifices),
-            "x": x,
+            "x": choices.x(),
         }),
         Action::ActivateAbility {
             source,
@@ -200,15 +376,53 @@ fn card_name(catalog: &CardCatalog, definition: crate::CardDefinitionId) -> Valu
         .map_or(Value::Null, |card| Value::from(card.name.clone()))
 }
 
+fn card_part_name(
+    catalog: &CardCatalog,
+    definition: crate::CardDefinitionId,
+    part: crate::CardPartId,
+) -> Value {
+    catalog.get(definition).map_or(Value::Null, |card| {
+        Value::from(
+            card.part(part)
+                .map_or_else(|| card.name.clone(), |part| part.name.clone()),
+        )
+    })
+}
+
+fn stack_card_name(
+    catalog: &CardCatalog,
+    definition: crate::CardDefinitionId,
+    signature: Option<&CastSignature>,
+) -> Value {
+    let Some(card) = catalog.get(definition) else {
+        return Value::Null;
+    };
+    let Some(signature) = signature else {
+        return Value::from(card.name.clone());
+    };
+
+    let resolved = match signature.form() {
+        SpellForm::Part(part) => card.part(*part).map(|part| part.name.clone()),
+        SpellForm::Combined(parts) if !parts.is_empty() => parts
+            .iter()
+            .map(|part| card.part(*part).map(|part| part.name.as_str()))
+            .collect::<Option<Vec<_>>>()
+            .map(|names| names.join(" // ")),
+        SpellForm::Combined(_) => None,
+    };
+    Value::from(resolved.unwrap_or_else(|| card.name.clone()))
+}
+
 fn card_list_json(
     catalog: &CardCatalog,
-    cards: &[(CardInstanceId, crate::CardDefinitionId)],
+    cards: &[(GameObjectId, crate::CardDefinitionId)],
 ) -> Value {
     Value::from(
         cards
             .iter()
             .map(|(instance, definition)| {
                 json!({
+                    "objectId": instance.0,
                     "instance": instance.0,
                     "definition": definition.0,
                     "name": card_name(catalog, *definition),
@@ -242,6 +456,7 @@ fn decision_json(catalog: &CardCatalog, decision: &DecisionObservation) -> Value
             "id": option.id,
             "label": option.label,
             "card": option.card.map(|(instance, definition)| json!({
+                "objectId": instance.0,
                 "instance": instance.0,
                 "definition": definition.0,
                 "name": card_name(catalog, definition),
@@ -337,9 +552,28 @@ pub fn observation_json(
     pregame: bool,
     actions: &[Action],
 ) -> Value {
+    observation_json_for_format(
+        catalog,
+        Format::OldSchool9394,
+        observation,
+        pregame,
+        actions,
+    )
+}
+
+/// Serializes one seat's redacted view together with its governing format.
+#[must_use]
+pub fn observation_json_for_format(
+    catalog: &CardCatalog,
+    format: Format,
+    observation: &PlayerObservation,
+    pregame: bool,
+    actions: &[Action],
+) -> Value {
     json!({
         "protocolVersion": PROTOCOL_VERSION,
         "engineVersion": ENGINE_VERSION,
+        "format": format.slug(),
         "seat": seat_name(observation.viewer),
         "pregame": pregame,
         "turn": observation.turn,
@@ -354,6 +588,10 @@ pub fn observation_json(
         ],
         "hand": card_list_json(catalog, &observation.hand),
         "opponentHandSize": observation.opponent_hand_size,
+        "lastSeenHand": observation.last_seen_hand.as_ref().map(|(player, cards)| json!({
+            "seat": seat_name(*player),
+            "cards": card_list_json(catalog, cards),
+        })),
         "librarySizes": observation.library_sizes,
         "graveyards": [
             card_list_json(catalog, &observation.graveyards[0]),
@@ -364,9 +602,11 @@ pub fn observation_json(
             card_list_json(catalog, &observation.exiles[1]),
         ],
         "battlefield": observation.battlefield.iter().map(|permanent| json!({
+            "objectId": permanent.id.0,
             "instance": permanent.id.0,
             "definition": permanent.definition.0,
-            "name": card_name(catalog, permanent.definition),
+            "presentedPartId": permanent.presented.0,
+            "name": card_part_name(catalog, permanent.definition, permanent.presented),
             "controller": seat_name(permanent.controller),
             "tapped": permanent.tapped,
             "power": permanent.power,
@@ -378,19 +618,11 @@ pub fn observation_json(
             "canAttack": permanent.can_attack,
             "enteredThisTurn": permanent.entered_this_turn,
         })).collect::<Vec<_>>(),
-        "stack": observation.stack.iter().map(|object| json!({
-            "stackId": object.id.0,
-            "kind": match object.kind {
-                StackObjectKind::Spell => "Spell",
-                StackObjectKind::ActivatedAbility => "ActivatedAbility",
-            },
-            "instance": object.card.0,
-            "definition": object.definition.0,
-            "name": card_name(catalog, object.definition),
-            "controller": seat_name(object.controller),
-            "targets": object.targets.iter().map(|target| target_json(*target)).collect::<Vec<_>>(),
-            "x": object.x,
-        })).collect::<Vec<_>>(),
+        "stack": observation
+            .stack
+            .iter()
+            .map(|object| stack_object_json(catalog, object))
+            .collect::<Vec<_>>(),
         "decision": observation.decision.as_ref().map(|decision| decision_json(catalog, decision)),
         "result": observation.result.map(result_json),
         "legalActions": actions.iter().enumerate().map(|(index, action)| {
@@ -403,44 +635,252 @@ pub fn observation_json(
     })
 }
 
-/// Serializes every card definition the engine knows, keyed by definition id.
-///
-/// Observations refer to cards by `definition`; this is the table those ids
-/// index into, fetched once at startup rather than repeated per observation.
+fn stack_object_json(catalog: &CardCatalog, object: &StackObservation) -> Value {
+    json!({
+        "objectId": object.id.0,
+        "stackId": object.id.0,
+        // Compatibility alias: this is a game object, not physical lineage.
+        "instance": object.id.0,
+        "sourceObjectId": object.source.map(|source| source.0),
+        "source": object.source.map(|source| source.0),
+        "kind": match object.kind {
+            StackObjectKind::Spell => "Spell",
+            StackObjectKind::ActivatedAbility => "ActivatedAbility",
+        },
+        "definition": object.definition.0,
+        "name": stack_card_name(catalog, object.definition, object.signature.as_ref()),
+        "controller": seat_name(object.controller),
+        "signature": object.signature.as_ref().map(cast_signature_json),
+        "targets": object
+            .targets
+            .iter()
+            .copied()
+            .map(target_json)
+            .collect::<Vec<_>>(),
+        "chosenPermanents": object
+            .chosen_permanents
+            .iter()
+            .map(|permanent| permanent.0)
+            .collect::<Vec<_>>(),
+        "x": object.x,
+    })
+}
+
+fn mana_cost_json(cost: &ManaCost) -> Value {
+    json!({
+        "generic": cost.generic,
+        "white": cost.white,
+        "blue": cost.blue,
+        "black": cost.black,
+        "red": cost.red,
+        "green": cost.green,
+        "whiteRedHybrid": cost.white_red_hybrid,
+        "variableX": cost.variable_x,
+        "xMultiplier": cost.x_multiplier,
+    })
+}
+
+const fn effect_status_name(status: CardEffectStatus) -> &'static str {
+    match status {
+        CardEffectStatus::Implemented => "implemented",
+        CardEffectStatus::MetadataOnly => "metadataOnly",
+    }
+}
+
+const fn card_set_slug(set: CardSet) -> &'static str {
+    match set {
+        CardSet::Alpha => "alpha",
+        CardSet::Beta => "beta",
+        CardSet::Unlimited => "unlimited",
+        CardSet::CollectorsEdition => "collectors-edition",
+        CardSet::InternationalCollectorsEdition => "international-collectors-edition",
+        CardSet::ArabianNights => "arabian-nights",
+        CardSet::Antiquities => "antiquities",
+        CardSet::Revised => "revised",
+        CardSet::Legends => "legends",
+        CardSet::TheDark => "the-dark",
+        CardSet::FallenEmpires => "fallen-empires",
+        CardSet::Promo1994 => "promo-1994",
+        CardSet::Innistrad => "innistrad",
+        CardSet::DarkAscension => "dark-ascension",
+        CardSet::AvacynRestored => "avacyn-restored",
+        CardSet::Magic2013 => "magic-2013",
+        CardSet::ReturnToRavnica => "return-to-ravnica",
+        CardSet::Gatecrash => "gatecrash",
+        CardSet::DragonsMaze => "dragons-maze",
+        CardSet::Magic2014 => "magic-2014",
+    }
+}
+
+fn rules_json(rules: &CardRules, mana_cost: Option<&ManaCost>) -> Value {
+    let stats = rules.creature_stats;
+    json!({
+        "kind": format!("{:?}", rules.kind),
+        "typeLine": rules.type_line,
+        "manaCost": mana_cost.map(mana_cost_json),
+        "power": stats.map(|stats| stats.power),
+        "toughness": stats.map(|stats| stats.toughness),
+        "rulesText": rules.text,
+        "effectStatus": effect_status_name(rules.effect_status),
+        "colors": rules.colors,
+    })
+}
+
+fn structure_json(structure: &CardStructure) -> Value {
+    match structure {
+        CardStructure::Single { main } => json!({
+            "kind": "single",
+            "mainPartId": main.0,
+        }),
+        CardStructure::Split { parts, fused } => json!({
+            "kind": "split",
+            "partIds": parts.iter().map(|part| part.0).collect::<Vec<_>>(),
+            "fusedPlayOptionId": fused.map(|option| option.0),
+        }),
+        CardStructure::Flip { normal, flipped } => json!({
+            "kind": "flip",
+            "normalPartId": normal.0,
+            "flippedPartId": flipped.0,
+        }),
+        CardStructure::DoubleFaced { front, back, kind } => json!({
+            "kind": "doubleFaced",
+            "frontPartId": front.0,
+            "backPartId": back.0,
+            "doubleFacedKind": format!("{kind:?}"),
+        }),
+        CardStructure::AlternateSpell {
+            main,
+            alternate,
+            kind,
+        } => json!({
+            "kind": "alternateSpell",
+            "mainPartId": main.0,
+            "alternatePartId": alternate.0,
+            "alternateSpellKind": format!("{kind:?}"),
+        }),
+        CardStructure::MeldPart { front, recipe } => json!({
+            "kind": "meldPart",
+            "frontPartId": front.0,
+            "meldRecipeId": recipe.0,
+        }),
+    }
+}
+
+fn target_slot_json(slot: &TargetSlotDef) -> Value {
+    json!({
+        "id": slot.id.0,
+        "label": slot.label,
+        "predicate": format!("{:?}", slot.predicate),
+        "minimum": slot.minimum,
+        "maximum": slot.maximum,
+    })
+}
+
+fn mode_json(mode: &ModeDef) -> Value {
+    json!({
+        "id": mode.id.0,
+        "label": mode.label,
+        "targets": mode.targets.iter().map(target_slot_json).collect::<Vec<_>>(),
+        "effectStatus": effect_status_name(mode.effect_status),
+    })
+}
+
+fn play_option_json(option: &PlayOptionDef) -> Value {
+    json!({
+        "id": option.id.0,
+        "label": option.label,
+        "action": match option.action {
+            PlayActionKind::CastSpell => "CastSpell",
+            PlayActionKind::PlayLand => "PlayLand",
+        },
+        "form": spell_form_json(&option.form),
+        "manaCost": option.mana_cost.as_ref().map(mana_cost_json),
+        "restriction": match option.restriction {
+            PlayRestriction::Normal => "normal",
+            PlayRestriction::FromHandOnly => "fromHandOnly",
+        },
+        "modes": option.modes.as_ref().map(|modes| json!({
+            "minimum": modes.minimum,
+            "maximum": modes.maximum,
+            "mayRepeat": modes.may_repeat,
+            "choices": modes.modes.iter().map(mode_json).collect::<Vec<_>>(),
+        })),
+        "targets": option.targets.iter().map(target_slot_json).collect::<Vec<_>>(),
+        "alternativeCosts": option.alternative_costs.iter().map(|cost| json!({
+            "id": cost.id.0,
+            "label": cost.label,
+            "manaCost": mana_cost_json(&cost.mana_cost),
+        })).collect::<Vec<_>>(),
+        "additionalCosts": option.additional_costs.iter().map(|cost| json!({
+            "id": cost.id.0,
+            "label": cost.label,
+            "manaCost": cost.mana_cost.as_ref().map(mana_cost_json),
+        })).collect::<Vec<_>>(),
+        "effectStatus": effect_status_name(option.effect_status),
+    })
+}
+
+fn definition_json(catalog: &CardCatalog, format: Format, card: &CardDefinition) -> Value {
+    let rules = &card.rules;
+    let stats = rules.creature_stats;
+    let allowed = catalog.is_allowed_in(card.id, format);
+    let banned = catalog.is_banned_in(card.id, format);
+    let restricted = catalog.is_restricted_in(card.id, format);
+    json!({
+        // Compatibility fields retained from protocol v1.
+        "definition": card.id.0,
+        "name": card.name,
+        "kind": format!("{:?}", rules.kind),
+        "isBasicLand": card.is_basic_land,
+        "manaCost": mana_cost_json(&rules.mana_cost),
+        "power": stats.map(|stats| stats.power),
+        "toughness": stats.map(|stats| stats.toughness),
+        "rulesText": rules.text,
+        "banned": banned,
+        "restricted": restricted,
+        // Protocol v2 structured and format-aware metadata.
+        "allowed": allowed,
+        "legal": allowed && !banned,
+        "debutSet": card_set_slug(card.set),
+        "effectStatus": effect_status_name(rules.effect_status),
+        "structure": structure_json(&card.structure),
+        "parts": card.parts.iter().map(|part| {
+            let mut value = rules_json(&part.rules, part.mana_cost.as_ref());
+            let Value::Object(fields) = &mut value else {
+                unreachable!("rules JSON is always an object");
+            };
+            fields.insert("id".into(), Value::from(part.id.0));
+            fields.insert("name".into(), Value::from(part.name.clone()));
+            value
+        }).collect::<Vec<_>>(),
+        "playOptions": card.play_options.iter().map(play_option_json).collect::<Vec<_>>(),
+        "printings": card.printings.iter().map(|printing| json!({
+            "set": card_set_slug(printing.id.set),
+            "variant": printing.id.variant,
+        })).collect::<Vec<_>>(),
+    })
+}
+
+/// Serializes every card definition for the default Old School format.
 #[must_use]
 pub fn catalog_json(catalog: &CardCatalog) -> Value {
-    let definition_json = |card: &CardDefinition| {
-        let behavior = card.behavior;
-        let cost = behavior.mana_cost();
-        let stats = behavior.creature_stats();
-        json!({
-            "definition": card.id.0,
-            "name": card.name,
-            "kind": format!("{:?}", behavior.kind()),
-            "isBasicLand": card.is_basic_land,
-            "manaCost": {
-                "generic": cost.generic,
-                "white": cost.white,
-                "blue": cost.blue,
-                "black": cost.black,
-                "red": cost.red,
-                "green": cost.green,
-                "variableX": cost.variable_x,
-            },
-            "power": stats.map(|stats| stats.power),
-            "toughness": stats.map(|stats| stats.toughness),
-            "rulesText": behavior.rules_text(),
-            "banned": catalog.is_banned(card.id),
-            "restricted": catalog.is_restricted(card.id),
-        })
-    };
+    catalog_json_for_format(catalog, Format::OldSchool9394)
+}
+
+/// Serializes every canonical definition, its structured play metadata, and
+/// legality in `format`. Printings remain metadata and never duplicate a card
+/// definition in the returned list.
+#[must_use]
+pub fn catalog_json_for_format(catalog: &CardCatalog, format: Format) -> Value {
     json!({
         "protocolVersion": PROTOCOL_VERSION,
         "engineVersion": ENGINE_VERSION,
+        "format": format.slug(),
+        "formatName": format.display_name(),
         "cards": catalog
             .definitions()
             .into_iter()
-            .map(definition_json)
+            .map(|card| definition_json(catalog, format, card))
             .collect::<Vec<_>>(),
     })
 }
@@ -473,6 +913,7 @@ enum OpponentPolicy {
 pub struct BotGame {
     game: Game,
     catalog: CardCatalog,
+    format: Format,
     opponent_seat: PlayerId,
     opponent: OpponentPolicy,
 }
@@ -492,10 +933,36 @@ impl BotGame {
         opponent_seat: PlayerId,
         seed: u64,
     ) -> Result<Self, String> {
+        Self::new_with_format(
+            Format::OldSchool9394,
+            p1_deck,
+            p2_deck,
+            opponent,
+            opponent_seat,
+            seed,
+        )
+    }
+
+    /// Starts a game using decks and rules from `format`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a message when a deck does not belong to `format`, the game
+    /// cannot be built, or the scripted opponent cannot reach a decision.
+    pub fn new_with_format(
+        format: Format,
+        p1_deck: &str,
+        p2_deck: &str,
+        opponent: Opponent,
+        opponent_seat: PlayerId,
+        seed: u64,
+    ) -> Result<Self, String> {
         let catalog = poc::catalog().map_err(|error| error.to_string())?;
-        let deck_one = deck_by_name(p1_deck).ok_or_else(|| format!("unknown deck: {p1_deck}"))?;
-        let deck_two = deck_by_name(p2_deck).ok_or_else(|| format!("unknown deck: {p2_deck}"))?;
-        let game = Game::new(catalog.clone(), [deck_one, deck_two], seed)
+        let deck_one = deck_by_name_for_format(format, p1_deck)
+            .ok_or_else(|| format!("unknown deck for {}: {p1_deck}", format.slug()))?;
+        let deck_two = deck_by_name_for_format(format, p2_deck)
+            .ok_or_else(|| format!("unknown deck for {}: {p2_deck}", format.slug()))?;
+        let game = Game::new_with_format(format, catalog.clone(), [deck_one, deck_two], seed)
             .map_err(|error| error.to_string())?;
         let opponent = match opponent {
             Opponent::External => OpponentPolicy::External,
@@ -509,6 +976,7 @@ impl BotGame {
         let mut bot_game = Self {
             game,
             catalog,
+            format,
             opponent_seat,
             opponent,
         };
@@ -520,12 +988,12 @@ impl BotGame {
     /// Python bindings share:
     ///
     /// ```json
-    /// {"p1Deck": "Sligh", "p2Deck": "The Deck",
+    /// {"format": "old-school-93-94", "p1Deck": "Sligh", "p2Deck": "The Deck",
     ///  "opponent": "handcrafted", "opponentSeat": "p2", "seed": 42}
     /// ```
     ///
-    /// `opponent` is `"random"`, `"handcrafted"`, or `"external"`;
-    /// `opponentSeat` defaults to `"p2"`.
+    /// `format` defaults to `"old-school-93-94"`; `opponent` is `"random"`,
+    /// `"handcrafted"`, or `"external"`; `opponentSeat` defaults to `"p2"`.
     ///
     /// # Errors
     ///
@@ -547,14 +1015,29 @@ impl BotGame {
         };
         let opponent_seat = seat_by_name(field("opponentSeat").unwrap_or("p2"))
             .ok_or_else(|| "opponentSeat must be \"p1\" or \"p2\"".to_string())?;
+        let format = match value.get("format") {
+            None => Format::OldSchool9394,
+            Some(value) => parse_format_slug(
+                value
+                    .as_str()
+                    .ok_or_else(|| "config field format must be a string".to_string())?,
+            )?,
+        };
         let seed = value["seed"].as_u64().unwrap_or(0);
-        Self::new(
+        Self::new_with_format(
+            format,
             field("p1Deck")?,
             field("p2Deck")?,
             opponent,
             opponent_seat,
             seed,
         )
+    }
+
+    /// The format whose rules and deck registry this game uses.
+    #[must_use]
+    pub const fn format(&self) -> Format {
+        self.format
     }
 
     /// The seat that must act next, or `None` when the game is over.
@@ -574,8 +1057,9 @@ impl BotGame {
     pub fn observe_json(&self, seat: PlayerId) -> String {
         let observation = self.game.observe(seat);
         let actions = protocol_actions(&observation);
-        observation_json(
+        observation_json_for_format(
             &self.catalog,
+            self.format,
             &observation,
             self.game.in_pregame(),
             &actions,
@@ -673,7 +1157,7 @@ impl BotGame {
     /// The catalog as protocol JSON.
     #[must_use]
     pub fn catalog_json(&self) -> String {
-        catalog_json(&self.catalog).to_string()
+        catalog_json_for_format(&self.catalog, self.format).to_string()
     }
 }
 
@@ -723,6 +1207,31 @@ mod tests {
             }
         }
         0
+    }
+
+    fn assert_no_physical_lineage_keys(value: &Value) {
+        fn visit(value: &Value, path: &str) {
+            match value {
+                Value::Object(fields) => {
+                    for (key, child) in fields {
+                        let normalized = key.to_ascii_lowercase();
+                        assert!(
+                            !normalized.contains("physical") && !normalized.contains("backing"),
+                            "protocol exposed physical-card lineage at {path}.{key}"
+                        );
+                        visit(child, &format!("{path}.{key}"));
+                    }
+                }
+                Value::Array(items) => {
+                    for (index, child) in items.iter().enumerate() {
+                        visit(child, &format!("{path}[{index}]"));
+                    }
+                }
+                Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) => {}
+            }
+        }
+
+        visit(value, "$observed");
     }
 
     #[test]
@@ -782,6 +1291,174 @@ mod tests {
         // The opponent's hand is a count, never a list of cards.
         assert!(observation["opponentHandSize"].is_u64());
         assert_eq!(observation["hand"].as_array().expect("hand").len(), 7);
+    }
+
+    #[test]
+    #[allow(clippy::too_many_lines)]
+    fn protocol_reincarnates_public_object_identity_across_cast_zones() {
+        let mut game = BotGame::new("Goblins", "Goblins", Opponent::External, PlayerId::Two, 0)
+            .expect("game starts");
+
+        let (casting_seat, hand_id, definition_id) = (0..600)
+            .find_map(|_| {
+                let seat = game.decision_seat().expect("game has not ended");
+                let observation: Value =
+                    serde_json::from_str(&game.observe_json(seat)).expect("valid observation JSON");
+                assert_no_physical_lineage_keys(&observation);
+                let actions = observation["legalActions"].as_array().expect("actions");
+
+                let permanent_cast = actions.iter().find_map(|action| {
+                    if action["type"] != "CastSpell" {
+                        return None;
+                    }
+                    let hand_raw = action["card"].as_u64()?;
+                    let hand_card = observation["hand"]
+                        .as_array()
+                        .expect("hand")
+                        .iter()
+                        .find(|card| card["objectId"].as_u64() == Some(hand_raw))?;
+                    let definition_raw = hand_card["definition"].as_u64()?;
+                    let definition = crate::CardDefinitionId(u16::try_from(definition_raw).ok()?);
+                    if !game
+                        .catalog
+                        .get(definition)
+                        .is_some_and(|card| card.rules.kind.is_permanent())
+                    {
+                        return None;
+                    }
+                    Some((
+                        usize::try_from(action["index"].as_u64()?).ok()?,
+                        GameObjectId(u32::try_from(hand_raw).ok()?),
+                        definition,
+                    ))
+                });
+                if let Some((index, hand_id, definition)) = permanent_cast {
+                    let hand_card = observation["hand"]
+                        .as_array()
+                        .expect("hand")
+                        .iter()
+                        .find(|card| card["objectId"].as_u64() == Some(u64::from(hand_id.0)))
+                        .expect("cast card was public in hand");
+                    assert_eq!(hand_card["instance"], hand_id.0);
+                    game.act(index).expect("cast action is legal");
+                    return Some((seat, hand_id, definition));
+                }
+
+                let find_action = |kind: &str| {
+                    actions
+                        .iter()
+                        .find(|action| action["type"] == kind)
+                        .and_then(|action| action["index"].as_u64())
+                        .and_then(|index| usize::try_from(index).ok())
+                };
+                let main_phase = matches!(
+                    observation["step"].as_str(),
+                    Some("PrecombatMain" | "PostcombatMain")
+                );
+                let mut selected = find_action("KeepHand");
+                if selected.is_none() && main_phase {
+                    selected = find_action("PlayLand");
+                }
+                if selected.is_none() && main_phase {
+                    selected = actions
+                        .iter()
+                        .find(|action| {
+                            action["type"] == "ActivateManaAbility" && action["color"] == "red"
+                        })
+                        .or_else(|| {
+                            actions
+                                .iter()
+                                .find(|action| action["type"] == "ActivateManaAbility")
+                        })
+                        .and_then(|action| action["index"].as_u64())
+                        .and_then(|index| usize::try_from(index).ok());
+                }
+                for kind in [
+                    "BottomCards",
+                    "DiscardCards",
+                    "ChooseDecision",
+                    "ChooseUntap",
+                    "FinishDeclaringAttackers",
+                    "FinishDeclaringBlockers",
+                    "AssignCombatDamage",
+                    "PassPriority",
+                ] {
+                    if selected.is_none() {
+                        selected = find_action(kind);
+                    }
+                }
+                game.act(selected.expect("the protocol always offers progress"))
+                    .expect("selected protocol action is legal");
+                None
+            })
+            .expect("the seeded game reaches a castable permanent");
+
+        let stack_observation: Value = serde_json::from_str(&game.observe_json(casting_seat))
+            .expect("valid stack observation");
+        assert_no_physical_lineage_keys(&stack_observation);
+        assert!(
+            stack_observation["hand"]
+                .as_array()
+                .expect("hand")
+                .iter()
+                .all(|card| card["objectId"].as_u64() != Some(u64::from(hand_id.0))),
+            "the hand object ceased to exist when the card changed zones"
+        );
+        let spell = stack_observation["stack"]
+            .as_array()
+            .expect("stack")
+            .iter()
+            .find(|object| object["definition"].as_u64() == Some(u64::from(definition_id.0)))
+            .expect("cast spell is public on the stack");
+        assert_eq!(spell["kind"], "Spell");
+        assert!(spell["sourceObjectId"].is_null());
+        assert!(spell["source"].is_null());
+        assert!(spell["signature"].is_object());
+        let spell_id = GameObjectId(
+            u32::try_from(spell["objectId"].as_u64().expect("stack object ID")).expect("ID fits"),
+        );
+        assert_ne!(spell_id, hand_id);
+
+        for _ in 0..2 {
+            let seat = game.decision_seat().expect("priority decision");
+            let observation: Value =
+                serde_json::from_str(&game.observe_json(seat)).expect("valid priority observation");
+            assert_no_physical_lineage_keys(&observation);
+            let pass = observation["legalActions"]
+                .as_array()
+                .expect("actions")
+                .iter()
+                .find(|action| action["type"] == "PassPriority")
+                .and_then(|action| action["index"].as_u64())
+                .and_then(|index| usize::try_from(index).ok())
+                .expect("priority can be passed");
+            game.act(pass).expect("priority pass is legal");
+        }
+
+        let battlefield_observation: Value = serde_json::from_str(&game.observe_json(casting_seat))
+            .expect("valid battlefield observation");
+        assert_no_physical_lineage_keys(&battlefield_observation);
+        let permanent = battlefield_observation["battlefield"]
+            .as_array()
+            .expect("battlefield")
+            .iter()
+            .find(|object| object["definition"].as_u64() == Some(u64::from(definition_id.0)))
+            .expect("resolved permanent is public on the battlefield");
+        let permanent_id = GameObjectId(
+            u32::try_from(permanent["objectId"].as_u64().expect("permanent object ID"))
+                .expect("ID fits"),
+        );
+        assert_ne!(permanent_id, hand_id);
+        assert_ne!(permanent_id, spell_id);
+        assert_eq!(permanent["instance"], permanent_id.0);
+        assert!(
+            battlefield_observation["stack"]
+                .as_array()
+                .expect("stack")
+                .iter()
+                .all(|object| object["objectId"].as_u64() != Some(u64::from(spell_id.0))),
+            "the stack object ceased to exist when the permanent was created"
+        );
     }
 
     #[test]
@@ -909,5 +1586,339 @@ mod tests {
             assert!(deck_by_name(name).is_some(), "{name} resolves");
         }
         assert!(deck_by_name("Not A Deck").is_none());
+    }
+
+    #[test]
+    fn both_format_deck_registries_resolve_without_cross_format_leakage() {
+        assert_eq!(deck_names(), deck_names_for_format(Format::OldSchool9394));
+        assert_eq!(deck_names_for_format(Format::OldSchool9394).len(), 15);
+        assert_eq!(deck_names_for_format(Format::IsdRtrStandard).len(), 8);
+
+        for format in [Format::OldSchool9394, Format::IsdRtrStandard] {
+            for name in deck_names_for_format(format) {
+                assert!(
+                    deck_by_name_for_format(format, name).is_some(),
+                    "{name} resolves in {format}"
+                );
+            }
+        }
+
+        assert!(deck_by_name_for_format(Format::OldSchool9394, "Briksza Naya Midrange").is_none());
+        assert!(deck_by_name_for_format(Format::IsdRtrStandard, "Sligh").is_none());
+        assert!(
+            deck_by_name_for_format(Format::IsdRtrStandard, "naya_midrange_rudy_briksza").is_some()
+        );
+        assert_eq!(
+            parse_format_slug("old_school_93_94"),
+            Ok(Format::OldSchool9394)
+        );
+        assert_eq!(
+            parse_format_slug("isd-rtr-standard"),
+            Ok(Format::IsdRtrStandard)
+        );
+        assert!(parse_format_slug("vintage").is_err());
+    }
+
+    #[test]
+    fn bot_game_stores_and_emits_its_format_and_rejects_wrong_decks() {
+        let old_school = BotGame::new("Sligh", "Goblins", Opponent::External, PlayerId::Two, 18)
+            .expect("compatibility constructor starts Old School");
+        assert_eq!(old_school.format(), Format::OldSchool9394);
+
+        let standard = BotGame::new_with_format(
+            Format::IsdRtrStandard,
+            "Briksza Naya Midrange",
+            "Greer G/R Aggro",
+            Opponent::External,
+            PlayerId::Two,
+            19,
+        )
+        .expect("Standard game starts");
+        assert_eq!(standard.format(), Format::IsdRtrStandard);
+        let seat = standard.decision_seat().expect("opening-hand decision");
+        let observation: Value =
+            serde_json::from_str(&standard.observe_json(seat)).expect("valid observation JSON");
+        assert_eq!(observation["protocolVersion"], PROTOCOL_VERSION);
+        assert_eq!(observation["format"], "isd-rtr-standard");
+        assert!(
+            observation["legalActions"]
+                .as_array()
+                .expect("actions")
+                .iter()
+                .all(|action| action["type"] != "Concede")
+        );
+
+        let configured = BotGame::from_config_json(
+            r#"{"format":"isd-rtr-standard","p1Deck":"Lorren U/W Flash","p2Deck":"Arch U/W Flash","opponent":"external","seed":4}"#,
+        )
+        .expect("format slug selects Standard");
+        assert_eq!(configured.format(), Format::IsdRtrStandard);
+        assert!(
+            BotGame::from_config_json(r#"{"format":2,"p1Deck":"Sligh","p2Deck":"Goblins"}"#)
+                .err()
+                .expect("non-string format is rejected")
+                .contains("format must be a string")
+        );
+
+        assert!(
+            BotGame::new_with_format(
+                Format::OldSchool9394,
+                "Briksza Naya Midrange",
+                "Sligh",
+                Opponent::External,
+                PlayerId::Two,
+                0,
+            )
+            .err()
+            .expect("cross-format deck is rejected")
+            .contains("unknown deck for old-school-93-94")
+        );
+        assert!(
+            BotGame::new_with_format(
+                Format::IsdRtrStandard,
+                "Sligh",
+                "Briksza Naya Midrange",
+                Opponent::External,
+                PlayerId::Two,
+                0,
+            )
+            .err()
+            .expect("cross-format deck is rejected")
+            .contains("unknown deck for isd-rtr-standard")
+        );
+    }
+
+    fn structured_choices() -> CastChoices {
+        CastChoices::new(crate::PlayOptionId(2))
+            .with_modes(vec![crate::ModeId(3), crate::ModeId(1)])
+            .with_costs(crate::CostConfiguration::new(
+                Some(crate::AlternativeCostId(4)),
+                vec![crate::AdditionalCostId(5)],
+            ))
+            .with_x(6)
+            .with_targets(vec![
+                crate::TargetSelection::single(
+                    crate::TargetSlotId(7),
+                    Target::Permanent(GameObjectId(20)),
+                ),
+                crate::TargetSelection::single(
+                    crate::TargetSlotId(8),
+                    Target::Spell(GameObjectId(21)),
+                ),
+            ])
+    }
+
+    #[test]
+    fn action_json_locks_play_option_modes_costs_x_and_target_slots() {
+        let land = action_json(&Action::PlayLand {
+            card: GameObjectId(10),
+            option: crate::PlayOptionId(9),
+        });
+        assert_eq!(land["card"], 10);
+        assert_eq!(land["playOptionId"], 9);
+
+        let spell = action_json(&Action::CastSpell {
+            card: GameObjectId(11),
+            choices: structured_choices(),
+            sacrifices: vec![GameObjectId(12)],
+        });
+        assert_eq!(spell["card"], 11);
+        assert_eq!(spell["playOptionId"], 2);
+        assert_eq!(spell["choices"]["modeIds"], json!([3, 1]));
+        assert_eq!(spell["choices"]["alternativeCostId"], 4);
+        assert_eq!(spell["choices"]["additionalCostIds"], json!([5]));
+        assert_eq!(spell["choices"]["x"], 6);
+        assert_eq!(spell["choices"]["targetSelections"][0]["slotId"], 7);
+        assert_eq!(
+            spell["choices"]["targetSelections"][0]["targets"][0]["objectId"],
+            20
+        );
+        assert_eq!(
+            spell["choices"]["targetSelections"][1]["targets"][0]["objectId"],
+            21
+        );
+        assert_eq!(spell["sacrifices"], json!([12]));
+    }
+
+    #[test]
+    fn battlefield_name_uses_the_presented_card_part() {
+        let catalog = poc::catalog().expect("catalog builds");
+        let observation = PlayerObservation {
+            viewer: PlayerId::One,
+            turn: 1,
+            active_turn: 1,
+            active_player: PlayerId::One,
+            priority: PlayerId::One,
+            step: crate::game::Step::PrecombatMain,
+            life_totals: [20, 20],
+            mana_pools: [crate::ManaPool::default(); 2],
+            hand: Vec::new(),
+            opponent_hand_size: 0,
+            last_seen_hand: None,
+            library_sizes: [0, 0],
+            graveyards: [Vec::new(), Vec::new()],
+            exiles: [Vec::new(), Vec::new()],
+            battlefield: vec![crate::game::PermanentObservation {
+                id: GameObjectId(30),
+                definition: crate::card::cards::HUNTMASTER_OF_THE_FELLS,
+                presented: crate::CardPartId(1),
+                controller: PlayerId::One,
+                tapped: false,
+                power: Some(4),
+                toughness: Some(4),
+                damage: 0,
+                attacking: false,
+                blocking: None,
+                flying: false,
+                can_attack: true,
+                entered_this_turn: false,
+            }],
+            stack: Vec::new(),
+            decision: None,
+            result: None,
+            legal_actions: Vec::new(),
+        };
+
+        let value =
+            observation_json_for_format(&catalog, Format::IsdRtrStandard, &observation, false, &[]);
+        assert_eq!(value["battlefield"][0]["objectId"], 30);
+        assert_eq!(value["battlefield"][0]["presentedPartId"], 1);
+        assert_eq!(value["battlefield"][0]["name"], "Ravager of the Fells");
+        assert_eq!(
+            card_part_name(
+                &catalog,
+                crate::card::cards::HUNTMASTER_OF_THE_FELLS,
+                crate::CardPartId(99),
+            ),
+            "Huntmaster of the Fells"
+        );
+    }
+
+    #[test]
+    fn stack_json_uses_game_object_identity_and_preserves_cast_signature() {
+        let catalog = poc::catalog().expect("catalog builds");
+        let signature = CastSignature::from_validated_choices(
+            SpellForm::Combined(vec![crate::CardPartId(0), crate::CardPartId(1)]),
+            structured_choices(),
+        );
+        let object = StackObservation {
+            id: GameObjectId(40),
+            kind: StackObjectKind::Spell,
+            source: None,
+            definition: crate::card::cards::TURN_BURN,
+            controller: PlayerId::One,
+            targets: signature.iter_targets().copied().collect(),
+            chosen_permanents: Vec::new(),
+            x: signature.x(),
+            signature: Some(signature),
+        };
+        let value = stack_object_json(&catalog, &object);
+
+        assert_eq!(value["objectId"], 40);
+        assert_eq!(value["stackId"], 40);
+        assert!(value["sourceObjectId"].is_null());
+        assert!(value["source"].is_null());
+        assert_eq!(value["signature"]["playOptionId"], 2);
+        assert_eq!(value["signature"]["form"]["kind"], "combined");
+        assert_eq!(value["signature"]["form"]["partIds"], json!([0, 1]));
+        assert_eq!(value["signature"]["modeIds"], json!([3, 1]));
+        assert_eq!(value["signature"]["alternativeCostId"], 4);
+        assert_eq!(value["signature"]["additionalCostIds"], json!([5]));
+        assert_eq!(value["signature"]["x"], 6);
+        assert_eq!(value["signature"]["targetSelections"][1]["slotId"], 8);
+
+        let burn_signature = CastSignature::from_validated_choices(
+            SpellForm::Part(crate::CardPartId(1)),
+            CastChoices::new(crate::PlayOptionId(1)),
+        );
+        let burn = StackObservation {
+            id: GameObjectId(41),
+            kind: StackObjectKind::Spell,
+            source: None,
+            definition: crate::card::cards::TURN_BURN,
+            controller: PlayerId::One,
+            targets: Vec::new(),
+            chosen_permanents: Vec::new(),
+            x: 0,
+            signature: Some(burn_signature),
+        };
+        assert_eq!(stack_object_json(&catalog, &burn)["name"], "Burn");
+
+        let ability = StackObservation {
+            id: GameObjectId(42),
+            kind: StackObjectKind::ActivatedAbility,
+            source: Some(GameObjectId(39)),
+            definition: crate::card::cards::MISHRA_S_FACTORY,
+            controller: PlayerId::One,
+            targets: Vec::new(),
+            chosen_permanents: Vec::new(),
+            x: 0,
+            signature: None,
+        };
+        let ability_value = stack_object_json(&catalog, &ability);
+        assert_eq!(ability_value["objectId"], 42);
+        assert_eq!(ability_value["stackId"], 42);
+        assert_eq!(ability_value["sourceObjectId"], 39);
+        assert_eq!(ability_value["source"], 39);
+        assert_ne!(
+            ability_value["objectId"], ability_value["sourceObjectId"],
+            "the ability and its source are distinct game objects"
+        );
+        assert!(ability_value["signature"].is_null());
+    }
+
+    #[test]
+    fn catalog_json_is_structured_and_legality_is_format_specific() {
+        let catalog = poc::catalog().expect("catalog builds");
+        let old_school = catalog_json(&catalog);
+        let standard = catalog_json_for_format(&catalog, Format::IsdRtrStandard);
+        assert_eq!(old_school["format"], "old-school-93-94");
+        assert_eq!(standard["format"], "isd-rtr-standard");
+
+        let cards = standard["cards"].as_array().expect("cards array");
+        assert!(cards.windows(2).all(|pair| {
+            pair[0]["definition"].as_u64().expect("id")
+                < pair[1]["definition"].as_u64().expect("id")
+        }));
+        let find = |name: &str| {
+            cards
+                .iter()
+                .find(|card| card["name"] == name)
+                .unwrap_or_else(|| panic!("{name} is cataloged"))
+        };
+        let turn_burn = find("Turn // Burn");
+        assert_eq!(turn_burn["legal"], true);
+        assert_eq!(turn_burn["structure"]["kind"], "split");
+        assert_eq!(turn_burn["parts"].as_array().expect("parts").len(), 2);
+        assert_eq!(
+            turn_burn["playOptions"]
+                .as_array()
+                .expect("play options")
+                .len(),
+            3
+        );
+        assert!(
+            !turn_burn["printings"]
+                .as_array()
+                .expect("printings")
+                .is_empty()
+        );
+
+        let charm = find("Izzet Charm");
+        assert_eq!(
+            charm["playOptions"][0]["modes"]["choices"]
+                .as_array()
+                .expect("modes")
+                .len(),
+            3
+        );
+        assert_eq!(find("Lightning Bolt")["legal"], false);
+        let old_bolt = old_school["cards"]
+            .as_array()
+            .expect("cards")
+            .iter()
+            .find(|card| card["name"] == "Lightning Bolt")
+            .expect("bolt");
+        assert_eq!(old_bolt["legal"], true);
     }
 }

@@ -2957,8 +2957,7 @@ fn firebreathing_is_offered_while_the_mana_is_still_in_the_land() {
         assert!(
             game.battlefield
                 .iter()
-                .any(|permanent| permanent.card.definition == cards::MOUNTAIN
-                    && permanent.tapped),
+                .any(|permanent| permanent.card.definition == cards::MOUNTAIN && permanent.tapped),
             "activating tapped the land for you",
         );
         assert_eq!(

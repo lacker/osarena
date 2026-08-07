@@ -26,7 +26,7 @@ extern "C" {
 /* An in-progress game. Opaque. */
 typedef struct PentaGame PentaGame;
 
-/* The engine crate version, e.g. "0.1.0". Static; never free. */
+/* The engine crate version, e.g. "0.3.0". Static; never free. */
 const char *penta_engine_version(void);
 
 /* The protocol version the JSON shapes follow. */
@@ -36,17 +36,26 @@ uint32_t penta_protocol_version(void);
  * fails; valid until the next failing call. Never free. */
 const char *penta_last_error(void);
 
-/* Every card definition, as protocol JSON. */
+/* Every card definition with Old School legality, as protocol JSON. */
 char *penta_catalog_json(void);
 
-/* The built-in deck names, as a JSON array of strings. */
+/* Every card definition with legality for format, as protocol JSON.
+ * format is "old-school-93-94" or "isd-rtr-standard". */
+char *penta_catalog_json_for_format(const char *format);
+
+/* The Old School built-in deck names, as a JSON array of strings. */
 char *penta_deck_names_json(void);
+
+/* The built-in deck names for format, as a JSON array of strings. */
+char *penta_deck_names_for_format_json(const char *format);
 
 /* Starts a game. config_json looks like:
  *
- *   {"p1Deck": "Sligh", "p2Deck": "The Deck",
+ *   {"format": "old-school-93-94",
+ *    "p1Deck": "Sligh", "p2Deck": "The Deck",
  *    "opponent": "handcrafted", "opponentSeat": "p2", "seed": 42}
  *
+ * format is optional and defaults to "old-school-93-94".
  * opponent is "random", "handcrafted", or "external" (you drive both
  * seats). Returns NULL on error; see penta_last_error(). */
 PentaGame *penta_new(const char *config_json);

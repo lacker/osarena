@@ -1,8 +1,13 @@
 # Writing an AI bot for penta
 
-penta is a deterministic engine for Eternal Central Old School 93/94 Magic.
-This guide is for writing a program that plays it: from Python, C, C++, or
-Rust, against the included bots or against itself.
+penta is a deterministic engine for two-player constructed Magic. It currently
+ships Eternal Central Old School 93/94 and the final pre-Theros ISD–RTR
+Standard format. This guide is for writing a program that plays it: from
+Python, C, C++, or Rust, against the included bots or against itself.
+
+This guide describes protocol 2, shipped by engine version 0.3.0. Old School
+remains the default for compatibility; new integrations should record and pass
+an explicit format slug with each game.
 
 A bot is a function from an **observation** (your seat's view of the game,
 as JSON) to an **action index** (a position in that observation's
@@ -54,6 +59,18 @@ while game.result() is None:
 print(game.result())                       # "p1", "p2", or "draw"
 ```
 
+Old School remains the default for compatibility. Select Standard explicitly:
+
+```python
+game = penta.Game(
+    "Briksza Naya Midrange",
+    "Greer G/R Aggro",
+    opponent="external",
+    format="isd-rtr-standard",
+    seed=42,
+)
+```
+
 A complete bot that plays lands, casts its biggest spells, and attacks —
 and beats `random` 100 games out of 100 — is in
 [`examples/python/first_bot.py`](examples/python/first_bot.py). Copy it next
@@ -63,14 +80,14 @@ The module surface:
 
 | call | meaning |
 | --- | --- |
-| `penta.Game(p1_deck, p2_deck, opponent=, opponent_seat=, seed=)` | start a game; `opponent` is `"handcrafted"`, `"random"`, or `"external"` |
+| `penta.Game(p1_deck, p2_deck, opponent=, opponent_seat=, seed=, format=)` | start a game; `format` defaults to `"old-school-93-94"` and `opponent` is `"handcrafted"`, `"random"`, or `"external"` |
 | `game.observe(seat=None)` | one seat's observation as JSON (default: the seat that must act) |
 | `game.act(index)` | play one entry from `legalActions` |
 | `game.choose_decision([ids])` | answer a multi-pick decision explicitly (see below) |
 | `game.decision_seat()` | `"p1"` / `"p2"` / `None` when the game is over |
 | `game.result()` | `None`, `"p1"`, `"p2"`, or `"draw"` |
-| `penta.catalog()` | every card definition, as JSON |
-| `penta.deck_names()` | the built-in decks |
+| `penta.catalog(format=)` | every canonical definition annotated with legality for the selected format, as JSON |
+| `penta.deck_names(format=)` | the selected format's built-in decks |
 | `penta.engine_version()`, `penta.protocol_version()` | pin these with your trained weights |
 
 ## Quick start: C and C++
@@ -90,11 +107,14 @@ cc mybot.c target/release/libpenta_ffi.a -I bindings/penta-ffi -o mybot
 ```
 
 The C ABI is the same protocol with the same JSON: `penta_new` takes a
-config, `penta_observe_json` returns an observation, `penta_act` takes an
-index. `penta_legal_action_count` lets a minimal client act without parsing
-JSON at all. From C++, wrap the header and parse observations with any JSON
-library (e.g. nlohmann/json). Anything else with a C FFI — Julia, Go, C# —
-can consume the same library.
+config, including an optional `"format"` slug; `penta_observe_json` returns an
+observation; and `penta_act` takes an index. The original catalog and deck-name
+functions remain Old School-compatible. New callers can use
+`penta_catalog_json_for_format` and `penta_deck_names_for_format_json`.
+`penta_legal_action_count` lets a minimal client act without parsing JSON at
+all. From C++, wrap the header and parse observations with any JSON library
+(e.g. nlohmann/json). Anything else with a C FFI — Julia, Go, C# — can consume
+the same library.
 
 ## Quick start: Rust
 
@@ -103,9 +123,16 @@ same facade the bindings use:
 
 ```rust
 use penta::protocol::{BotGame, Opponent};
-use penta::PlayerId;
+use penta::{Format, PlayerId};
 
-let mut game = BotGame::new("Sligh", "The Deck", Opponent::Handcrafted, PlayerId::Two, 42)?;
+let mut game = BotGame::new_with_format(
+    Format::IsdRtrStandard,
+    "Briksza Naya Midrange",
+    "Greer G/R Aggro",
+    Opponent::Handcrafted,
+    PlayerId::Two,
+    42,
+)?;
 while game.result().is_none() {
     let observation = game.observe_json(game.decision_seat().unwrap());
     game.act(0)?; // your bot's index here
@@ -155,33 +182,38 @@ Observations are per-seat and redacted — `p1`'s observation never contains
 
 | field | meaning |
 | --- | --- |
+| `format` | the rules/deck profile slug, such as `"old-school-93-94"` or `"isd-rtr-standard"` |
 | `seat` | whose view this is: `"p1"` or `"p2"` |
 | `pregame` | true while mulligans are being settled |
 | `turn`, `activeSeat`, `prioritySeat`, `step` | where the game is; `step` is one of `Upkeep`, `Draw`, `PrecombatMain`, `BeginningOfCombat`, `DeclareAttackers`, `DeclareBlockers`, `CombatDamage`, `EndOfCombat`, `PostcombatMain`, `End`, `Cleanup` |
 | `life`, `manaPools`, `librarySizes` | two-element arrays, indexed p1 then p2 |
 | `hand` | your cards: `{instance, definition, name}` |
 | `opponentHandSize` | their hand as a count — never the cards |
-| `battlefield` | every permanent: `{instance, definition, name, controller, tapped, power, toughness, damage, attacking, blocking, flying, canAttack, enteredThisTurn}` |
-| `stack` | pending spells and abilities, bottom to top, with `targets` and `x` |
+| `battlefield` | every permanent, including its current-zone object ID, canonical definition, and presented card-part ID |
+| `stack` | pending spells and abilities, bottom to top, including each object's source and locked cast signature when applicable |
 | `graveyards`, `exiles` | public zones, both players |
 | `decision` | a pending choice (see below), or null |
 | `result` | null while running, else `{winner, reason}` |
 | `legalActions` | what you can do, each with an `index` |
 
-Cards are referenced two ways: `instance` identifies one physical card in
-this game (the second Mountain is a different instance from the first);
-`definition` identifies the card *kind*, and is the key into
-`penta.catalog()`, which carries names, mana costs, power/toughness, and
-rules text. Fetch the catalog once at startup.
+Cards are referenced two ways: the object ID identifies one rules object in
+its current zone, while `definition` identifies the canonical card kind and is
+the key into `penta.catalog(format)`. A true zone change creates a new object
+ID, so a Goblin Balloon Brigade card in hand, its spell on the stack, and its
+permanent on the battlefield are distinct. Transforming, flipping, and phasing
+do not create a new object. Physical-card lineage is private engine state and
+never appears in a player's observation. Fetch the format's catalog once at
+startup.
 
 ### Actions
 
 Every entry in `legalActions` has an `index` (what you pass to `act`) and a
 `type` naming the engine action, plus fields saying what it operates on:
 
-`KeepHand`, `TakeMulligan`, `BottomCards`, `PlayLand`, `CastSpell` (with
-`targets`, `sacrifices`, and `x` already filled in — one entry per legal
-targeting), `ActivateAbility`, `ActivateManaAbility`, `PayLifeForMana`,
+`KeepHand`, `TakeMulligan`, `BottomCards`, `PlayLand` (with a
+`playOptionId`), `CastSpell` (with the play option, ordered modes, cost
+configuration, target slots, sacrifices, and X already filled in — one entry
+per legal casting choice), `ActivateAbility`, `ActivateManaAbility`, `PayLifeForMana`,
 `DeclareAttacker`, `FinishDeclaringAttackers`, `DeclareBlocker`,
 `FinishDeclaringBlockers`, `AssignCombatDamage`, `DiscardCards`,
 `ChooseUntap`, `ChooseDecision`, `CancelDecision`, `PassPriority`.
@@ -215,10 +247,10 @@ other selection you'd prefer.
 
 ## Determinism and versioning
 
-The same decks, seed, and action sequence always produce the identical
-game, byte for byte — replays, regression tests, and reproducible training
-episodes are free. `(engine version, seed, decks, action list)` is a
-complete record of a game.
+The same engine version, format, decks, seed, and action sequence produce the
+identical game, byte for byte — replays, regression tests, and reproducible
+training episodes are free. `(engine version, format, seed, decks, action
+list)` is a complete record of a game.
 
 Two numbers describe what you trained against, and both are worth pinning
 alongside your weights:
@@ -238,17 +270,22 @@ nothing now and survives those changes.
 
 ## What the engine covers, honestly
 
-This is Old School 93/94 with a curated pool of roughly 100 implemented
-cards — `penta.catalog()` is the authoritative list, including each card's
-implemented rules text. The fifteen built-in decks are constructed entirely
-from that pool. The Eternal Central banned/restricted list is enforced.
+Old School 93/94 has 128 cards with functional behavior and fifteen built-in
+decks; the Eternal Central banned/restricted list and mana-burn exception are
+enforced. ISD–RTR Standard adds the eight SCG Atlanta Top 8 decks and complete
+declarative card records. Baseline creatures, mana, land entry, flash, and
+combat metadata are active while specialized Standard card effects are being
+implemented incrementally; metadata-only noncreature spells are withheld from
+legal actions rather than resolving as silent no-ops. `penta.catalog(format)`
+is the authoritative description of the selected format's support.
 
-What this is *not*: a complete Magic rules engine. Cards outside the pool
-do not exist here; custom decks beyond the built-in fifteen are not yet
-exposed through the protocol. Interactions are implemented to the depth the
-pool requires and are covered by the engine's test suite and long random
-self-play sweeps — but a trained bot will probe every edge, and if you find
-behavior that contradicts the printed cards, that is a bug worth filing.
+What this is *not*: a complete Magic rules engine. Cards outside the catalog
+do not exist here, and custom decks beyond the twenty-three built-ins are not
+yet exposed through the protocol. Interactions are implemented to the depth
+the supported tranche requires and are covered by the engine's test suite and
+long random self-play sweeps — but a trained bot will probe every edge, and if
+you find behavior that contradicts the printed cards, that is a bug worth
+filing.
 
 ## Where this is going
 

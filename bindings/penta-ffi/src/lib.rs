@@ -16,8 +16,8 @@
 use std::cell::RefCell;
 use std::ffi::{CStr, CString, c_char};
 
-use penta::protocol::{BotGame, deck_names};
-use penta::{GameResult, PlayerId, poc};
+use penta::protocol::{BotGame, catalog_json_for_format, deck_names_for_format, parse_format_slug};
+use penta::{Format, GameResult, PlayerId, card};
 
 thread_local! {
     static LAST_ERROR: RefCell<CString> = RefCell::new(CString::default());
@@ -36,6 +36,40 @@ fn give_string(value: String) -> *mut c_char {
         return std::ptr::null_mut();
     };
     string.into_raw()
+}
+
+/// Parses a borrowed C format slug, reporting errors through
+/// [`penta_last_error`].
+///
+/// # Safety
+///
+/// `format` must point to a valid NUL-terminated string.
+unsafe fn format_from_c(format: *const c_char) -> Option<Format> {
+    if format.is_null() {
+        set_error("format is null");
+        return None;
+    }
+    let Ok(slug) = (unsafe { CStr::from_ptr(format) }).to_str() else {
+        set_error("format is not valid UTF-8");
+        return None;
+    };
+    match parse_format_slug(slug) {
+        Ok(format) => Some(format),
+        Err(message) => {
+            set_error(&message);
+            None
+        }
+    }
+}
+
+fn catalog_json_for(format: Format) -> *mut c_char {
+    match card::catalog() {
+        Ok(catalog) => give_string(catalog_json_for_format(&catalog, format).to_string()),
+        Err(error) => {
+            set_error(&error.to_string());
+            std::ptr::null_mut()
+        }
+    }
 }
 
 const fn seat_code(seat: PlayerId) -> i32 {
@@ -73,22 +107,46 @@ pub extern "C" fn penta_last_error() -> *const c_char {
     LAST_ERROR.with(|slot| slot.borrow().as_ptr())
 }
 
-/// Every card definition as protocol JSON. Caller frees.
+/// Every card definition as Old School protocol JSON. Caller frees.
 #[unsafe(no_mangle)]
 pub extern "C" fn penta_catalog_json() -> *mut c_char {
-    match poc::catalog() {
-        Ok(catalog) => give_string(penta::protocol::catalog_json(&catalog).to_string()),
-        Err(error) => {
-            set_error(&error.to_string());
-            std::ptr::null_mut()
-        }
-    }
+    catalog_json_for(Format::OldSchool9394)
 }
 
-/// The built-in deck names as a JSON array of strings. Caller frees.
+/// Every card definition with legality for `format`, as protocol JSON.
+/// Caller frees. Returns null on error; see [`penta_last_error`].
+///
+/// # Safety
+///
+/// `format` must be a valid NUL-terminated UTF-8 format slug.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn penta_catalog_json_for_format(format: *const c_char) -> *mut c_char {
+    let Some(format) = (unsafe { format_from_c(format) }) else {
+        return std::ptr::null_mut();
+    };
+    catalog_json_for(format)
+}
+
+/// The Old School built-in deck names as a JSON array of strings. Caller frees.
 #[unsafe(no_mangle)]
 pub extern "C" fn penta_deck_names_json() -> *mut c_char {
-    give_string(serde_json_names(&deck_names()))
+    give_string(serde_json_names(&deck_names_for_format(
+        Format::OldSchool9394,
+    )))
+}
+
+/// The built-in deck names for `format` as a JSON array. Caller frees.
+/// Returns null on error; see [`penta_last_error`].
+///
+/// # Safety
+///
+/// `format` must be a valid NUL-terminated UTF-8 format slug.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn penta_deck_names_for_format_json(format: *const c_char) -> *mut c_char {
+    let Some(format) = (unsafe { format_from_c(format) }) else {
+        return std::ptr::null_mut();
+    };
+    give_string(serde_json_names(&deck_names_for_format(format)))
 }
 
 fn serde_json_names(names: &[&str]) -> String {

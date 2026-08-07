@@ -12,6 +12,32 @@ Two numbers matter to a bot, and they move independently:
 Pin both alongside trained weights. Until 1.0 the engine version bumps its
 minor for breaking changes, per Cargo's 0.x convention.
 
+## 0.3.0 — protocol 2
+
+### Changed
+
+- Games now select an explicit format. Existing constructors and catalog/deck
+  helpers still default to Eternal Central Old School 93/94, while new
+  format-aware entry points also expose ISD–RTR Standard.
+- Runtime IDs now identify one game object in its current zone rather than a
+  physical card for the whole game. A card in hand, the spell it becomes on
+  the stack, and the permanent it becomes on the battlefield therefore have
+  different IDs.
+- `PlayLand` actions carry a play-option ID, and `CastSpell` actions carry
+  structured play-option, mode, cost, X, and target-slot choices. Stack
+  observations retain the resulting cast signature for spell-copy effects.
+- Catalog and observation JSON expose structured card parts and the currently
+  presented permanent part. These wire-shape and legal-action changes require
+  protocol 2; clients should continue selecting actions by their `type` and
+  other semantic fields rather than hardcoded indices.
+
+### Added
+
+- The final pre-Theros ISD–RTR Standard format profile and the eight decks from
+  the September 2013 SCG Open Atlanta Top 8.
+- Optional `format` arguments in the Python binding and protocol config JSON,
+  plus format-aware catalog and deck-list helpers in the Python and C APIs.
+
 ## 0.2.0 — protocol 1
 
 ### Changed

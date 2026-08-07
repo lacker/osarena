@@ -8,8 +8,10 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
-use engine::PlayerId;
-use engine::protocol::{BotGame, Opponent};
+use engine::protocol::{
+    BotGame, Opponent, catalog_json_for_format, deck_names_for_format, parse_format_slug,
+};
+use engine::{Format, PlayerId};
 
 fn seat_from_name(name: &str) -> PyResult<PlayerId> {
     match name {
@@ -21,7 +23,11 @@ fn seat_from_name(name: &str) -> PyResult<PlayerId> {
     }
 }
 
-/// One game of Old School Magic, driven from Python.
+fn format_from_slug(slug: &str) -> PyResult<Format> {
+    parse_format_slug(slug).map_err(PyValueError::new_err)
+}
+
+/// One game of a supported Magic format, driven from Python.
 ///
 /// With a built-in opponent, `act` plays your action and then lets the
 /// opponent play until you have a real choice again. With
@@ -35,15 +41,24 @@ struct Game {
 #[pymethods]
 impl Game {
     /// Starts a game. `opponent` is `"handcrafted"`, `"random"`, or
-    /// `"external"`; `opponent_seat` is `"p1"` or `"p2"`.
+    /// `"external"`; `opponent_seat` is `"p1"` or `"p2"`. `format`
+    /// defaults to Old School for compatibility.
     #[new]
-    #[pyo3(signature = (p1_deck, p2_deck, opponent="handcrafted", opponent_seat="p2", seed=0))]
+    #[pyo3(signature = (
+        p1_deck,
+        p2_deck,
+        opponent="handcrafted",
+        opponent_seat="p2",
+        seed=0,
+        format="old-school-93-94"
+    ))]
     fn new(
         p1_deck: &str,
         p2_deck: &str,
         opponent: &str,
         opponent_seat: &str,
         seed: u64,
+        format: &str,
     ) -> PyResult<Self> {
         let opponent = match opponent {
             "external" => Opponent::External,
@@ -56,7 +71,8 @@ impl Game {
             }
         };
         let seat = seat_from_name(opponent_seat)?;
-        BotGame::new(p1_deck, p2_deck, opponent, seat, seed)
+        let format = format_from_slug(format)?;
+        BotGame::new_with_format(format, p1_deck, p2_deck, opponent, seat, seed)
             .map(|inner| Self { inner })
             .map_err(PyValueError::new_err)
     }
@@ -118,18 +134,21 @@ impl Game {
     }
 }
 
-/// Every card definition the engine knows, as protocol JSON.
+/// Every card definition with legality for `format`, as protocol JSON.
 #[pyfunction]
-fn catalog() -> PyResult<String> {
+#[pyo3(signature = (format = "old-school-93-94"))]
+fn catalog(format: &str) -> PyResult<String> {
+    let format = format_from_slug(format)?;
     let catalog =
-        engine::poc::catalog().map_err(|error| PyValueError::new_err(error.to_string()))?;
-    Ok(engine::protocol::catalog_json(&catalog).to_string())
+        engine::card::catalog().map_err(|error| PyValueError::new_err(error.to_string()))?;
+    Ok(catalog_json_for_format(&catalog, format).to_string())
 }
 
-/// The built-in deck names.
+/// The built-in deck names for `format`.
 #[pyfunction]
-fn deck_names() -> Vec<&'static str> {
-    engine::protocol::deck_names()
+#[pyo3(signature = (format = "old-school-93-94"))]
+fn deck_names(format: &str) -> PyResult<Vec<&'static str>> {
+    Ok(deck_names_for_format(format_from_slug(format)?))
 }
 
 /// The engine crate version, for pinning trained bots to rules behavior.

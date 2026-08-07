@@ -1,6 +1,6 @@
 [package]
 name = "penta-ffi"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 description = "C ABI for the penta engine, for C, C++, and any FFI-capable language"
 license = "Apache-2.0"
