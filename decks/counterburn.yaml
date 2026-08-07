@@ -1,0 +1,30 @@
+main:
+  Island: 8
+  Volcanic Island: 4
+  City of Brass: 4
+  Mishra's Factory: 4
+  Strip Mine: 2
+  Black Lotus: 1
+  Mox Sapphire: 1
+  Mox Ruby: 1
+  Sol Ring: 1
+  Serendib Efreet: 4
+  Su-Chi: 3
+  Lightning Bolt: 4
+  Chain Lightning: 4
+  Psionic Blast: 4
+  Earthquake: 2
+  Counterspell: 4
+  Mana Drain: 1
+  Black Vise: 3
+  Ancestral Recall: 1
+  Time Walk: 1
+  Braingeyser: 1
+  Chaos Orb: 1
+  Wheel of Fortune: 1
+sideboard:
+  Blue Elemental Blast: 4
+  Red Elemental Blast: 4
+  Shatter: 3
+  Blood Moon: 2
+  Earthquake: 2

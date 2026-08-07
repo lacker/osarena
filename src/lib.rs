@@ -3,6 +3,7 @@
 pub mod action;
 pub mod card;
 pub mod deck;
+pub mod decks;
 pub mod game;
 pub mod ids;
 pub mod poc;
@@ -13,7 +14,7 @@ pub mod rules;
 
 pub use action::{Action, ActionError, CombatDamageAssignment, ManaColor, Target};
 pub use card::{
-    ActivatedAbilityText, CardBehavior, CardCatalog, CardDefinition, CardKind, CardSet,
+    ActivatedAbilityText, CardBehavior, CardCatalog, CardDefinition, CardKind, CardRules, CardSet,
     CatalogError, CreatureStats, ManaCost,
 };
 pub use deck::{Deck, DeckError, ValidatedDeck};

@@ -1,0 +1,29 @@
+main:
+  Forest: 6
+  Mountain: 5
+  Taiga: 4
+  Mishra's Factory: 3
+  Pendelhaven: 2
+  City of Brass: 1
+  Strip Mine: 1
+  Black Lotus: 1
+  Mox Ruby: 1
+  Mox Emerald: 1
+  Kird Ape: 4
+  Argothian Pixies: 4
+  Llanowar Elves: 4
+  Scryb Sprites: 4
+  Erhnam Djinn: 4
+  Lightning Bolt: 4
+  Chain Lightning: 4
+  Giant Growth: 4
+  Berserk: 2
+  Wheel of Fortune: 1
+sideboard:
+  Red Elemental Blast: 3
+  Blood Moon: 2
+  Whirling Dervish: 3
+  Shatter: 2
+  Earthquake: 2
+  Stone Rain: 2
+  Blue Elemental Blast: 1

@@ -44,6 +44,20 @@ bag of switches spread throughout the engine.
 See [the engine design notes](docs/engine.md) for state-machine invariants and
 extension boundaries.
 
+## Repository layout
+
+- `src/card/` owns the card model, catalog, stable IDs, and corpus. Each file
+  under `src/card/sets/` groups cards by first-printing set, with one complete
+  record per card containing its identity, cost, type, text, stats, and traits.
+- `decks/` contains the built-in decklists as YAML mappings from printed card
+  names to copy counts. `src/decks.rs` compiles those files into the binary, so
+  the engine and browser build do not need runtime filesystem access.
+- `src/game/` keeps the rules state machine together while separating its
+  decision, event, mana, observation, and test vocabulary into small modules.
+
+The original `poc` module remains as a compatibility façade. New code should
+prefer `card::catalog()`, `card::cards::*`, and the functions in `decks`.
+
 ## Current scope
 
 The engine currently supports:
@@ -66,9 +80,9 @@ The engine currently supports:
   restricted untaps
 - staged public/private decisions with bounded multi-selection, cancellation,
   bot preferences, and continuations across costs and effect resolution
-- functional behavior metadata for all 107 catalog cards, with engine support
+- functional behavior metadata for all 128 catalog cards, with engine support
   for the shared mana, removal, discard, draw, tutor, and global-effect package
-- ten fixed 60-card archetype decks with 15-card sideboards
+- fifteen fixed 60-card archetype decks with 15-card sideboards
 - a small bot API with seeded random and card-aware handcrafted policies
 
 The event log is intentionally omniscient and must not be passed directly to a
@@ -91,37 +105,37 @@ support for cards outside the POC.
 
 ## Built-in decks
 
-The proof of concept contains sixteen powered EC archetypes:
+The proof of concept contains fifteen powered EC archetypes:
 
-- `poc::goblins()` is a tribal aggro deck built around Goblin King, Goblin
+- `decks::goblins()` is a tribal aggro deck built around Goblin King, Goblin
   Grenade, Goblin Balloon Brigade, and Goblins of the Flarg.
-- `poc::sligh()` is a curve-based aggro/burn deck with Ironclaw Orcs, Ball
+- `decks::sligh()` is a curve-based aggro/burn deck with Ironclaw Orcs, Ball
   Lightning, Granite Gargoyle, Dragon Whelp, and direct damage.
-- `poc::artifacts()` is Atog Smash, using Atog, Orcish Mechanics, Black Vise,
+- `decks::artifacts()` is Atog Smash, using Atog, Orcish Mechanics, Black Vise,
   Ankh of Mishra, Copper Tablet, and fast artifact mana.
-- `poc::robots()` uses Mana Vault to accelerate Juggernaut, Su-Chi, and
+- `decks::robots()` uses Mana Vault to accelerate Juggernaut, Su-Chi, and
   Triskelion, backed by Atog and red removal.
-- `poc::the_deck()` is the format's namesake control strategy: Counterspell,
+- `decks::the_deck()` is the format's namesake control strategy: Counterspell,
   Mana Drain, Swords to Plowshares, Balance, Demonic Tutor, Jayemdae Tome, and
   the format's restricted card-draw suite.
-- `poc::mono_black()` combines Dark Ritual, Hypnotic Specter, Hymn to Tourach,
+- `decks::mono_black()` combines Dark Ritual, Hypnotic Specter, Hymn to Tourach,
   Sinkhole, and Juzam Djinn.
-- `poc::white_weenie()` curves Savannah Lions and Icatian Javelineers into
+- `decks::white_weenie()` curves Savannah Lions and Icatian Javelineers into
   Crusade and Armageddon.
-- `poc::erhnamgeddon()` pairs Birds of Paradise and Erhnam Djinn with white
+- `decks::erhnamgeddon()` pairs Birds of Paradise and Erhnam Djinn with white
   removal and Armageddon.
-- `poc::counterburn()` is blue-red tempo with Serendib Efreet, permission,
+- `decks::counterburn()` is blue-red tempo with Serendib Efreet, permission,
   Psionic Blast, and burn.
-- `poc::lions_dib()` is the blue-white Savannah Lions/Serendib Efreet tempo
+- `decks::lions_dib()` is the blue-white Savannah Lions/Serendib Efreet tempo
   shell.
-- `poc::bwr_aggro()` is a black-white-red knight and burn aggro shell.
-- `poc::gr_aggro()` is a green-red creature deck built around Kird Ape,
+- `decks::bwr_aggro()` is a black-white-red knight and burn aggro shell.
+- `decks::gr_aggro()` is a green-red creature deck built around Kird Ape,
   Argothian Pixies, mana Elves, and pump spells.
-- `poc::troll_disk()` is black-red Sedge Troll control with Nevinyrral's Disk
+- `decks::troll_disk()` is black-red Sedge Troll control with Nevinyrral's Disk
   and land destruction.
-- `poc::jeskai_aggro()` is a blue-white-red tempo deck with burn and
+- `decks::jeskai_aggro()` is a blue-white-red tempo deck with burn and
   permission.
-- `poc::lions_dib_bolt()` is the Lion/Dib shell with a dedicated Bolt package.
+- `decks::lions_dib_bolt()` is the Lion/Dib shell with a dedicated Bolt package.
 
 Their cores are based on the [TC Decks Goblins aggregate][goblins-data], the
 [Wak-Wak Sligh archetype guide][sligh-guide], a representative
@@ -165,7 +179,7 @@ Run the reproducible, seat-swapped sanity gauntlet with:
 cargo run --release --bin policy_sanity
 ```
 
-The gauntlet uses mirror matches for all ten built-in decks, isolating policy
+The gauntlet uses mirror matches for all fifteen built-in decks, isolating policy
 quality from deck strength.
 
 Run the broader rules audit with:

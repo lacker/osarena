@@ -1,0 +1,28 @@
+main:
+  Island: 4
+  Plains: 4
+  Tundra: 4
+  Volcanic Island: 4
+  Plateau: 3
+  City of Brass: 3
+  Mishra's Factory: 4
+  Strip Mine: 1
+  Black Lotus: 1
+  Mox Pearl: 1
+  Mox Sapphire: 1
+  Mox Ruby: 1
+  Sol Ring: 1
+  Savannah Lions: 4
+  White Knight: 3
+  Serendib Efreet: 4
+  Lightning Bolt: 4
+  Chain Lightning: 4
+  Psionic Blast: 3
+  Swords to Plowshares: 4
+  Counterspell: 2
+sideboard:
+  Red Elemental Blast: 4
+  Blue Elemental Blast: 4
+  Disenchant: 3
+  Divine Offering: 2
+  Armageddon: 2

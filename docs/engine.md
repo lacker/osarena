@@ -83,12 +83,16 @@ sequence. Events provide a convenient derived trace for debugging and UI use.
 
 ## Card behavior
 
-Card metadata lives in `CardCatalog`; executable behavior is selected by the
-closed `CardBehavior` enum. Every card in the POC catalog has a behavior,
-kind, mana cost, color, and creature characteristics where applicable.
-Unsupported cards can exist in other catalogs and hidden zones but do not
-generate cast actions. This makes partial coverage explicit and keeps
-arbitrary card code out of serialized game state.
+Each built-in card is declared once in its first-printing set module. Its
+`CardRecord` keeps identity and `CardRules` together: name, cost, type, rules
+text, creature stats, and traits can all be understood at the card's
+declaration. The runtime `CardDefinition` carries those rules directly.
+
+Executable game effects are still selected by the closed `CardBehavior` enum,
+which is safe to serialize and also provides a compatibility lookup for copied
+or temporary card behavior. Unsupported cards can exist in other catalogs and
+hidden zones but do not generate cast actions. This makes partial coverage
+explicit and keeps arbitrary card code out of serialized game state.
 
 As the corpus grows, behavior should be factored into reusable primitives
 (damage, draw, destroy, continuous restrictions, triggers) rather than one
@@ -98,7 +102,7 @@ large bespoke function per printed card.
 
 The format is Eternal Central 93/94: current Magic rules plus the EC
 exceptions, notably phase-boundary mana burn. The POC implements London
-mulligans, priority-bearing turn steps, cleanup, combat, sixteen fixed powered
+mulligans, priority-bearing turn steps, cleanup, combat, fifteen fixed powered
 decks, and its 128-card corpus.
 
 It deliberately remains narrower than the full Comprehensive Rules. Fireball

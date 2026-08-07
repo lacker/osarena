@@ -1,9 +1,9 @@
-use penta::poc;
 use penta::{
     Action, ActivatedAbilityText, BattlefieldExit, CardCatalog, CardDefinitionId, CardInstanceId,
     Game, GameEvent, GameResult, HandcraftedPolicy, PlayerId, PlayerObservation, Policy,
     RandomPolicy, Step, Target,
 };
+use penta::card;
 use serde_json::{Value, json};
 use std::fmt::Write as _;
 use wasm_bindgen::prelude::*;
@@ -61,7 +61,7 @@ impl WebGame {
         human_first: bool,
         seed: u32,
     ) -> Result<WebGame, JsValue> {
-        let catalog = poc::catalog().map_err(js_error)?;
+        let catalog = card::catalog().map_err(js_error)?;
         let human_deck = deck_by_name(human_deck)?;
         let bot_deck = deck_by_name(bot_deck)?;
         let human = if human_first {
@@ -918,21 +918,21 @@ impl WebGame {
             .iter()
             .map(|permanent| {
                 let card = self.catalog.get(permanent.definition);
-                let mana_cost = card.map(|card| card.behavior.mana_cost());
+                let mana_cost = card.map(|card| card.rules.mana_cost);
                 let current_kind = card.map_or("unknown".into(), |card| {
                     if card.behavior == penta::CardBehavior::MishrasFactory
                         && permanent.power.is_some()
                     {
                         "artifactcreature".into()
                     } else {
-                        format!("{:?}", card.behavior.kind()).to_ascii_lowercase()
+                        format!("{:?}", card.rules.kind).to_ascii_lowercase()
                     }
                 });
                 json!({
                     "id": permanent.id.0,
                     "name": self.card_name(permanent.definition),
                     "kind": current_kind,
-                    "isLand": card.is_some_and(|card| card.behavior.kind() == penta::CardKind::Land),
+                    "isLand": card.is_some_and(|card| card.rules.kind == penta::CardKind::Land),
                     "manaCost": mana_cost.map(|cost| json!({
                         "generic": cost.generic,
                         "white": cost.white,
@@ -942,7 +942,7 @@ impl WebGame {
                         "green": cost.green,
                         "x": cost.variable_x,
                     })),
-                    "rulesText": card.map_or("", |card| card.behavior.rules_text()),
+                    "rulesText": card.map_or("", |card| card.rules.text),
                     "owner": if permanent.controller == self.human { "human" } else { "opponent" },
                     "tapped": permanent.tapped,
                     "power": permanent.power,
@@ -961,15 +961,15 @@ impl WebGame {
             .iter()
             .map(|(id, definition)| {
                 let card = self.catalog.get(*definition);
-                let mana_cost = card.map(|card| card.behavior.mana_cost());
-                let creature_stats = card.and_then(|card| card.behavior.creature_stats());
+                let mana_cost = card.map(|card| card.rules.mana_cost);
+                let creature_stats = card.and_then(|card| card.rules.creature_stats);
                 json!({
                     "id": id.0,
                     "name": self.card_name(*definition),
                     "kind": card.map_or("unknown".into(), |card| {
-                        format!("{:?}", card.behavior.kind()).to_ascii_lowercase()
+                        format!("{:?}", card.rules.kind).to_ascii_lowercase()
                     }),
-                    "isLand": card.is_some_and(|card| card.behavior.kind() == penta::CardKind::Land),
+                    "isLand": card.is_some_and(|card| card.rules.kind == penta::CardKind::Land),
                     "manaCost": mana_cost.map(|cost| json!({
                         "generic": cost.generic,
                         "white": cost.white,
@@ -979,7 +979,7 @@ impl WebGame {
                         "green": cost.green,
                         "x": cost.variable_x,
                     })),
-                    "rulesText": card.map_or("", |card| card.behavior.rules_text()),
+                    "rulesText": card.map_or("", |card| card.rules.text),
                     "power": creature_stats.map(|stats| stats.power),
                     "toughness": creature_stats.map(|stats| stats.toughness),
                 })
@@ -993,8 +993,8 @@ impl WebGame {
                 // Enough card detail for the browser to draw a real card on
                 // the stack rather than a name tag.
                 let card = self.catalog.get(object.definition);
-                let mana_cost = card.map(|card| card.behavior.mana_cost());
-                let creature_stats = card.and_then(|card| card.behavior.creature_stats());
+                let mana_cost = card.map(|card| card.rules.mana_cost);
+                let creature_stats = card.and_then(|card| card.rules.creature_stats);
                 json!({
                     "id": object.id.0,
                     "cardId": object.card.0,
@@ -1028,9 +1028,9 @@ impl WebGame {
                         })
                         .collect::<Vec<_>>(),
                     "cardKind": card.map_or("unknown".into(), |card| {
-                        format!("{:?}", card.behavior.kind()).to_ascii_lowercase()
+                        format!("{:?}", card.rules.kind).to_ascii_lowercase()
                     }),
-                    "isLand": card.is_some_and(|card| card.behavior.kind() == penta::CardKind::Land),
+                    "isLand": card.is_some_and(|card| card.rules.kind == penta::CardKind::Land),
                     "manaCost": mana_cost.map(|cost| json!({
                         "generic": cost.generic,
                         "white": cost.white,
@@ -1040,7 +1040,7 @@ impl WebGame {
                         "green": cost.green,
                         "x": cost.variable_x,
                     })),
-                    "rulesText": card.map_or("", |card| card.behavior.rules_text()),
+                    "rulesText": card.map_or("", |card| card.rules.text),
                     "power": creature_stats.map(|stats| stats.power),
                     "toughness": creature_stats.map(|stats| stats.toughness),
                 })
@@ -1170,7 +1170,7 @@ impl WebGame {
             .iter()
             .find(|permanent| permanent.id == source)
             .and_then(|permanent| self.catalog.get(permanent.definition))
-            .and_then(|card| card.behavior.activated_ability_text())
+            .and_then(|card| card.rules.activated_ability_text)
     }
 
     fn card_name(&self, definition: CardDefinitionId) -> String {

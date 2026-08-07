@@ -1,0 +1,29 @@
+main:
+  Island: 5
+  Plains: 5
+  Tundra: 4
+  City of Brass: 4
+  Mishra's Factory: 4
+  Strip Mine: 2
+  Black Lotus: 1
+  Mox Sapphire: 1
+  Mox Pearl: 1
+  Sol Ring: 1
+  Savannah Lions: 4
+  Icatian Javelineers: 4
+  White Knight: 3
+  Serendib Efreet: 4
+  Serra Angel: 2
+  Swords to Plowshares: 4
+  Disenchant: 3
+  Counterspell: 4
+  Mana Drain: 1
+  Psionic Blast: 1
+  Ancestral Recall: 1
+  Time Walk: 1
+sideboard:
+  Blue Elemental Blast: 4
+  Red Elemental Blast: 4
+  Divine Offering: 3
+  Armageddon: 2
+  Serra Angel: 2

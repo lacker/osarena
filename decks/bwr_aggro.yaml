@@ -1,0 +1,31 @@
+main:
+  Badlands: 3
+  Scrubland: 3
+  Plateau: 3
+  City of Brass: 4
+  Mishra's Factory: 4
+  Strip Mine: 1
+  Black Lotus: 1
+  Mox Jet: 1
+  Mox Pearl: 1
+  Mox Ruby: 1
+  Savannah Lions: 4
+  White Knight: 4
+  Order of Leitbur: 4
+  Black Knight: 4
+  Hypnotic Specter: 3
+  Lightning Bolt: 4
+  Chain Lightning: 4
+  Swords to Plowshares: 4
+  Disenchant: 3
+  Chaos Orb: 1
+  Demonic Tutor: 1
+  Mind Twist: 1
+  Fireball: 1
+sideboard:
+  Red Elemental Blast: 4
+  Blue Elemental Blast: 3
+  Divine Offering: 3
+  Earthquake: 2
+  Armageddon: 2
+  Sengir Vampire: 1

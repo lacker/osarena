@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 use std::error::Error;
 
-use penta::poc;
 use penta::{Game, HandcraftedPolicy, PlayerId, PlayerObservation, Policy, RandomPolicy};
+use penta::{card, decks};
 
 const DEFAULT_SEEDS: u64 = 100;
 const ACTION_LIMIT: usize = 50_000;
@@ -20,23 +20,23 @@ fn main() -> Result<(), Box<dyn Error>> {
         .map(|value| value.parse())
         .transpose()?
         .unwrap_or(DEFAULT_SEEDS);
-    let catalog = poc::catalog()?;
+    let catalog = card::catalog()?;
     let decks = [
-        ("Goblins", poc::goblins()),
-        ("Sligh", poc::sligh()),
-        ("Artifacts", poc::artifacts()),
-        ("Robots", poc::robots()),
-        ("The Deck", poc::the_deck()),
-        ("Mono Black", poc::mono_black()),
-        ("White Weenie", poc::white_weenie()),
-        ("Erhnamgeddon", poc::erhnamgeddon()),
-        ("Counterburn", poc::counterburn()),
-        ("Lions/Dib", poc::lions_dib()),
-        ("BWR Aggro", poc::bwr_aggro()),
-        ("GR Aggro", poc::gr_aggro()),
-        ("Troll Disk", poc::troll_disk()),
-        ("Jeskai Aggro", poc::jeskai_aggro()),
-        ("Lion Dib Bolt", poc::lions_dib_bolt()),
+        ("Goblins", decks::goblins()),
+        ("Sligh", decks::sligh()),
+        ("Artifacts", decks::artifacts()),
+        ("Robots", decks::robots()),
+        ("The Deck", decks::the_deck()),
+        ("Mono Black", decks::mono_black()),
+        ("White Weenie", decks::white_weenie()),
+        ("Erhnamgeddon", decks::erhnamgeddon()),
+        ("Counterburn", decks::counterburn()),
+        ("Lions/Dib", decks::lions_dib()),
+        ("BWR Aggro", decks::bwr_aggro()),
+        ("GR Aggro", decks::gr_aggro()),
+        ("Troll Disk", decks::troll_disk()),
+        ("Jeskai Aggro", decks::jeskai_aggro()),
+        ("Lion Dib Bolt", decks::lions_dib_bolt()),
     ];
     let mut totals = AuditTotals::default();
 

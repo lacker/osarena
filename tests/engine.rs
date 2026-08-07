@@ -6,34 +6,34 @@ use penta::{Action, CardDefinitionId, Game, GameError, GameEvent, PlayerId, Step
 
 fn catalog() -> CardCatalog {
     CardCatalog::new([
-        CardDefinition {
-            id: CardDefinitionId(1),
-            name: "Mountain".into(),
-            set: CardSet::Alpha,
-            is_basic_land: true,
-            behavior: CardBehavior::Mountain,
-        },
-        CardDefinition {
-            id: CardDefinitionId(2),
-            name: "Lightning Bolt".into(),
-            set: CardSet::Alpha,
-            is_basic_land: false,
-            behavior: CardBehavior::LightningBolt,
-        },
-        CardDefinition {
-            id: CardDefinitionId(3),
-            name: "Black Lotus".into(),
-            set: CardSet::Alpha,
-            is_basic_land: false,
-            behavior: CardBehavior::Unsupported,
-        },
-        CardDefinition {
-            id: CardDefinitionId(4),
-            name: "Contract from Below".into(),
-            set: CardSet::Alpha,
-            is_basic_land: false,
-            behavior: CardBehavior::Unsupported,
-        },
+        CardDefinition::new(
+            CardDefinitionId(1),
+            "Mountain",
+            CardSet::Alpha,
+            true,
+            CardBehavior::Mountain,
+        ),
+        CardDefinition::new(
+            CardDefinitionId(2),
+            "Lightning Bolt",
+            CardSet::Alpha,
+            false,
+            CardBehavior::LightningBolt,
+        ),
+        CardDefinition::new(
+            CardDefinitionId(3),
+            "Black Lotus",
+            CardSet::Alpha,
+            false,
+            CardBehavior::Unsupported,
+        ),
+        CardDefinition::new(
+            CardDefinitionId(4),
+            "Contract from Below",
+            CardSet::Alpha,
+            false,
+            CardBehavior::Unsupported,
+        ),
     ])
     .unwrap()
 }
