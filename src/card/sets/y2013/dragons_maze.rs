@@ -2,8 +2,9 @@
 
 use super::{CardRecord, PrintingRecord};
 use crate::card::{
-    CardBehavior, CardComposition, CardEffectStatus, CardKind, CardPart, CardRules, CardSet,
-    CardStructure, ManaCost, PlayOptionDef, SpellForm, TargetPredicate, TargetSlotDef, cards,
+    CardArt, CardBehavior, CardComposition, CardEffectStatus, CardKind, CardPart, CardRules,
+    CardSet, CardStructure, ManaCost, PlayOptionDef, SpellForm, TargetPredicate, TargetSlotDef,
+    cards,
 };
 use crate::ids::{CardPartId, PlayOptionId, TargetSlotId};
 
@@ -11,8 +12,7 @@ use crate::ids::{CardPartId, PlayOptionId, TargetSlotId};
 pub(in crate::card::sets) static AETHERLING: CardRecord = CardRecord::new(
     cards::AETHERLING,
     "Aetherling",
-    "9c93313b-cf43-47e9-a911-717b4d14b0b5",
-    "Tyler Jacobson",
+    CardArt::new("9c93313b-cf43-47e9-a911-717b4d14b0b5", "Tyler Jacobson"),
     CardSet::DragonsMaze,
     false,
     CardBehavior::Aetherling,
@@ -30,8 +30,7 @@ pub(in crate::card::sets) static AETHERLING: CardRecord = CardRecord::new(
 pub(in crate::card::sets) static BLOOD_BARON_OF_VIZKOPA: CardRecord = CardRecord::new(
     cards::BLOOD_BARON_OF_VIZKOPA,
     "Blood Baron of Vizkopa",
-    "e4edad09-bf7b-40e9-ac2a-100da8a43274",
-    "Anthony Palumbo",
+    CardArt::new("e4edad09-bf7b-40e9-ac2a-100da8a43274", "Anthony Palumbo"),
     CardSet::DragonsMaze,
     false,
     CardBehavior::BloodBaronOfVizkopa,
@@ -51,8 +50,7 @@ pub(in crate::card::sets) static BLOOD_BARON_OF_VIZKOPA: CardRecord = CardRecord
 pub(in crate::card::sets) static GAZE_OF_GRANITE: CardRecord = CardRecord::new(
     cards::GAZE_OF_GRANITE,
     "Gaze of Granite",
-    "96c9ac10-d114-4aa5-87ac-f1069cde8e40",
-    "Nils Hamm",
+    CardArt::new("96c9ac10-d114-4aa5-87ac-f1069cde8e40", "Nils Hamm"),
     CardSet::DragonsMaze,
     false,
     CardBehavior::GazeOfGranite,
@@ -69,8 +67,7 @@ pub(in crate::card::sets) static GAZE_OF_GRANITE: CardRecord = CardRecord::new(
 pub(in crate::card::sets) static PUTREFY: CardRecord = CardRecord::new(
     cards::PUTREFY,
     "Putrefy",
-    "0d43a0b6-2a5c-4959-96ee-6e570949dfed",
-    "Igor Kieryluk",
+    CardArt::new("0d43a0b6-2a5c-4959-96ee-6e570949dfed", "Igor Kieryluk"),
     CardSet::DragonsMaze,
     false,
     CardBehavior::Putrefy,
@@ -87,8 +84,7 @@ pub(in crate::card::sets) static PUTREFY: CardRecord = CardRecord::new(
 pub(in crate::card::sets) static RURIC_THAR_THE_UNBOWED: CardRecord = CardRecord::new(
     cards::RURIC_THAR_THE_UNBOWED,
     "Ruric Thar, the Unbowed",
-    "84dd3586-7c3b-4f9c-a1eb-7745b75339b0",
-    "Tyler Jacobson",
+    CardArt::new("84dd3586-7c3b-4f9c-a1eb-7745b75339b0", "Tyler Jacobson"),
     CardSet::DragonsMaze,
     false,
     CardBehavior::RuricTharTheUnbowed,
@@ -109,8 +105,7 @@ pub(in crate::card::sets) static RURIC_THAR_THE_UNBOWED: CardRecord = CardRecord
 pub(in crate::card::sets) static SIN_COLLECTOR: CardRecord = CardRecord::new(
     cards::SIN_COLLECTOR,
     "Sin Collector",
-    "305a3feb-df49-486c-a3b4-ff2721d60019",
-    "Mike Bierek",
+    CardArt::new("305a3feb-df49-486c-a3b4-ff2721d60019", "Mike Bierek"),
     CardSet::DragonsMaze,
     false,
     CardBehavior::SinCollector,
@@ -200,8 +195,7 @@ fn turn_burn_composition() -> CardComposition {
 pub(in crate::card::sets) static TURN_BURN: CardRecord = CardRecord::new(
     cards::TURN_BURN,
     "Turn // Burn",
-    "8d7fdd59-6d76-4a0c-ac75-816345ef4a39",
-    "Ryan Barger",
+    CardArt::new("8d7fdd59-6d76-4a0c-ac75-816345ef4a39", "Ryan Barger"),
     CardSet::DragonsMaze,
     false,
     CardBehavior::TurnBurn,
@@ -213,8 +207,7 @@ pub(in crate::card::sets) static TURN_BURN: CardRecord = CardRecord::new(
 pub(in crate::card::sets) static UNFLINCHING_COURAGE: CardRecord = CardRecord::new(
     cards::UNFLINCHING_COURAGE,
     "Unflinching Courage",
-    "35952c24-d728-4ec6-b0d1-b8183a18554a",
-    "Mike Bierek",
+    CardArt::new("35952c24-d728-4ec6-b0d1-b8183a18554a", "Mike Bierek"),
     CardSet::DragonsMaze,
     false,
     CardBehavior::UnflinchingCourage,
@@ -231,8 +224,7 @@ pub(in crate::card::sets) static UNFLINCHING_COURAGE: CardRecord = CardRecord::n
 pub(in crate::card::sets) static VOICE_OF_RESURGENCE: CardRecord = CardRecord::new(
     cards::VOICE_OF_RESURGENCE,
     "Voice of Resurgence",
-    "07246783-d475-4f61-99ac-e2b574072349",
-    "Winona Nelson",
+    CardArt::new("07246783-d475-4f61-99ac-e2b574072349", "Winona Nelson"),
     CardSet::DragonsMaze,
     false,
     CardBehavior::VoiceOfResurgence,
@@ -250,8 +242,7 @@ pub(in crate::card::sets) static VOICE_OF_RESURGENCE: CardRecord = CardRecord::n
 pub(in crate::card::sets) static WARLEADERS_HELIX: CardRecord = CardRecord::new(
     cards::WARLEADERS_HELIX,
     "Warleader's Helix",
-    "81e474ac-54f7-43f9-8af9-2f1adf258b15",
-    "Greg Staples",
+    CardArt::new("81e474ac-54f7-43f9-8af9-2f1adf258b15", "Greg Staples"),
     CardSet::DragonsMaze,
     false,
     CardBehavior::WarleadersHelix,

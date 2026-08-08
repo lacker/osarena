@@ -426,18 +426,18 @@ impl CardComposition {
 }
 
 /// Canonical artwork metadata used when no exact printing is selected.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct CardArt {
-    pub scryfall_id: String,
-    pub artist: String,
+    pub scryfall_id: &'static str,
+    pub artist: &'static str,
 }
 
 impl CardArt {
     #[must_use]
-    pub fn new(scryfall_id: impl Into<String>, artist: impl Into<String>) -> Self {
+    pub const fn new(scryfall_id: &'static str, artist: &'static str) -> Self {
         Self {
-            scryfall_id: scryfall_id.into(),
-            artist: artist.into(),
+            scryfall_id,
+            artist,
         }
     }
 }

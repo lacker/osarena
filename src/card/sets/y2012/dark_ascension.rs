@@ -2,8 +2,8 @@
 
 use super::{CardRecord, PrintingRecord};
 use crate::card::{
-    CardBehavior, CardComposition, CardEffectStatus, CardKind, CardPart, CardRules, CardSet,
-    CardStructure, DoubleFacedKind, LandEntry, ManaCost, PlayOptionDef, SpellForm, cards,
+    CardArt, CardBehavior, CardComposition, CardEffectStatus, CardKind, CardPart, CardRules,
+    CardSet, CardStructure, DoubleFacedKind, LandEntry, ManaCost, PlayOptionDef, SpellForm, cards,
 };
 use crate::ids::{CardPartId, PlayOptionId};
 
@@ -11,8 +11,7 @@ use crate::ids::{CardPartId, PlayOptionId};
 pub(in crate::card::sets) static HELLRIDER: CardRecord = CardRecord::new(
     cards::HELLRIDER,
     "Hellrider",
-    "0ec8d800-7f06-44e0-b22d-cdff0a9b153d",
-    "Svetlin Velinov",
+    CardArt::new("0ec8d800-7f06-44e0-b22d-cdff0a9b153d", "Svetlin Velinov"),
     CardSet::DarkAscension,
     false,
     CardBehavior::Hellrider,
@@ -74,8 +73,7 @@ fn huntmaster_composition() -> CardComposition {
 pub(in crate::card::sets) static HUNTMASTER_OF_THE_FELLS: CardRecord = CardRecord::new(
     cards::HUNTMASTER_OF_THE_FELLS,
     "Huntmaster of the Fells",
-    "aae6fb12-b252-453b-bca7-1ea2a0d6c8dc",
-    "Chris Rahn",
+    CardArt::new("aae6fb12-b252-453b-bca7-1ea2a0d6c8dc", "Chris Rahn"),
     CardSet::DarkAscension,
     false,
     CardBehavior::HuntmasterOfTheFells,
@@ -87,8 +85,7 @@ pub(in crate::card::sets) static HUNTMASTER_OF_THE_FELLS: CardRecord = CardRecor
 pub(in crate::card::sets) static RAY_OF_REVELATION: CardRecord = CardRecord::new(
     cards::RAY_OF_REVELATION,
     "Ray of Revelation",
-    "d7e2c5a4-cf92-46bd-9033-8036436488cb",
-    "Cliff Childs",
+    CardArt::new("d7e2c5a4-cf92-46bd-9033-8036436488cb", "Cliff Childs"),
     CardSet::DarkAscension,
     false,
     CardBehavior::RayOfRevelation,
@@ -105,8 +102,7 @@ pub(in crate::card::sets) static RAY_OF_REVELATION: CardRecord = CardRecord::new
 pub(in crate::card::sets) static STRANGLEROOT_GEIST: CardRecord = CardRecord::new(
     cards::STRANGLEROOT_GEIST,
     "Strangleroot Geist",
-    "bf1fb137-205c-480f-b6dc-dfa137793ae3",
-    "Jason Chan",
+    CardArt::new("bf1fb137-205c-480f-b6dc-dfa137793ae3", "Jason Chan"),
     CardSet::DarkAscension,
     false,
     CardBehavior::StranglerootGeist,
@@ -126,8 +122,7 @@ pub(in crate::card::sets) static STRANGLEROOT_GEIST: CardRecord = CardRecord::ne
 pub(in crate::card::sets) static TRAGIC_SLIP: CardRecord = CardRecord::new(
     cards::TRAGIC_SLIP,
     "Tragic Slip",
-    "09666671-601e-4fca-bdfb-fb288bf2672c",
-    "Christopher Moeller",
+    CardArt::new("09666671-601e-4fca-bdfb-fb288bf2672c", "Christopher Moeller"),
     CardSet::DarkAscension,
     false,
     CardBehavior::TragicSlip,
@@ -144,8 +139,7 @@ pub(in crate::card::sets) static TRAGIC_SLIP: CardRecord = CardRecord::new(
 pub(in crate::card::sets) static VAULT_OF_THE_ARCHANGEL: CardRecord = CardRecord::new(
     cards::VAULT_OF_THE_ARCHANGEL,
     "Vault of the Archangel",
-    "35a65437-430a-42ef-854f-6e66f8e1a04a",
-    "John Avon",
+    CardArt::new("35a65437-430a-42ef-854f-6e66f8e1a04a", "John Avon"),
     CardSet::DarkAscension,
     false,
     CardBehavior::VaultOfTheArchangel,

@@ -656,7 +656,7 @@ mod tests {
         let mut scryfall_ids = HashSet::new();
 
         for record in records {
-            let scryfall_id = record.scryfall_id;
+            let scryfall_id = record.art.scryfall_id;
             assert!(
                 is_uuid(scryfall_id),
                 "{} has an invalid Scryfall ID: {scryfall_id}",
@@ -668,7 +668,7 @@ mod tests {
                 record.name
             );
             assert!(
-                !record.artist.trim().is_empty(),
+                !record.art.artist.trim().is_empty(),
                 "{} is missing its artist",
                 record.name
             );

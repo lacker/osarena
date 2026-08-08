@@ -1,12 +1,11 @@
 use super::{CardRecord, PrintingRecord};
-use crate::card::{CardBehavior, CardKind, CardRules, CardSet, ManaCost, cards};
+use crate::card::{CardArt, CardBehavior, CardKind, CardRules, CardSet, ManaCost, cards};
 
 // Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static GOBLIN_GRENADE: CardRecord = CardRecord::new(
     cards::GOBLIN_GRENADE,
     "Goblin Grenade",
-    "8837eaba-9602-4f63-9897-85583fcdcf51",
-    "Ron Spencer",
+    CardArt::new("8837eaba-9602-4f63-9897-85583fcdcf51", "Ron Spencer"),
     CardSet::FallenEmpires,
     false,
     CardBehavior::GoblinGrenade,
@@ -21,8 +20,7 @@ pub(in crate::card::sets) static GOBLIN_GRENADE: CardRecord = CardRecord::new(
 pub(in crate::card::sets) static HYMN_TO_TOURACH: CardRecord = CardRecord::new(
     cards::HYMN_TO_TOURACH,
     "Hymn to Tourach",
-    "eb9273ea-9a41-42e3-8c9c-0d50b127a818",
-    "Susan Van Camp",
+    CardArt::new("eb9273ea-9a41-42e3-8c9c-0d50b127a818", "Susan Van Camp"),
     CardSet::FallenEmpires,
     false,
     CardBehavior::HymnToTourach,
@@ -37,8 +35,7 @@ pub(in crate::card::sets) static HYMN_TO_TOURACH: CardRecord = CardRecord::new(
 pub(in crate::card::sets) static ICATIAN_JAVELINEERS: CardRecord = CardRecord::new(
     cards::ICATIAN_JAVELINEERS,
     "Icatian Javelineers",
-    "f04b8356-2384-4743-80dd-f15ca7ec65f7",
-    "Melissa A. Benson",
+    CardArt::new("f04b8356-2384-4743-80dd-f15ca7ec65f7", "Melissa A. Benson"),
     CardSet::FallenEmpires,
     false,
     CardBehavior::IcatianJavelineers,
@@ -58,8 +55,7 @@ pub(in crate::card::sets) static ICATIAN_JAVELINEERS: CardRecord = CardRecord::n
 pub(in crate::card::sets) static ORDER_OF_LEITBUR: CardRecord = CardRecord::new(
     cards::ORDER_OF_LEITBUR,
     "Order of Leitbur",
-    "ebd6e51e-f042-4673-a898-291607105829",
-    "Bryon Wackwitz",
+    CardArt::new("ebd6e51e-f042-4673-a898-291607105829", "Bryon Wackwitz"),
     CardSet::FallenEmpires,
     false,
     CardBehavior::OrderOfLeitbur,
@@ -75,8 +71,7 @@ pub(in crate::card::sets) static ORDER_OF_LEITBUR: CardRecord = CardRecord::new(
 pub(in crate::card::sets) static ORDER_OF_THE_EBON_HAND: CardRecord = CardRecord::new(
     cards::ORDER_OF_THE_EBON_HAND,
     "Order of the Ebon Hand",
-    "9e51f5d8-a7cc-4720-8af5-e002bcfd78a0",
-    "Melissa A. Benson",
+    CardArt::new("9e51f5d8-a7cc-4720-8af5-e002bcfd78a0", "Melissa A. Benson"),
     CardSet::FallenEmpires,
     false,
     CardBehavior::OrderOfTheEbonHand,

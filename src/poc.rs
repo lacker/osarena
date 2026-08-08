@@ -55,11 +55,11 @@ mod tests {
                 .as_ref()
                 .unwrap_or_else(|| panic!("{} is missing art metadata", card.name));
             assert!(
-                is_uuid(&art.scryfall_id),
+                is_uuid(art.scryfall_id),
                 "{} has an invalid Scryfall ID",
                 card.name
             );
-            let scryfall_id = art.scryfall_id.as_str();
+            let scryfall_id = art.scryfall_id;
             assert!(
                 scryfall_ids.insert(scryfall_id),
                 "{} repeats Scryfall ID {}",
@@ -104,7 +104,7 @@ mod tests {
         ] {
             let card = catalog.get(id).unwrap();
             assert_eq!(
-                card.art.as_ref().map(|art| art.scryfall_id.as_str()),
+                card.art.as_ref().map(|art| art.scryfall_id),
                 Some(scryfall_id)
             );
             assert_eq!(card.set, set);

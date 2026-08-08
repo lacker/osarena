@@ -2,8 +2,8 @@
 
 use super::{CardRecord, PrintingRecord};
 use crate::card::{
-    CardBehavior, CardComposition, CardEffectStatus, CardKind, CardPart, CardRules, CardSet,
-    CardStructure, DoubleFacedKind, LandEntry, ManaCost, PlayOptionDef, SpellForm, cards,
+    CardArt, CardBehavior, CardComposition, CardEffectStatus, CardKind, CardPart, CardRules,
+    CardSet, CardStructure, DoubleFacedKind, LandEntry, ManaCost, PlayOptionDef, SpellForm, cards,
 };
 use crate::ids::{CardPartId, PlayOptionId};
 
@@ -11,8 +11,10 @@ use crate::ids::{CardPartId, PlayOptionId};
 pub(in crate::card::sets) static AVACYNS_PILGRIM: CardRecord = CardRecord::new(
     cards::AVACYNS_PILGRIM,
     "Avacyn's Pilgrim",
-    "7eb39e97-53c2-4df0-9fb3-a3d6a24ec41f",
-    "Jana Schirmer & Johannes Voss",
+    CardArt::new(
+        "7eb39e97-53c2-4df0-9fb3-a3d6a24ec41f",
+        "Jana Schirmer & Johannes Voss",
+    ),
     CardSet::Innistrad,
     false,
     CardBehavior::AvacynsPilgrim,
@@ -31,8 +33,7 @@ pub(in crate::card::sets) static AVACYNS_PILGRIM: CardRecord = CardRecord::new(
 pub(in crate::card::sets) static BLASPHEMOUS_ACT: CardRecord = CardRecord::new(
     cards::BLASPHEMOUS_ACT,
     "Blasphemous Act",
-    "509ce648-fb76-486d-8b39-183e368b7cb7",
-    "Daarken",
+    CardArt::new("509ce648-fb76-486d-8b39-183e368b7cb7", "Daarken"),
     CardSet::Innistrad,
     false,
     CardBehavior::BlasphemousAct,
@@ -49,8 +50,7 @@ pub(in crate::card::sets) static BLASPHEMOUS_ACT: CardRecord = CardRecord::new(
 pub(in crate::card::sets) static CLIFFTOP_RETREAT: CardRecord = CardRecord::new(
     cards::CLIFFTOP_RETREAT,
     "Clifftop Retreat",
-    "fd7e1bf9-bd6a-48e3-9331-178e5142c06a",
-    "John Avon",
+    CardArt::new("fd7e1bf9-bd6a-48e3-9331-178e5142c06a", "John Avon"),
     CardSet::Innistrad,
     false,
     CardBehavior::ClifftopRetreat,
@@ -71,8 +71,7 @@ pub(in crate::card::sets) static CLIFFTOP_RETREAT: CardRecord = CardRecord::new(
 pub(in crate::card::sets) static DISSIPATE: CardRecord = CardRecord::new(
     cards::DISSIPATE,
     "Dissipate",
-    "5d778082-bcdb-423a-b16f-57ac0d4dace7",
-    "Tomasz Jedruszek",
+    CardArt::new("5d778082-bcdb-423a-b16f-57ac0d4dace7", "Tomasz Jedruszek"),
     CardSet::Innistrad,
     false,
     CardBehavior::Dissipate,
@@ -132,8 +131,7 @@ fn garruk_composition() -> CardComposition {
 pub(in crate::card::sets) static GARRUK_RELENTLESS: CardRecord = CardRecord::new(
     cards::GARRUK_RELENTLESS,
     "Garruk Relentless",
-    "b4160322-ff40-41a4-887a-73cd6b85ae45",
-    "Eric Deschamps",
+    CardArt::new("b4160322-ff40-41a4-887a-73cd6b85ae45", "Eric Deschamps"),
     CardSet::Innistrad,
     false,
     CardBehavior::GarrukRelentless,
@@ -145,8 +143,7 @@ pub(in crate::card::sets) static GARRUK_RELENTLESS: CardRecord = CardRecord::new
 pub(in crate::card::sets) static GAVONY_TOWNSHIP: CardRecord = CardRecord::new(
     cards::GAVONY_TOWNSHIP,
     "Gavony Township",
-    "b5f73443-2fe8-424f-8e71-fc7ce1f3a3eb",
-    "Peter Mohrbacher",
+    CardArt::new("b5f73443-2fe8-424f-8e71-fc7ce1f3a3eb", "Peter Mohrbacher"),
     CardSet::Innistrad,
     false,
     CardBehavior::GavonyTownship,
@@ -165,8 +162,7 @@ pub(in crate::card::sets) static GAVONY_TOWNSHIP: CardRecord = CardRecord::new(
 pub(in crate::card::sets) static GHOST_QUARTER: CardRecord = CardRecord::new(
     cards::GHOST_QUARTER,
     "Ghost Quarter",
-    "1c6456ed-0ffb-4d22-b252-5775076030ce",
-    "Peter Mohrbacher",
+    CardArt::new("1c6456ed-0ffb-4d22-b252-5775076030ce", "Peter Mohrbacher"),
     CardSet::Innistrad,
     false,
     CardBehavior::GhostQuarter,
@@ -185,8 +181,7 @@ pub(in crate::card::sets) static GHOST_QUARTER: CardRecord = CardRecord::new(
 pub(in crate::card::sets) static ISOLATED_CHAPEL: CardRecord = CardRecord::new(
     cards::ISOLATED_CHAPEL,
     "Isolated Chapel",
-    "b3c1a371-5ded-4a3a-bf96-503c4f1a665d",
-    "Cliff Childs",
+    CardArt::new("b3c1a371-5ded-4a3a-bf96-503c4f1a665d", "Cliff Childs"),
     CardSet::Innistrad,
     false,
     CardBehavior::IsolatedChapel,
@@ -207,8 +202,7 @@ pub(in crate::card::sets) static ISOLATED_CHAPEL: CardRecord = CardRecord::new(
 pub(in crate::card::sets) static KESSIG_WOLF_RUN: CardRecord = CardRecord::new(
     cards::KESSIG_WOLF_RUN,
     "Kessig Wolf Run",
-    "4a8447fe-7368-470a-911a-1083ec6cc831",
-    "Eytan Zana",
+    CardArt::new("4a8447fe-7368-470a-911a-1083ec6cc831", "Eytan Zana"),
     CardSet::Innistrad,
     false,
     CardBehavior::KessigWolfRun,
@@ -227,8 +221,7 @@ pub(in crate::card::sets) static KESSIG_WOLF_RUN: CardRecord = CardRecord::new(
 pub(in crate::card::sets) static LILIANA_OF_THE_VEIL: CardRecord = CardRecord::new(
     cards::LILIANA_OF_THE_VEIL,
     "Liliana of the Veil",
-    "ac506c17-adc8-49c6-9d8d-43db7cb1ec9d",
-    "Steve Argyle",
+    CardArt::new("ac506c17-adc8-49c6-9d8d-43db7cb1ec9d", "Steve Argyle"),
     CardSet::Innistrad,
     false,
     CardBehavior::LilianaOfTheVeil,
@@ -247,8 +240,7 @@ pub(in crate::card::sets) static LILIANA_OF_THE_VEIL: CardRecord = CardRecord::n
 pub(in crate::card::sets) static MOORLAND_HAUNT: CardRecord = CardRecord::new(
     cards::MOORLAND_HAUNT,
     "Moorland Haunt",
-    "1d5569e3-278c-4cf3-860e-712010333fe6",
-    "James Paick",
+    CardArt::new("1d5569e3-278c-4cf3-860e-712010333fe6", "James Paick"),
     CardSet::Innistrad,
     false,
     CardBehavior::MoorlandHaunt,
@@ -267,8 +259,7 @@ pub(in crate::card::sets) static MOORLAND_HAUNT: CardRecord = CardRecord::new(
 pub(in crate::card::sets) static MULCH: CardRecord = CardRecord::new(
     cards::MULCH,
     "Mulch",
-    "52a1dabd-82df-4814-9d64-bf7bf9c1018d",
-    "Christopher Moeller",
+    CardArt::new("52a1dabd-82df-4814-9d64-bf7bf9c1018d", "Christopher Moeller"),
     CardSet::Innistrad,
     false,
     CardBehavior::Mulch,
@@ -285,8 +276,7 @@ pub(in crate::card::sets) static MULCH: CardRecord = CardRecord::new(
 pub(in crate::card::sets) static SNAPCASTER_MAGE: CardRecord = CardRecord::new(
     cards::SNAPCASTER_MAGE,
     "Snapcaster Mage",
-    "9e5b279e-4670-4a1e-87d0-3cab7e4f9e58",
-    "Volkan Baǵa",
+    CardArt::new("9e5b279e-4670-4a1e-87d0-3cab7e4f9e58", "Volkan Baǵa"),
     CardSet::Innistrad,
     false,
     CardBehavior::SnapcasterMage,
@@ -305,8 +295,7 @@ pub(in crate::card::sets) static SNAPCASTER_MAGE: CardRecord = CardRecord::new(
 pub(in crate::card::sets) static SULFUR_FALLS: CardRecord = CardRecord::new(
     cards::SULFUR_FALLS,
     "Sulfur Falls",
-    "4968b65d-50e5-4d7e-b78b-cdada1cbf7a7",
-    "Cliff Childs",
+    CardArt::new("4968b65d-50e5-4d7e-b78b-cdada1cbf7a7", "Cliff Childs"),
     CardSet::Innistrad,
     false,
     CardBehavior::SulfurFalls,
@@ -327,8 +316,7 @@ pub(in crate::card::sets) static SULFUR_FALLS: CardRecord = CardRecord::new(
 pub(in crate::card::sets) static THINK_TWICE: CardRecord = CardRecord::new(
     cards::THINK_TWICE,
     "Think Twice",
-    "53e44060-a9a2-4095-9f5b-f60297525315",
-    "Anthony Francisco",
+    CardArt::new("53e44060-a9a2-4095-9f5b-f60297525315", "Anthony Francisco"),
     CardSet::Innistrad,
     false,
     CardBehavior::ThinkTwice,
@@ -345,8 +333,7 @@ pub(in crate::card::sets) static THINK_TWICE: CardRecord = CardRecord::new(
 pub(in crate::card::sets) static UNBURIAL_RITES: CardRecord = CardRecord::new(
     cards::UNBURIAL_RITES,
     "Unburial Rites",
-    "2794c82b-e5ce-4369-894e-bf56c6402ae1",
-    "Ryan Pancoast",
+    CardArt::new("2794c82b-e5ce-4369-894e-bf56c6402ae1", "Ryan Pancoast"),
     CardSet::Innistrad,
     false,
     CardBehavior::UnburialRites,
@@ -363,8 +350,7 @@ pub(in crate::card::sets) static UNBURIAL_RITES: CardRecord = CardRecord::new(
 pub(in crate::card::sets) static URGENT_EXORCISM: CardRecord = CardRecord::new(
     cards::URGENT_EXORCISM,
     "Urgent Exorcism",
-    "516a437c-a2ee-43c6-876c-1a63a455c97c",
-    "Svetlin Velinov",
+    CardArt::new("516a437c-a2ee-43c6-876c-1a63a455c97c", "Svetlin Velinov"),
     CardSet::Innistrad,
     false,
     CardBehavior::UrgentExorcism,
@@ -381,8 +367,7 @@ pub(in crate::card::sets) static URGENT_EXORCISM: CardRecord = CardRecord::new(
 pub(in crate::card::sets) static WOODLAND_CEMETERY: CardRecord = CardRecord::new(
     cards::WOODLAND_CEMETERY,
     "Woodland Cemetery",
-    "67139101-ec5e-434b-be3a-21338cc33840",
-    "Lars Grant-West",
+    CardArt::new("67139101-ec5e-434b-be3a-21338cc33840", "Lars Grant-West"),
     CardSet::Innistrad,
     false,
     CardBehavior::WoodlandCemetery,

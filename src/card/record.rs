@@ -9,8 +9,7 @@ type CompositionBuilder = fn() -> CardComposition;
 pub(super) struct CardRecord {
     pub(super) id: CardDefinitionId,
     pub(super) name: &'static str,
-    pub(super) scryfall_id: &'static str,
-    pub(super) artist: &'static str,
+    pub(super) art: CardArt,
     pub(super) set: CardSet,
     pub(super) is_basic_land: bool,
     pub(super) behavior: CardBehavior,
@@ -19,12 +18,10 @@ pub(super) struct CardRecord {
 }
 
 impl CardRecord {
-    #[allow(clippy::too_many_arguments)]
     pub(super) const fn new(
         id: CardDefinitionId,
         name: &'static str,
-        scryfall_id: &'static str,
-        artist: &'static str,
+        art: CardArt,
         set: CardSet,
         is_basic_land: bool,
         behavior: CardBehavior,
@@ -33,8 +30,7 @@ impl CardRecord {
         Self {
             id,
             name,
-            scryfall_id,
-            artist,
+            art,
             set,
             is_basic_land,
             behavior,
@@ -58,7 +54,7 @@ impl CardRecord {
         CardDefinition {
             id: self.id,
             name: self.name.into(),
-            art: Some(CardArt::new(self.scryfall_id, self.artist)),
+            art: Some(self.art),
             set: self.set,
             printings: vec![CardPrinting::new(self.id, self.set)],
             is_basic_land: self.is_basic_land,
