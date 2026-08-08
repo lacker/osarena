@@ -2,10 +2,13 @@
 
 use super::{CardRecord, PrintingRecord};
 use crate::card::{
-    CardArt, CardBehavior, CardComposition, CardEffectStatus, CardKind, CardPart, CardRules,
-    CardSet, CardStructure, DoubleFacedKind, LandEntry, ManaCost, PlayOptionDef, SpellForm, cards,
+    AbilityDef, AbilityTargetDef, AbilityTargetPredicate, AppliedEffectDef, CardArt, CardBehavior,
+    CardComposition, CardEffectStatus, CardKind, CardPart, CardRules, CardSet, CardStructure,
+    DoubleFacedKind, EffectDef, EffectDurationDef, EffectRecipientDef, ImplementationStatus,
+    LandEntry, ManaCost, ObjectPredicateDef, PlayOptionDef, PlayerRelation, SpellForm,
+    TriggerEventDef, TriggeredAbilityDef, ZoneKind, cards,
 };
-use crate::ids::{CardPartId, PlayOptionId};
+use crate::ids::{AbilityId, CardPartId, PlayOptionId, TargetSlotId};
 
 // Implementation status: Baseline creature and printed mana ability are active.
 pub(in crate::card::sets) static AVACYNS_PILGRIM: CardRecord = CardRecord::new(
@@ -272,7 +275,37 @@ pub(in crate::card::sets) static MULCH: CardRecord = CardRecord::new(
     .metadata_only(),
 );
 
-// Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
+static SNAPCASTER_MAGE_TARGETS: [AbilityTargetDef; 1] = [AbilityTargetDef::exactly_one(
+    TargetSlotId(0),
+    "instant or sorcery card in your graveyard",
+    AbilityTargetPredicate::Object {
+        object: ObjectPredicateDef::Special("instant or sorcery card"),
+        zones: &[ZoneKind::Graveyard],
+        controller: None,
+        owner: Some(PlayerRelation::You),
+    },
+)];
+
+static SNAPCASTER_MAGE_ABILITIES: [AbilityDef; 1] = [AbilityDef::Triggered(
+    TriggeredAbilityDef::new(
+        AbilityId::PRIMARY,
+        "When this creature enters, target instant or sorcery card in your graveyard gains flashback until end of turn. The flashback cost is equal to its mana cost.",
+        TriggerEventDef::ZoneChanged {
+            object: ObjectPredicateDef::Source,
+            from: None,
+            to: Some(ZoneKind::Battlefield),
+        },
+        EffectDef::Apply {
+            recipient: EffectRecipientDef::Target(TargetSlotId(0)),
+            effect: AppliedEffectDef::Special(
+                "Grant flashback with a flashback cost equal to this card's mana cost",
+            ),
+            duration: EffectDurationDef::UntilEndOfTurn,
+        },
+    )
+    .with_targets(&SNAPCASTER_MAGE_TARGETS),
+)];
+
 pub(in crate::card::sets) static SNAPCASTER_MAGE: CardRecord = CardRecord::new(
     cards::SNAPCASTER_MAGE,
     "Snapcaster Mage",
@@ -288,8 +321,12 @@ pub(in crate::card::sets) static SNAPCASTER_MAGE: CardRecord = CardRecord::new(
     .type_line("Creature — Human Wizard")
     .creature(2, 1)
     .flash()
+    .with_abilities(&SNAPCASTER_MAGE_ABILITIES)
     .metadata_only(),
-);
+)
+.with_implementation_status(ImplementationStatus::MetadataOnly {
+    explanation: "Flash and the baseline creature are implemented; the declared ETB target, flashback grant, graveyard casting, flashback cost, and exile-after-casting behavior are not executed.",
+});
 
 // Implementation status: Land entry and mana production are active.
 pub(in crate::card::sets) static SULFUR_FALLS: CardRecord = CardRecord::new(

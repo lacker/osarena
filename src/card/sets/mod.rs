@@ -1,9 +1,9 @@
 //! Built-in card records, grouped by release year and set.
 //!
-//! Each canonical card is defined in one set module and has an adjacent
-//! `Implementation status` comment describing which rules the engine executes.
-//! Reprints and alternate-art variants point back to that canonical record from
-//! their own set module.
+//! Each canonical card is defined in one set module. Records default to a
+//! complete implementation and explicitly carry a reason when they are partial
+//! or metadata-only. Reprints and alternate-art variants point back to that
+//! canonical record from their own set module.
 
 mod y1993;
 mod y1994;
@@ -425,56 +425,9 @@ mod tests {
     use super::{CardRecord, SET_MODULES, y1993, y2011, y2012, y2013};
     use crate::card::{
         CardEffectStatus, CardPrinting, CardPrintingId, CardStructure, DoubleFacedKind,
-        PlayActionKind, PlayRestriction, SpellForm, TargetPredicate, cards,
+        ImplementationStatus, PlayActionKind, PlayRestriction, SpellForm, TargetPredicate, cards,
     };
     use crate::{CardDefinitionId, CardPartId, CardSet, Format, ModeId, PlayOptionId};
-
-    const SET_SOURCES: &[(&str, &str)] = &[
-        ("y1993/alpha.rs", include_str!("y1993/alpha.rs")),
-        (
-            "y1993/arabian_nights.rs",
-            include_str!("y1993/arabian_nights.rs"),
-        ),
-        ("y1993/beta.rs", include_str!("y1993/beta.rs")),
-        (
-            "y1993/collectors_edition.rs",
-            include_str!("y1993/collectors_edition.rs"),
-        ),
-        (
-            "y1993/international_collectors_edition.rs",
-            include_str!("y1993/international_collectors_edition.rs"),
-        ),
-        ("y1993/unlimited.rs", include_str!("y1993/unlimited.rs")),
-        ("y1994/antiquities.rs", include_str!("y1994/antiquities.rs")),
-        (
-            "y1994/fallen_empires.rs",
-            include_str!("y1994/fallen_empires.rs"),
-        ),
-        ("y1994/legends.rs", include_str!("y1994/legends.rs")),
-        ("y1994/promo_1994.rs", include_str!("y1994/promo_1994.rs")),
-        ("y1994/revised.rs", include_str!("y1994/revised.rs")),
-        ("y1994/the_dark.rs", include_str!("y1994/the_dark.rs")),
-        ("y2011/innistrad.rs", include_str!("y2011/innistrad.rs")),
-        (
-            "y2012/avacyn_restored.rs",
-            include_str!("y2012/avacyn_restored.rs"),
-        ),
-        (
-            "y2012/dark_ascension.rs",
-            include_str!("y2012/dark_ascension.rs"),
-        ),
-        ("y2012/magic_2013.rs", include_str!("y2012/magic_2013.rs")),
-        (
-            "y2012/return_to_ravnica.rs",
-            include_str!("y2012/return_to_ravnica.rs"),
-        ),
-        (
-            "y2013/dragons_maze.rs",
-            include_str!("y2013/dragons_maze.rs"),
-        ),
-        ("y2013/gatecrash.rs", include_str!("y2013/gatecrash.rs")),
-        ("y2013/magic_2014.rs", include_str!("y2013/magic_2014.rs")),
-    ];
 
     fn standard_records() -> Vec<&'static CardRecord> {
         let mut records = SET_MODULES
@@ -600,33 +553,24 @@ mod tests {
     }
 
     #[test]
-    fn every_card_record_has_an_adjacent_implementation_status_comment() {
-        let mut record_count = 0;
-        let mut status_count = 0;
+    fn every_non_complete_card_explains_its_status() {
+        let records = SET_MODULES
+            .iter()
+            .flat_map(|module| module.cards.iter().copied())
+            .collect::<Vec<_>>();
+        assert_eq!(records.len(), 244);
 
-        for (path, source) in SET_SOURCES {
-            let lines = source.lines().collect::<Vec<_>>();
-            status_count += lines
-                .iter()
-                .filter(|line| line.trim_start().starts_with("// Implementation status:"))
-                .count();
-
-            for (index, line) in lines.iter().enumerate() {
-                if line.starts_with("pub(in crate::card::sets) static ")
-                    && line.contains(": CardRecord")
-                {
-                    record_count += 1;
-                    assert!(
-                        index > 0 && lines[index - 1].starts_with("// Implementation status:"),
-                        "{path}:{} is missing an adjacent implementation-status comment",
-                        index + 1
-                    );
-                }
+        for record in records {
+            match record.implementation_status {
+                ImplementationStatus::Complete => {}
+                ImplementationStatus::Partial { explanation }
+                | ImplementationStatus::MetadataOnly { explanation } => assert!(
+                    !explanation.trim().is_empty(),
+                    "{} has a non-complete status without an explanation",
+                    record.name
+                ),
             }
         }
-
-        assert_eq!(record_count, 244);
-        assert_eq!(status_count, record_count);
     }
 
     #[test]

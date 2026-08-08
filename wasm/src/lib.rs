@@ -1,4 +1,5 @@
 use penta::card;
+use penta::game::{DecisionKind, DecisionOrderSemantics};
 use penta::{
     Action, ActivatedAbilityText, BattlefieldExit, CardCatalog, CardDefinitionId, CardInstanceId,
     Format, Game, GameEvent, GameResult, HandcraftedPolicy, ModeId, PlayOptionId, PlayerId,
@@ -492,6 +493,9 @@ impl WebGame {
                 GameEvent::SpellResolved { card, definition } => Some((*card, *definition, false)),
                 GameEvent::AbilityResolved {
                     object, definition, ..
+                }
+                | GameEvent::TriggeredAbilityResolved {
+                    object, definition, ..
                 } => Some((*object, *definition, false)),
                 GameEvent::SpellFizzled { card, definition } => Some((*card, *definition, true)),
                 _ => None,
@@ -624,6 +628,7 @@ impl WebGame {
     fn automatic_human_action_for(&self, observation: &PlayerObservation) -> Option<Action> {
         if self.autopass_enabled
             && let Some(decision) = observation.decision.as_ref()
+            && decision.kind == DecisionKind::Choice
             && decision.minimum == 1
             && decision.maximum == 1
             && decision.options.len() == 1
@@ -1049,6 +1054,8 @@ impl WebGame {
                     // this is the spell/ability object, not physical lineage.
                     "cardId": object.id.0,
                     "sourceId": object.source.map(|source| source.0),
+                    "abilityId": object.ability.map(|ability| ability.0),
+                    "abilityText": object.ability_text,
                     "name": presentation.name,
                     "art": card_art_value(art),
                     "owner": if object.controller == self.human { "human" } else { "opponent" },
@@ -1145,8 +1152,13 @@ impl WebGame {
             None
         };
         let decision = observation.decision.as_ref().map(|decision| {
-            json!({
+            let mut value = json!({
                 "id": decision.id,
+                "kind": match decision.kind {
+                    DecisionKind::Choice => "Choice",
+                    DecisionKind::TriggerOrder => "TriggerOrder",
+                    DecisionKind::TriggerPlacement => "TriggerPlacement",
+                },
                 "prompt": decision.prompt,
                 "minimum": decision.minimum,
                 "maximum": decision.maximum,
@@ -1154,12 +1166,20 @@ impl WebGame {
                 "visibility": readable_debug(decision.visibility),
                 "options": decision.options.iter().map(|option| json!({
                     "id": option.id,
+                    "triggerId": matches!(decision.kind, DecisionKind::TriggerOrder).then_some(option.id),
                     "label": option.label,
                     "cardId": option.card.map(|(card, _)| card.0),
                     "cardName": option.card.map(|(_, definition)| self.card_name(definition)),
+                    "abilityText": option.ability_text,
                     "zone": readable_debug(option.zone),
                 })).collect::<Vec<_>>(),
-            })
+            });
+            if let Some(order_semantics) = decision.order_semantics {
+                value["orderSemantics"] = Value::from(match order_semantics {
+                    DecisionOrderSemantics::Resolution => "resolution",
+                });
+            }
+            value
         });
 
         json!({
@@ -1401,6 +1421,17 @@ impl WebGame {
                 self.player_name(*player),
                 self.card_name(*definition)
             )),
+            GameEvent::AbilityTriggered {
+                player, definition, ..
+            } => Some(format!(
+                "{} {} triggered",
+                if *player == self.human {
+                    "Your"
+                } else {
+                    "Opponent’s"
+                },
+                self.card_name(*definition)
+            )),
             GameEvent::AttackDeclared { player, attackers } => Some(format!(
                 "{} attacked with {}",
                 self.player_name(*player),
@@ -1490,6 +1521,8 @@ impl WebGame {
             GameEvent::ManaAdded { .. }
             | GameEvent::SpellResolved { .. }
             | GameEvent::AbilityResolved { .. }
+            | GameEvent::TriggeredAbilityPutOnStack { .. }
+            | GameEvent::TriggeredAbilityResolved { .. }
             | GameEvent::StepChanged { .. } => None,
         }
     }

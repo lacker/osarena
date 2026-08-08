@@ -19,12 +19,17 @@ pub mod cards;
 pub use catalog::{CardCatalog, CatalogError};
 pub use characteristics::{CharacteristicContext, CharacteristicError, applicable_part_ids};
 pub use model::{
-    ActivatedAbilityText, AdditionalCostDef, AlternateManaCost, AlternateSpellKind,
-    AlternativeCostDef, CardArt, CardBehavior, CardComposition, CardDefinition, CardEffectStatus,
-    CardKind, CardPart, CardPrinting, CardPrintingId, CardRules, CardSet, CardStructure,
-    CreatureStats, DoubleFacedKind, LandEntry, ManaCost, ManaProduction, MeldComponentDef,
-    MeldRecipeDef, MeldResultDef, ModeDef, ModeSetDef, PlayActionKind, PlayOptionDef,
-    PlayRestriction, SpellForm, TargetPredicate, TargetSlotDef,
+    AbilityCostDef, AbilityDef, AbilityTargetDef, AbilityTargetPredicate, ActivatedAbilityDef,
+    ActivatedAbilityText, AddManaEffectDef, AdditionalCostDef, AlternateManaCost,
+    AlternateSpellKind, AlternativeCostDef, AppliedEffectDef, CardArt, CardBehavior,
+    CardComposition, CardDefinition, CardEffectStatus, CardKind, CardPart, CardPrinting,
+    CardPrintingId, CardRules, CardSet, CardStructure, CreatureStats, DoubleFacedKind, EffectDef,
+    EffectDurationDef, EffectRecipientDef, ImplementationStatus, LandEntry, ManaCost, ManaKindDef,
+    ManaProduction, ManaRestrictionDef, ManaSelectionDef, ManaSpendEffectDef, MeldComponentDef,
+    MeldRecipeDef, MeldResultDef, ModeDef, ModeSetDef, ObjectPredicateDef, PlayActionKind,
+    PlayOptionDef, PlayRestriction, PlayerRelation, PrintedManaCost, SpecialActionDef,
+    SpellAbilityDef, SpellForm, StaticAbilityDef, TargetPredicate, TargetSlotDef, TriggerEventDef,
+    TriggeredAbilityDef, TurnStepDef, ValueDef, ZoneKind,
 };
 
 /// The built-in catalog, validated once per process. Construction walks every

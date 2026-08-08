@@ -1,9 +1,10 @@
 //! Limited Edition Beta card definitions and printings.
 
 use super::{CardRecord, PrintingRecord, alpha};
-use crate::card::{CardArt, CardBehavior, CardKind, CardRules, CardSet, ManaCost, cards};
+use crate::card::{
+    CardArt, CardBehavior, CardKind, CardRules, CardSet, ImplementationStatus, ManaCost, cards,
+};
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static VOLCANIC_ISLAND: CardRecord = CardRecord::new(
     cards::VOLCANIC_ISLAND,
     "Volcanic Island",
@@ -12,7 +13,10 @@ pub(in crate::card::sets) static VOLCANIC_ISLAND: CardRecord = CardRecord::new(
     false,
     CardBehavior::VolcanicIsland,
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add U or R."),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The Island and Mountain basic land subtypes are not represented.",
+});
 
 pub(in crate::card::sets) static CARDS: &[&CardRecord] = &[&VOLCANIC_ISLAND];
 

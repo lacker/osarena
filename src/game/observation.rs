@@ -1,4 +1,6 @@
-use crate::{Action, CardDefinitionId, CardPartId, CastSignature, GameObjectId, PlayerId, Target};
+use crate::{
+    AbilityId, Action, CardDefinitionId, CardPartId, CastSignature, GameObjectId, PlayerId, Target,
+};
 
 use super::{DecisionObservation, GameResult, ManaPool, StackObjectKind, Step};
 
@@ -30,6 +32,12 @@ pub struct StackObservation {
     pub id: GameObjectId,
     pub kind: StackObjectKind,
     pub source: Option<GameObjectId>,
+    /// The printed or granted ability that created this stack object. Spells
+    /// and legacy activated abilities that have not yet migrated omit it.
+    pub ability: Option<AbilityId>,
+    /// Frozen rules text for the creating ability. This remains inspectable
+    /// even when its source changes zones or characteristics.
+    pub ability_text: Option<String>,
     pub definition: CardDefinitionId,
     pub controller: PlayerId,
     /// Locked spell form, modes, costs, X, and target slots. Activated

@@ -1,11 +1,12 @@
 use super::*;
 use crate::poc::{self, cards};
 use crate::{
-    AdditionalCostDef, AdditionalCostId, AlternativeCostDef, AlternativeCostId, CardComposition,
-    CardDefinition, CardEffectStatus, CardInstanceId, CardPart, CardPartId, CardPrinting,
-    CardRules, CardStructure, CastChoices, DoubleFacedKind, LandEntry, ModeDef, ModeSetDef,
-    PlayOptionDef, PlayOptionId, SpellForm, StackObjectId, TargetPredicate, TargetSelection,
-    TargetSlotDef, TargetSlotId,
+    AbilityTargetDef, AbilityTargetPredicate, AdditionalCostDef, AdditionalCostId,
+    AlternativeCostDef, AlternativeCostId, CardComposition, CardDefinition, CardEffectStatus,
+    CardInstanceId, CardPart, CardPartId, CardPrinting, CardRules, CardStructure, CastChoices,
+    DoubleFacedKind, LandEntry, ManaRestrictionDef, ManaSpendEffectDef, ModeDef, ModeSetDef,
+    PlayOptionDef, PlayOptionId, PlayerRelation, SpellForm, StackObjectId, TargetPredicate,
+    TargetSelection, TargetSlotDef, TargetSlotId,
 };
 
 fn ready_game() -> Game {
@@ -25,6 +26,7 @@ fn ready_game() -> Game {
         player.exile.clear();
         player.life = i16::from(rules::STARTING_LIFE);
         player.mana_pool = ManaPool::default();
+        player.mana.clear();
     }
     game
 }
@@ -102,13 +104,20 @@ fn spell(id: u32, definition: CardDefinitionId, controller: PlayerId, x: u16) ->
         kind: StackObjectKind::Spell,
         card: card(id, definition, controller),
         source: None,
+        ability: None,
+        ability_text: None,
         controller,
         signature: Some(CastSignature::from_validated_choices(
             SpellForm::Part(CardPartId::PRIMARY),
             cast_choices(Vec::new(), x),
         )),
         ability_targets: Vec::new(),
+        ability_target_selections: Vec::new(),
+        triggered_target_defs: &[],
         chosen_permanents: Vec::new(),
+        triggered_effect: None,
+        trigger_context: None,
+        applied_effects: Vec::new(),
         is_copy: false,
     }
 }
@@ -953,7 +962,7 @@ fn metadata_only_flash_creatures_keep_their_printed_cast_timing() {
 }
 
 #[test]
-fn city_of_brass_produces_any_color_and_deals_one_damage() {
+fn city_of_brass_produces_any_color_then_uses_the_stack_for_damage() {
     let mut game = ready_game();
     game.battlefield
         .push(creature(10_000, cards::CITY_OF_BRASS, PlayerId::One));
@@ -961,7 +970,420 @@ fn city_of_brass_produces_any_color_and_deals_one_damage() {
     game.activate_mana_source(PlayerId::One, CardInstanceId(10_000), ManaColor::Blue);
 
     assert_eq!(game.players[0].mana_pool.blue, 1);
+    assert_eq!(game.players[0].life, 20);
+    assert!(game.stack.is_empty());
+    game.finish_rules_procedure();
+    assert_eq!(game.stack.len(), 1);
+    assert_eq!(game.stack[0].kind, StackObjectKind::TriggeredAbility);
+    assert_eq!(game.stack[0].source, Some(CardInstanceId(10_000)));
+
+    pass_priority_pair(&mut game);
     assert_eq!(game.players[0].life, 19);
+}
+
+#[test]
+fn trigger_placement_preserves_the_nonactive_players_priority() {
+    let mut game = ready_game();
+    game.battlefield
+        .push(creature(10_000, cards::CITY_OF_BRASS, PlayerId::Two));
+
+    game.apply(PlayerId::One, Action::PassPriority).unwrap();
+    assert_eq!(game.priority, PlayerId::Two);
+    game.apply(
+        PlayerId::Two,
+        Action::ActivateManaAbility {
+            source: CardInstanceId(10_000),
+            color: ManaColor::Blue,
+        },
+    )
+    .unwrap();
+
+    assert_eq!(game.stack.len(), 1);
+    assert_eq!(game.priority, PlayerId::Two);
+    assert!(
+        game.legal_actions(PlayerId::Two)
+            .contains(&Action::PassPriority)
+    );
+}
+
+#[test]
+fn ankh_trigger_can_be_answered_by_bolt_before_it_resolves() {
+    let mut game = ready_game();
+    game.players[0].life = 2;
+    game.players[1].life = 3;
+    game.battlefield
+        .push(creature(10_000, cards::ANKH_OF_MISHRA, PlayerId::Two));
+    let mountain = card(10_001, cards::MOUNTAIN, PlayerId::One);
+    let bolt = card(10_002, cards::LIGHTNING_BOLT, PlayerId::One);
+    game.players[0]
+        .hand
+        .extend([mountain.clone(), bolt.clone()]);
+
+    let play_land = game
+        .legal_actions(PlayerId::One)
+        .into_iter()
+        .find(|action| matches!(action, Action::PlayLand { card, .. } if *card == mountain.id))
+        .expect("Mountain is a legal land play");
+    game.apply(PlayerId::One, play_land).unwrap();
+
+    assert_eq!(game.players[0].life, 2);
+    assert_eq!(game.stack.len(), 1);
+    assert_eq!(game.stack[0].kind, StackObjectKind::TriggeredAbility);
+    assert_eq!(game.stack[0].source, Some(CardInstanceId(10_000)));
+    assert_eq!(game.stack[0].ability, Some(crate::AbilityId::PRIMARY));
+
+    let cast_bolt = cast_action(bolt.id, vec![Target::Player(PlayerId::Two)], Vec::new(), 0);
+    assert!(game.legal_actions(PlayerId::One).contains(&cast_bolt));
+    game.apply(PlayerId::One, cast_bolt).unwrap();
+    assert_eq!(game.stack.len(), 2);
+    assert_eq!(game.stack.last().unwrap().kind, StackObjectKind::Spell);
+
+    pass_priority_pair(&mut game);
+    assert_eq!(
+        game.result,
+        Some(GameResult::Winner {
+            winner: PlayerId::One,
+            reason: WinReason::OpponentLostAllLife,
+        })
+    );
+    assert_eq!(game.players[0].life, 2);
+    assert_eq!(game.stack.len(), 1, "Ankh never got to resolve");
+}
+
+#[test]
+fn city_trigger_can_be_answered_when_mana_was_floated_first() {
+    let mut game = ready_game();
+    game.players[0].life = 1;
+    game.players[1].life = 3;
+    let city = creature(10_000, cards::CITY_OF_BRASS, PlayerId::One);
+    let bolt = card(10_001, cards::LIGHTNING_BOLT, PlayerId::One);
+    game.battlefield.push(city);
+    game.players[0].hand.push(bolt.clone());
+
+    game.apply(
+        PlayerId::One,
+        Action::ActivateManaAbility {
+            source: CardInstanceId(10_000),
+            color: ManaColor::Red,
+        },
+    )
+    .unwrap();
+    assert_eq!(game.stack.len(), 1);
+    assert_eq!(game.players[0].life, 1);
+
+    game.apply(
+        PlayerId::One,
+        cast_action(bolt.id, vec![Target::Player(PlayerId::Two)], Vec::new(), 0),
+    )
+    .unwrap();
+    assert_eq!(game.stack.last().unwrap().kind, StackObjectKind::Spell);
+    pass_priority_pair(&mut game);
+
+    assert_eq!(
+        game.result,
+        Some(GameResult::Winner {
+            winner: PlayerId::One,
+            reason: WinReason::OpponentLostAllLife,
+        })
+    );
+}
+
+#[test]
+fn city_trigger_is_above_a_spell_when_city_pays_during_casting() {
+    let mut game = ready_game();
+    game.players[0].life = 1;
+    game.players[1].life = 3;
+    game.battlefield
+        .push(creature(10_000, cards::CITY_OF_BRASS, PlayerId::One));
+    let bolt = card(10_001, cards::LIGHTNING_BOLT, PlayerId::One);
+    game.players[0].hand.push(bolt.clone());
+
+    let cast = cast_action(bolt.id, vec![Target::Player(PlayerId::Two)], Vec::new(), 0);
+    assert!(game.legal_actions(PlayerId::One).contains(&cast));
+    game.apply(PlayerId::One, cast).unwrap();
+
+    assert_eq!(game.stack.len(), 2);
+    assert_eq!(game.stack[0].kind, StackObjectKind::Spell);
+    assert_eq!(game.stack[1].kind, StackObjectKind::TriggeredAbility);
+    pass_priority_pair(&mut game);
+    assert_eq!(
+        game.result,
+        Some(GameResult::Winner {
+            winner: PlayerId::Two,
+            reason: WinReason::OpponentLostAllLife,
+        })
+    );
+    assert_eq!(game.players[1].life, 3, "Bolt never resolved");
+}
+
+#[test]
+fn a_resolving_tap_effect_uses_the_same_city_trigger_path() {
+    let mut game = ready_game();
+    game.players[0].mana_pool.colorless = 1;
+    game.battlefield.extend([
+        creature(10_000, cards::ICY_MANIPULATOR, PlayerId::One),
+        creature(10_001, cards::CITY_OF_BRASS, PlayerId::Two),
+    ]);
+    let activation = Action::ActivateAbility {
+        source: CardInstanceId(10_000),
+        target: Some(Target::Permanent(CardInstanceId(10_001))),
+        sacrifice: None,
+    };
+    assert!(game.legal_actions(PlayerId::One).contains(&activation));
+    game.apply(PlayerId::One, activation).unwrap();
+    pass_priority_pair(&mut game);
+
+    assert!(game.battlefield[1].tapped);
+    assert_eq!(game.players[1].life, 20);
+    assert_eq!(game.stack.len(), 1);
+    assert_eq!(game.stack[0].kind, StackObjectKind::TriggeredAbility);
+    assert_eq!(game.stack[0].source, Some(CardInstanceId(10_001)));
+    pass_priority_pair(&mut game);
+    assert_eq!(game.players[1].life, 19);
+}
+
+#[test]
+fn controller_chooses_resolution_order_for_simultaneous_triggers() {
+    let mut game = ready_game();
+    game.battlefield.extend([
+        creature(10_000, cards::ANKH_OF_MISHRA, PlayerId::One),
+        creature(10_001, cards::ANKH_OF_MISHRA, PlayerId::One),
+    ]);
+    let mountain = card(10_002, cards::MOUNTAIN, PlayerId::One);
+    game.players[0].hand.push(mountain.clone());
+    let play = game
+        .legal_actions(PlayerId::One)
+        .into_iter()
+        .find(|action| matches!(action, Action::PlayLand { card, .. } if *card == mountain.id))
+        .unwrap();
+    game.apply(PlayerId::One, play).unwrap();
+
+    let decision = game.observe(PlayerId::One).decision.unwrap();
+    assert_eq!(decision.kind, DecisionKind::TriggerOrder);
+    assert_eq!(
+        decision.order_semantics,
+        Some(DecisionOrderSemantics::Resolution)
+    );
+    assert!(decision.options.iter().all(|option| {
+        option
+            .ability_text
+            .as_deref()
+            .is_some_and(|text| text.contains("Whenever a land enters"))
+    }));
+    let first = decision.options[0].id;
+    let second = decision.options[1].id;
+    game.apply(
+        PlayerId::One,
+        Action::ChooseDecision {
+            decision: decision.id,
+            options: vec![second, first],
+        },
+    )
+    .unwrap();
+
+    assert_eq!(game.stack.len(), 2);
+    assert_eq!(
+        game.stack.last().unwrap().source,
+        Some(CardInstanceId(10_001))
+    );
+    assert!(game.stack.iter().all(|object| {
+        object.ability == Some(crate::AbilityId::PRIMARY) && object.ability_text.is_some()
+    }));
+}
+
+#[test]
+fn targeted_trigger_chooses_public_targets_while_being_put_on_stack() {
+    static TARGETS: [AbilityTargetDef; 1] = [AbilityTargetDef::exactly_one(
+        TargetSlotId(7),
+        "target creature an opponent controls",
+        AbilityTargetPredicate::Object {
+            object: ObjectPredicateDef::Creature,
+            zones: &[ZoneKind::Battlefield],
+            controller: Some(PlayerRelation::Opponent),
+            owner: None,
+        },
+    )];
+    let mut game = ready_game();
+    game.battlefield.extend([
+        creature(10_000, cards::ANKH_OF_MISHRA, PlayerId::One),
+        creature(10_001, cards::SU_CHI, PlayerId::Two),
+    ]);
+    game.capture_trigger(TriggerCapture {
+        source: AbilitySourceRef {
+            object: CardInstanceId(10_000),
+            ability: crate::AbilityId::PRIMARY,
+        },
+        definition: cards::ANKH_OF_MISHRA,
+        owner: PlayerId::One,
+        controller: PlayerId::One,
+        text: "Deal 2 damage to target creature an opponent controls.",
+        target_defs: &TARGETS,
+        effect: EffectDef::DealDamage {
+            recipient: EffectRecipientDef::Target(TargetSlotId(7)),
+            amount: ValueDef::Constant(2),
+        },
+        context: TriggerContext {
+            object: None,
+            player: None,
+            amount: None,
+        },
+    });
+    game.finish_rules_procedure();
+
+    let decision = game.observe(PlayerId::One).decision.unwrap();
+    assert_eq!(decision.kind, DecisionKind::TriggerPlacement);
+    assert_eq!(decision.visibility, DecisionVisibility::Public);
+    assert_eq!(decision.minimum, 1);
+    assert_eq!(decision.maximum, 1);
+    assert_eq!(decision.options.len(), 1);
+    game.apply(
+        PlayerId::One,
+        Action::ChooseDecision {
+            decision: decision.id,
+            options: vec![decision.options[0].id],
+        },
+    )
+    .unwrap();
+
+    assert_eq!(
+        game.stack[0].targets(),
+        vec![Target::Permanent(CardInstanceId(10_001))]
+    );
+    pass_priority_pair(&mut game);
+    assert_eq!(game.battlefield[1].damage, 2);
+}
+
+#[test]
+fn su_chi_mana_and_source_power_use_ordinary_stack_and_lki() {
+    let mut game = ready_game();
+    game.battlefield
+        .push(creature(10_000, cards::SU_CHI, PlayerId::One));
+    game.destroy_permanent(CardInstanceId(10_000));
+    assert_eq!(game.players[0].mana_pool.colorless, 0);
+    game.finish_rules_procedure();
+    assert_eq!(game.stack.len(), 1);
+    assert_eq!(game.stack[0].source, Some(CardInstanceId(10_000)));
+    pass_priority_pair(&mut game);
+    assert_eq!(game.players[0].mana_pool.colorless, 4);
+
+    let mut game = ready_game();
+    let mut source = creature(10_010, cards::SAVANNAH_LIONS, PlayerId::One);
+    source.power_bonus = 3;
+    game.battlefield.push(source);
+    game.capture_trigger(TriggerCapture {
+        source: AbilitySourceRef {
+            object: CardInstanceId(10_010),
+            ability: crate::AbilityId::PRIMARY,
+        },
+        definition: cards::SAVANNAH_LIONS,
+        owner: PlayerId::One,
+        controller: PlayerId::One,
+        text: "Deal damage equal to this creature's power.",
+        target_defs: &[],
+        effect: EffectDef::DealDamage {
+            recipient: EffectRecipientDef::Opponent,
+            amount: ValueDef::SourcePower,
+        },
+        context: TriggerContext {
+            object: Some(CardInstanceId(10_010)),
+            player: Some(PlayerId::One),
+            amount: None,
+        },
+    });
+    game.destroy_permanent(CardInstanceId(10_010));
+    game.finish_rules_procedure();
+    pass_priority_pair(&mut game);
+    assert_eq!(game.players[1].life, 15, "last known power was five");
+}
+
+#[test]
+fn workshop_mana_is_three_individual_restricted_values() {
+    let mut game = ready_game();
+    game.battlefield
+        .push(creature(10_000, cards::MISHRA_S_WORKSHOP, PlayerId::One));
+    game.apply(
+        PlayerId::One,
+        Action::ActivateManaAbility {
+            source: CardInstanceId(10_000),
+            color: ManaColor::Colorless,
+        },
+    )
+    .unwrap();
+
+    assert_eq!(game.players[0].mana_pool.colorless, 3);
+    assert_eq!(game.players[0].mana.len(), 3);
+    assert!(game.players[0].mana.iter().all(|mana| {
+        mana.color == ManaColor::Colorless
+            && mana.source
+                == Some(ManaSource {
+                    object: CardInstanceId(10_000),
+                    ability: crate::AbilityId::PRIMARY,
+                })
+            && mana.restrictions == [ManaRestrictionDef::CastSpell(ObjectPredicateDef::Artifact)]
+    }));
+}
+
+#[test]
+fn explicitly_tagged_triggered_mana_ability_resolves_without_the_stack() {
+    static ABILITIES: [AbilityDef; 1] = [AbilityDef::triggered_mana(
+        crate::AbilityId::PRIMARY,
+        "Whenever this becomes tapped, add {C}.",
+        TriggerEventDef::BecomesTapped(ObjectPredicateDef::Source),
+        EffectDef::AddMana(AddManaEffectDef::one(ManaKindDef::Colorless)),
+    )];
+    let definition_id = CardDefinitionId(10_050);
+    let mut definition = CardDefinition::new(
+        definition_id,
+        "Test triggered mana source",
+        CardSet::Magic2014,
+        false,
+        CardBehavior::Unsupported,
+    );
+    definition.rules = CardRules::new(
+        CardKind::Artifact,
+        ManaCost::new(0, 0),
+        "Whenever this becomes tapped, add {C}.",
+    )
+    .with_abilities(&ABILITIES);
+    synchronize_single_part_definition(&mut definition);
+
+    let mut game = ready_game();
+    game.catalog = CardCatalog::new([definition]).unwrap();
+    game.battlefield
+        .push(creature(10_050, definition_id, PlayerId::One));
+
+    let _ = game.tap_permanent(CardInstanceId(10_050));
+
+    assert_eq!(game.players[0].mana_pool.colorless, 1);
+    assert_eq!(game.players[0].mana.len(), 1);
+    assert!(game.pending_triggers.is_empty());
+    assert!(game.stack.is_empty());
+}
+
+#[test]
+fn a_mana_spend_rider_attaches_to_the_paid_spell_with_its_source() {
+    static RIDERS: [ManaSpendEffectDef; 1] = [ManaSpendEffectDef::ApplyToPaidSpell(
+        crate::AppliedEffectDef::CannotBeCountered,
+    )];
+    let mut object = spell(77, cards::SAVANNAH_LIONS, PlayerId::One, 0);
+    let mana = Mana::from_ability(
+        ManaColor::White,
+        ManaSource {
+            object: CardInstanceId(10_000),
+            ability: crate::AbilityId(1),
+        },
+        &[],
+        &RIDERS,
+    );
+
+    Game::apply_spent_mana_to_spell(&mut object, &[mana]);
+
+    assert_eq!(object.applied_effects.len(), 1);
+    assert_eq!(object.applied_effects[0].source, mana.source);
+    assert_eq!(
+        object.applied_effects[0].effect,
+        crate::AppliedEffectDef::CannotBeCountered
+    );
 }
 
 #[test]

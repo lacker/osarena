@@ -1,7 +1,25 @@
 use super::{CardRecord, PrintingRecord};
-use crate::card::{CardArt, CardBehavior, CardKind, CardRules, CardSet, ManaCost, cards};
+use crate::card::{
+    AbilityCostDef, AbilityDef, AddManaEffectDef, CardArt, CardBehavior, CardKind, CardRules,
+    CardSet, EffectDef, EffectRecipientDef, ImplementationStatus, ManaCost, ManaKindDef,
+    ObjectPredicateDef, TriggerEventDef, ValueDef, ZoneKind, cards,
+};
+use crate::ids::AbilityId;
 
-// Implementation status: complete — card rules are executed by the engine.
+static ANKH_OF_MISHRA_ABILITIES: [AbilityDef; 1] = [AbilityDef::triggered(
+    AbilityId::PRIMARY,
+    "Whenever a land enters, deal 2 damage to its controller.",
+    TriggerEventDef::ZoneChanged {
+        object: ObjectPredicateDef::Land,
+        from: None,
+        to: Some(ZoneKind::Battlefield),
+    },
+    EffectDef::DealDamage {
+        recipient: EffectRecipientDef::TriggeringPlayer,
+        amount: ValueDef::Constant(2),
+    },
+)];
+
 pub(in crate::card::sets) static ANKH_OF_MISHRA: CardRecord = CardRecord::new(
     cards::ANKH_OF_MISHRA,
     "Ankh of Mishra",
@@ -13,10 +31,10 @@ pub(in crate::card::sets) static ANKH_OF_MISHRA: CardRecord = CardRecord::new(
         CardKind::Artifact,
         ManaCost::new(2, 0),
         "Whenever a land enters, Ankh of Mishra deals 2 damage to its controller.",
-    ),
+    )
+    .with_abilities(&ANKH_OF_MISHRA_ABILITIES),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static BLACK_VISE: CardRecord = CardRecord::new(
     cards::BLACK_VISE,
     "Black Vise",
@@ -29,9 +47,11 @@ pub(in crate::card::sets) static BLACK_VISE: CardRecord = CardRecord::new(
         ManaCost::new(1, 0),
         "As Black Vise enters, choose an opponent. At their upkeep, it deals 1 damage for each card in their hand beyond four.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+        explanation: "The upkeep trigger currently resolves immediately instead of using the stack.",
+    });
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static COPPER_TABLET: CardRecord = CardRecord::new(
     cards::COPPER_TABLET,
     "Copper Tablet",
@@ -44,9 +64,11 @@ pub(in crate::card::sets) static COPPER_TABLET: CardRecord = CardRecord::new(
         ManaCost::new(2, 0),
         "At the beginning of each player's upkeep, Copper Tablet deals 1 damage to that player.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The upkeep trigger currently resolves immediately instead of using the stack.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static FIREBALL: CardRecord = CardRecord::new(
     cards::FIREBALL,
     "Fireball",
@@ -59,9 +81,11 @@ pub(in crate::card::sets) static FIREBALL: CardRecord = CardRecord::new(
         ManaCost::with_x(1),
         "Deal X damage divided evenly among the chosen targets. Each target beyond the first costs 1 more.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+        explanation: "The complex multi-target cost and damage-division rules need a full correctness review.",
+    });
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static FORK: CardRecord = CardRecord::new(
     cards::FORK,
     "Fork",
@@ -74,9 +98,11 @@ pub(in crate::card::sets) static FORK: CardRecord = CardRecord::new(
         ManaCost::new(0, 2),
         "Copy target instant or sorcery. You may choose new targets for the copy.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The copy does not become red as required by Fork's copy effect.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static GLASSES_OF_URZA: CardRecord = CardRecord::new(
     cards::GLASSES_OF_URZA,
     "Glasses of Urza",
@@ -93,9 +119,11 @@ pub(in crate::card::sets) static GLASSES_OF_URZA: CardRecord = CardRecord::new(
         "Look at {}'s hand with Glasses of Urza",
         "Look at a player's hand",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The activated ability currently resolves immediately instead of using the stack.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static IRON_STAR: CardRecord = CardRecord::new(
     cards::IRON_STAR,
     "Iron Star",
@@ -108,9 +136,11 @@ pub(in crate::card::sets) static IRON_STAR: CardRecord = CardRecord::new(
         ManaCost::new(1, 0),
         "Whenever a red spell is cast, you may pay 1. If you do, gain 1 life.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The spell-cast trigger currently bypasses the stack.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static LIGHTNING_BOLT: CardRecord = CardRecord::new(
     cards::LIGHTNING_BOLT,
     "Lightning Bolt",
@@ -125,7 +155,6 @@ pub(in crate::card::sets) static LIGHTNING_BOLT: CardRecord = CardRecord::new(
     ),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static MOUNTAIN: CardRecord = CardRecord::new(
     cards::MOUNTAIN,
     "Mountain",
@@ -136,7 +165,6 @@ pub(in crate::card::sets) static MOUNTAIN: CardRecord = CardRecord::new(
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add R."),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static RED_ELEMENTAL_BLAST: CardRecord = CardRecord::new(
     cards::RED_ELEMENTAL_BLAST,
     "Red Elemental Blast",
@@ -151,7 +179,6 @@ pub(in crate::card::sets) static RED_ELEMENTAL_BLAST: CardRecord = CardRecord::n
     ),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static SHATTER: CardRecord = CardRecord::new(
     cards::SHATTER,
     "Shatter",
@@ -166,7 +193,6 @@ pub(in crate::card::sets) static SHATTER: CardRecord = CardRecord::new(
     ),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static SMOKE: CardRecord = CardRecord::new(
     cards::SMOKE,
     "Smoke",
@@ -181,7 +207,6 @@ pub(in crate::card::sets) static SMOKE: CardRecord = CardRecord::new(
     ),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static STONE_GIANT: CardRecord = CardRecord::new(
     cards::STONE_GIANT,
     "Stone Giant",
@@ -196,9 +221,11 @@ pub(in crate::card::sets) static STONE_GIANT: CardRecord = CardRecord::new(
     )
     .creature(3, 4)
     .activated("Give {} flying with Stone Giant", "Give a smaller creature flying"),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+        explanation: "The activated ability and its delayed end-step trigger currently bypass the stack.",
+    });
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static WINTER_ORB: CardRecord = CardRecord::new(
     cards::WINTER_ORB,
     "Winter Orb",
@@ -213,7 +240,6 @@ pub(in crate::card::sets) static WINTER_ORB: CardRecord = CardRecord::new(
     ),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static BLACK_LOTUS: CardRecord = CardRecord::new(
     cards::BLACK_LOTUS,
     "Black Lotus",
@@ -226,9 +252,11 @@ pub(in crate::card::sets) static BLACK_LOTUS: CardRecord = CardRecord::new(
         ManaCost::new(0, 0),
         "Tap, sacrifice Black Lotus: Add RRR.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+        explanation: "The catalog text incorrectly says the mana is red; the chosen color is not represented here.",
+    });
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static CHAOS_ORB: CardRecord = CardRecord::new(
     cards::CHAOS_ORB,
     "Chaos Orb",
@@ -242,9 +270,11 @@ pub(in crate::card::sets) static CHAOS_ORB: CardRecord = CardRecord::new(
         "1, Tap: Choose a permanent. On resolution, destroy it and Chaos Orb if Chaos Orb is still on the battlefield.",
     )
     .activated("Flip Chaos Orb onto {}", "Flip Chaos Orb onto a permanent"),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+        explanation: "The engine uses a deterministic chosen-permanent approximation rather than the physical flip procedure.",
+    });
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static DRAGON_WHELP: CardRecord = CardRecord::new(
     cards::DRAGON_WHELP,
     "Dragon Whelp",
@@ -259,9 +289,11 @@ pub(in crate::card::sets) static DRAGON_WHELP: CardRecord = CardRecord::new(
     )
     .creature(2, 3)
     .flying(),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+        explanation: "The pump ability and its delayed end-step trigger currently bypass the stack.",
+    });
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static GOBLIN_BALLOON_BRIGADE: CardRecord = CardRecord::new(
     cards::GOBLIN_BALLOON_BRIGADE,
     "Goblin Balloon Brigade",
@@ -276,9 +308,11 @@ pub(in crate::card::sets) static GOBLIN_BALLOON_BRIGADE: CardRecord = CardRecord
     )
     .creature(1, 1)
     .goblin(),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+        explanation: "The flying-granting activated ability currently resolves immediately instead of using the stack.",
+    });
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static GOBLIN_KING: CardRecord = CardRecord::new(
     cards::GOBLIN_KING,
     "Goblin King",
@@ -293,9 +327,11 @@ pub(in crate::card::sets) static GOBLIN_KING: CardRecord = CardRecord::new(
     )
     .creature(2, 2)
     .goblin(),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+        explanation: "Mountainwalk does not currently recognize Mountains supplied by dual-land subtypes.",
+    });
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static GRANITE_GARGOYLE: CardRecord = CardRecord::new(
     cards::GRANITE_GARGOYLE,
     "Granite Gargoyle",
@@ -310,9 +346,11 @@ pub(in crate::card::sets) static GRANITE_GARGOYLE: CardRecord = CardRecord::new(
     )
     .creature(2, 2)
     .flying(),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+        explanation: "The toughness-pumping activated ability currently resolves immediately instead of using the stack.",
+    });
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static IRONCLAW_ORCS: CardRecord = CardRecord::new(
     cards::IRONCLAW_ORCS,
     "Ironclaw Orcs",
@@ -328,7 +366,6 @@ pub(in crate::card::sets) static IRONCLAW_ORCS: CardRecord = CardRecord::new(
     .creature(2, 2),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static MOX_EMERALD: CardRecord = CardRecord::new(
     cards::MOX_EMERALD,
     "Mox Emerald",
@@ -337,9 +374,11 @@ pub(in crate::card::sets) static MOX_EMERALD: CardRecord = CardRecord::new(
     false,
     CardBehavior::MoxEmerald,
     CardRules::new(CardKind::Artifact, ManaCost::new(0, 0), "Tap: Add 1."),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The catalog text does not identify the green mana this ability produces.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static MOX_JET: CardRecord = CardRecord::new(
     cards::MOX_JET,
     "Mox Jet",
@@ -348,9 +387,11 @@ pub(in crate::card::sets) static MOX_JET: CardRecord = CardRecord::new(
     false,
     CardBehavior::MoxJet,
     CardRules::new(CardKind::Artifact, ManaCost::new(0, 0), "Tap: Add 1."),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The catalog text does not identify the black mana this ability produces.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static MOX_PEARL: CardRecord = CardRecord::new(
     cards::MOX_PEARL,
     "Mox Pearl",
@@ -359,9 +400,11 @@ pub(in crate::card::sets) static MOX_PEARL: CardRecord = CardRecord::new(
     false,
     CardBehavior::MoxPearl,
     CardRules::new(CardKind::Artifact, ManaCost::new(0, 0), "Tap: Add 1."),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The catalog text does not identify the white mana this ability produces.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static MOX_RUBY: CardRecord = CardRecord::new(
     cards::MOX_RUBY,
     "Mox Ruby",
@@ -372,7 +415,6 @@ pub(in crate::card::sets) static MOX_RUBY: CardRecord = CardRecord::new(
     CardRules::new(CardKind::Artifact, ManaCost::new(0, 0), "Tap: Add R."),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static MOX_SAPPHIRE: CardRecord = CardRecord::new(
     cards::MOX_SAPPHIRE,
     "Mox Sapphire",
@@ -381,9 +423,11 @@ pub(in crate::card::sets) static MOX_SAPPHIRE: CardRecord = CardRecord::new(
     false,
     CardBehavior::MoxSapphire,
     CardRules::new(CardKind::Artifact, ManaCost::new(0, 0), "Tap: Add 1."),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The catalog text does not identify the blue mana this ability produces.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static SOL_RING: CardRecord = CardRecord::new(
     cards::SOL_RING,
     "Sol Ring",
@@ -394,7 +438,6 @@ pub(in crate::card::sets) static SOL_RING: CardRecord = CardRecord::new(
     CardRules::new(CardKind::Artifact, ManaCost::new(1, 0), "Tap: Add 2."),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static WHEEL_OF_FORTUNE: CardRecord = CardRecord::new(
     cards::WHEEL_OF_FORTUNE,
     "Wheel of Fortune",
@@ -407,9 +450,11 @@ pub(in crate::card::sets) static WHEEL_OF_FORTUNE: CardRecord = CardRecord::new(
         ManaCost::new(2, 1),
         "Each player discards their hand, then draws seven cards.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+        explanation: "Simultaneous discard, draw, and loss handling still uses a legacy shortcut and needs review.",
+    });
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static JUGGERNAUT: CardRecord = CardRecord::new(
     cards::JUGGERNAUT,
     "Juggernaut",
@@ -423,9 +468,11 @@ pub(in crate::card::sets) static JUGGERNAUT: CardRecord = CardRecord::new(
         "Attacks each combat if able. Juggernaut can't be blocked by Walls.",
     )
     .creature(5, 3),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The restriction preventing Walls from blocking Juggernaut is not implemented.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static MANA_VAULT: CardRecord = CardRecord::new(
     cards::MANA_VAULT,
     "Mana Vault",
@@ -438,9 +485,11 @@ pub(in crate::card::sets) static MANA_VAULT: CardRecord = CardRecord::new(
         ManaCost::new(1, 0),
         "Mana Vault doesn't untap during your untap step. At your upkeep, you may pay 4 to untap it. At your draw step, if tapped, it deals 1 damage to you. Tap: Add 3.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+        explanation: "Its upkeep and draw-step triggers currently resolve outside the stack.",
+    });
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static ANCESTRAL_RECALL: CardRecord = CardRecord::new(
     cards::ANCESTRAL_RECALL,
     "Ancestral Recall",
@@ -455,7 +504,6 @@ pub(in crate::card::sets) static ANCESTRAL_RECALL: CardRecord = CardRecord::new(
     ),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static BRAINGEYSER: CardRecord = CardRecord::new(
     cards::BRAINGEYSER,
     "Braingeyser",
@@ -470,7 +518,6 @@ pub(in crate::card::sets) static BRAINGEYSER: CardRecord = CardRecord::new(
     ),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static COUNTERSPELL: CardRecord = CardRecord::new(
     cards::COUNTERSPELL,
     "Counterspell",
@@ -485,7 +532,6 @@ pub(in crate::card::sets) static COUNTERSPELL: CardRecord = CardRecord::new(
     ),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static DISENCHANT: CardRecord = CardRecord::new(
     cards::DISENCHANT,
     "Disenchant",
@@ -500,7 +546,6 @@ pub(in crate::card::sets) static DISENCHANT: CardRecord = CardRecord::new(
     ),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static ISLAND: CardRecord = CardRecord::new(
     cards::ISLAND,
     "Island",
@@ -511,7 +556,6 @@ pub(in crate::card::sets) static ISLAND: CardRecord = CardRecord::new(
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add U."),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static JAYEMDAE_TOME: CardRecord = CardRecord::new(
     cards::JAYEMDAE_TOME,
     "Jayemdae Tome",
@@ -526,7 +570,6 @@ pub(in crate::card::sets) static JAYEMDAE_TOME: CardRecord = CardRecord::new(
     ),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static PLAINS: CardRecord = CardRecord::new(
     cards::PLAINS,
     "Plains",
@@ -537,7 +580,6 @@ pub(in crate::card::sets) static PLAINS: CardRecord = CardRecord::new(
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add W."),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static SERRA_ANGEL: CardRecord = CardRecord::new(
     cards::SERRA_ANGEL,
     "Serra Angel",
@@ -555,7 +597,6 @@ pub(in crate::card::sets) static SERRA_ANGEL: CardRecord = CardRecord::new(
     .vigilance(),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static SWORDS_TO_PLOWSHARES: CardRecord = CardRecord::new(
     cards::SWORDS_TO_PLOWSHARES,
     "Swords to Plowshares",
@@ -570,7 +611,6 @@ pub(in crate::card::sets) static SWORDS_TO_PLOWSHARES: CardRecord = CardRecord::
     ),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static TIME_WALK: CardRecord = CardRecord::new(
     cards::TIME_WALK,
     "Time Walk",
@@ -585,7 +625,6 @@ pub(in crate::card::sets) static TIME_WALK: CardRecord = CardRecord::new(
     ),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static TUNDRA: CardRecord = CardRecord::new(
     cards::TUNDRA,
     "Tundra",
@@ -594,9 +633,11 @@ pub(in crate::card::sets) static TUNDRA: CardRecord = CardRecord::new(
     false,
     CardBehavior::Tundra,
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add W or U."),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The Plains and Island basic land subtypes are not represented.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static ARMAGEDDON: CardRecord = CardRecord::new(
     cards::ARMAGEDDON,
     "Armageddon",
@@ -611,7 +652,6 @@ pub(in crate::card::sets) static ARMAGEDDON: CardRecord = CardRecord::new(
     ),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static BADLANDS: CardRecord = CardRecord::new(
     cards::BADLANDS,
     "Badlands",
@@ -620,9 +660,11 @@ pub(in crate::card::sets) static BADLANDS: CardRecord = CardRecord::new(
     false,
     CardBehavior::Badlands,
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add B or R."),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The Swamp and Mountain basic land subtypes are not represented.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static BALANCE: CardRecord = CardRecord::new(
     cards::BALANCE,
     "Balance",
@@ -635,9 +677,11 @@ pub(in crate::card::sets) static BALANCE: CardRecord = CardRecord::new(
         ManaCost::colored(1, 1, 0, 0, 0, 0),
         "Each player discards and sacrifices creatures and lands until tied for the fewest of each.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+        explanation: "The legacy decision sequence needs review against the simultaneous-choice procedure.",
+    });
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static BAYOU: CardRecord = CardRecord::new(
     cards::BAYOU,
     "Bayou",
@@ -646,9 +690,11 @@ pub(in crate::card::sets) static BAYOU: CardRecord = CardRecord::new(
     false,
     CardBehavior::Bayou,
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add B or G."),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The Swamp and Forest basic land subtypes are not represented.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static BLACK_KNIGHT: CardRecord = CardRecord::new(
     cards::BLACK_KNIGHT,
     "Black Knight",
@@ -662,9 +708,11 @@ pub(in crate::card::sets) static BLACK_KNIGHT: CardRecord = CardRecord::new(
         "First strike, protection from white.",
     )
     .creature(2, 2),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "First strike is not implemented.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static BIRDS_OF_PARADISE: CardRecord = CardRecord::new(
     cards::BIRDS_OF_PARADISE,
     "Birds of Paradise",
@@ -681,7 +729,6 @@ pub(in crate::card::sets) static BIRDS_OF_PARADISE: CardRecord = CardRecord::new
     .flying(),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static BLUE_ELEMENTAL_BLAST: CardRecord = CardRecord::new(
     cards::BLUE_ELEMENTAL_BLAST,
     "Blue Elemental Blast",
@@ -696,7 +743,6 @@ pub(in crate::card::sets) static BLUE_ELEMENTAL_BLAST: CardRecord = CardRecord::
     ),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static CHANNEL: CardRecord = CardRecord::new(
     cards::CHANNEL,
     "Channel",
@@ -709,9 +755,11 @@ pub(in crate::card::sets) static CHANNEL: CardRecord = CardRecord::new(
         ManaCost::colored(0, 0, 0, 0, 0, 2),
         "Until end of turn, you may pay 1 life to add one colorless mana.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "Paying life for mana is not yet integrated with all mana-payment timing windows.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static CRUSADE: CardRecord = CardRecord::new(
     cards::CRUSADE,
     "Crusade",
@@ -726,7 +774,6 @@ pub(in crate::card::sets) static CRUSADE: CardRecord = CardRecord::new(
     ),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static DARK_RITUAL: CardRecord = CardRecord::new(
     cards::DARK_RITUAL,
     "Dark Ritual",
@@ -741,7 +788,6 @@ pub(in crate::card::sets) static DARK_RITUAL: CardRecord = CardRecord::new(
     ),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static DEMONIC_TUTOR: CardRecord = CardRecord::new(
     cards::DEMONIC_TUTOR,
     "Demonic Tutor",
@@ -754,9 +800,11 @@ pub(in crate::card::sets) static DEMONIC_TUTOR: CardRecord = CardRecord::new(
         ManaCost::colored(1, 0, 0, 1, 0, 0),
         "Search your library for a card, put it into your hand, then shuffle.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "Resolving with an empty library currently creates an impossible mandatory choice and stalls the game.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static DRAIN_LIFE: CardRecord = CardRecord::new(
     cards::DRAIN_LIFE,
     "Drain Life",
@@ -769,9 +817,11 @@ pub(in crate::card::sets) static DRAIN_LIFE: CardRecord = CardRecord::new(
         ManaCost::variable(1, 0, 0, 1, 0, 0, 1),
         "Drain Life deals X damage to any target and you gain that much life.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "Black-mana spending restrictions and the life-gain cap are not fully enforced.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static EARTHQUAKE: CardRecord = CardRecord::new(
     cards::EARTHQUAKE,
     "Earthquake",
@@ -786,7 +836,13 @@ pub(in crate::card::sets) static EARTHQUAKE: CardRecord = CardRecord::new(
     ),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
+static FOREST_ABILITIES: [AbilityDef; 1] = [AbilityDef::activated_mana(
+    AbilityId::PRIMARY,
+    "{T}: Add {G}.",
+    &[AbilityCostDef::TapSource],
+    EffectDef::AddMana(AddManaEffectDef::one(ManaKindDef::Green)),
+)];
+
 pub(in crate::card::sets) static FOREST: CardRecord = CardRecord::new(
     cards::FOREST,
     "Forest",
@@ -794,10 +850,10 @@ pub(in crate::card::sets) static FOREST: CardRecord = CardRecord::new(
     CardSet::Alpha,
     true,
     CardBehavior::Forest,
-    CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add G."),
+    CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add G.")
+        .with_abilities(&FOREST_ABILITIES),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static HYPNOTIC_SPECTER: CardRecord = CardRecord::new(
     cards::HYPNOTIC_SPECTER,
     "Hypnotic Specter",
@@ -812,9 +868,11 @@ pub(in crate::card::sets) static HYPNOTIC_SPECTER: CardRecord = CardRecord::new(
     )
     .creature(2, 2)
     .flying(),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The combat-damage trigger currently resolves without becoming a stack object.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static MIND_TWIST: CardRecord = CardRecord::new(
     cards::MIND_TWIST,
     "Mind Twist",
@@ -827,9 +885,11 @@ pub(in crate::card::sets) static MIND_TWIST: CardRecord = CardRecord::new(
         ManaCost::colored_x(0, 0, 1, 0, 0),
         "Target player discards X cards at random.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The spell always affects the opponent instead of selecting its target player.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static NEVINYRRALS_DISK: CardRecord = CardRecord::new(
     cards::NEVINYRRALS_DISK,
     "Nevinyrral's Disk",
@@ -840,11 +900,13 @@ pub(in crate::card::sets) static NEVINYRRALS_DISK: CardRecord = CardRecord::new(
     CardRules::new(
         CardKind::Artifact,
         ManaCost::new(4, 0),
-        "Enters tapped. 1, Tap: Destroy all artifacts, creatures, and enchantments.",
+        "Enters tapped. 1, Tap: Destroy all artifacts, creatures, and enchantments. They can't be regenerated.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The destruction effect currently allows affected permanents to regenerate.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static PLATEAU: CardRecord = CardRecord::new(
     cards::PLATEAU,
     "Plateau",
@@ -853,9 +915,11 @@ pub(in crate::card::sets) static PLATEAU: CardRecord = CardRecord::new(
     false,
     CardBehavior::Plateau,
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add R or W."),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The Mountain and Plains basic land subtypes are not represented.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static PSIONIC_BLAST: CardRecord = CardRecord::new(
     cards::PSIONIC_BLAST,
     "Psionic Blast",
@@ -870,7 +934,6 @@ pub(in crate::card::sets) static PSIONIC_BLAST: CardRecord = CardRecord::new(
     ),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static REGROWTH: CardRecord = CardRecord::new(
     cards::REGROWTH,
     "Regrowth",
@@ -883,9 +946,11 @@ pub(in crate::card::sets) static REGROWTH: CardRecord = CardRecord::new(
         ManaCost::colored(1, 0, 0, 0, 0, 1),
         "Return target card from your graveyard to your hand.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The graveyard card is selected by position rather than as a target.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static SAVANNAH: CardRecord = CardRecord::new(
     cards::SAVANNAH,
     "Savannah",
@@ -894,9 +959,11 @@ pub(in crate::card::sets) static SAVANNAH: CardRecord = CardRecord::new(
     false,
     CardBehavior::Savannah,
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add G or W."),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The Forest and Plains basic land subtypes are not represented.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static SAVANNAH_LIONS: CardRecord = CardRecord::new(
     cards::SAVANNAH_LIONS,
     "Savannah Lions",
@@ -912,7 +979,6 @@ pub(in crate::card::sets) static SAVANNAH_LIONS: CardRecord = CardRecord::new(
     .creature(2, 1),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static SCRUBLAND: CardRecord = CardRecord::new(
     cards::SCRUBLAND,
     "Scrubland",
@@ -921,9 +987,11 @@ pub(in crate::card::sets) static SCRUBLAND: CardRecord = CardRecord::new(
     false,
     CardBehavior::Scrubland,
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add W or B."),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The Plains and Swamp basic land subtypes are not represented.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static SENGIR_VAMPIRE: CardRecord = CardRecord::new(
     cards::SENGIR_VAMPIRE,
     "Sengir Vampire",
@@ -938,9 +1006,11 @@ pub(in crate::card::sets) static SENGIR_VAMPIRE: CardRecord = CardRecord::new(
     )
     .creature(4, 4)
     .flying(),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The damage-and-death trigger is not implemented as a stack ability.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static SINKHOLE: CardRecord = CardRecord::new(
     cards::SINKHOLE,
     "Sinkhole",
@@ -955,7 +1025,6 @@ pub(in crate::card::sets) static SINKHOLE: CardRecord = CardRecord::new(
     ),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static SWAMP: CardRecord = CardRecord::new(
     cards::SWAMP,
     "Swamp",
@@ -966,7 +1035,16 @@ pub(in crate::card::sets) static SWAMP: CardRecord = CardRecord::new(
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add B."),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
+static TAIGA_ABILITIES: [AbilityDef; 1] = [AbilityDef::activated_mana(
+    AbilityId::PRIMARY,
+    "{T}: Add {R} or {G}.",
+    &[AbilityCostDef::TapSource],
+    EffectDef::AddMana(AddManaEffectDef::choice(&[
+        ManaKindDef::Red,
+        ManaKindDef::Green,
+    ])),
+)];
+
 pub(in crate::card::sets) static TAIGA: CardRecord = CardRecord::new(
     cards::TAIGA,
     "Taiga",
@@ -974,10 +1052,13 @@ pub(in crate::card::sets) static TAIGA: CardRecord = CardRecord::new(
     CardSet::Alpha,
     false,
     CardBehavior::Taiga,
-    CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add R or G."),
-);
+    CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add R or G.")
+        .with_abilities(&TAIGA_ABILITIES),
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The Mountain and Forest basic land subtypes are not represented.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static TERROR: CardRecord = CardRecord::new(
     cards::TERROR,
     "Terror",
@@ -990,9 +1071,11 @@ pub(in crate::card::sets) static TERROR: CardRecord = CardRecord::new(
         ManaCost::colored(1, 0, 0, 1, 0, 0),
         "Destroy target nonartifact, nonblack creature. It can't be regenerated.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "Target selection and resolution do not account for protection from black.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static TIME_VAULT: CardRecord = CardRecord::new(
     cards::TIME_VAULT,
     "Time Vault",
@@ -1005,9 +1088,11 @@ pub(in crate::card::sets) static TIME_VAULT: CardRecord = CardRecord::new(
         ManaCost::new(2, 0),
         "Enters tapped and doesn't untap normally. Skip a turn to untap it. Tap: Take an extra turn.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+        explanation: "The hard-coded turn-skip shortcut needs review against replacement-effect timing.",
+    });
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static TIMETWISTER: CardRecord = CardRecord::new(
     cards::TIMETWISTER,
     "Timetwister",
@@ -1020,9 +1105,11 @@ pub(in crate::card::sets) static TIMETWISTER: CardRecord = CardRecord::new(
         ManaCost::colored(2, 0, 1, 0, 0, 0),
         "Each player shuffles their hand and graveyard into their library, then draws seven cards.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+        explanation: "Simultaneous shuffle, draw, and loss handling still uses a legacy shortcut and needs review.",
+    });
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static TROPICAL_ISLAND: CardRecord = CardRecord::new(
     cards::TROPICAL_ISLAND,
     "Tropical Island",
@@ -1031,9 +1118,11 @@ pub(in crate::card::sets) static TROPICAL_ISLAND: CardRecord = CardRecord::new(
     false,
     CardBehavior::TropicalIsland,
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add U or G."),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The Island and Forest basic land subtypes are not represented.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static UNDERGROUND_SEA: CardRecord = CardRecord::new(
     cards::UNDERGROUND_SEA,
     "Underground Sea",
@@ -1042,9 +1131,11 @@ pub(in crate::card::sets) static UNDERGROUND_SEA: CardRecord = CardRecord::new(
     false,
     CardBehavior::UndergroundSea,
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "Tap: Add U or B."),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The Island and Swamp basic land subtypes are not represented.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static WHITE_KNIGHT: CardRecord = CardRecord::new(
     cards::WHITE_KNIGHT,
     "White Knight",
@@ -1058,9 +1149,11 @@ pub(in crate::card::sets) static WHITE_KNIGHT: CardRecord = CardRecord::new(
         "First strike, protection from black.",
     )
     .creature(2, 2),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "First strike is not implemented.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static BERSERK: CardRecord = CardRecord::new(
     cards::BERSERK,
     "Berserk",
@@ -1073,9 +1166,11 @@ pub(in crate::card::sets) static BERSERK: CardRecord = CardRecord::new(
         ManaCost::colored(0, 0, 0, 0, 0, 1),
         "Target creature gains trample and gets +X/+0 until end of turn, where X is its power. Destroy it at end of turn if it attacked this turn.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+        explanation: "Targeting is restricted to your creatures, and the delayed destruction bypasses the stack.",
+    });
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static COPY_ARTIFACT: CardRecord = CardRecord::new(
     cards::COPY_ARTIFACT,
     "Copy Artifact",
@@ -1088,9 +1183,11 @@ pub(in crate::card::sets) static COPY_ARTIFACT: CardRecord = CardRecord::new(
         ManaCost::colored(1, 0, 1, 0, 0, 0),
         "You may have Copy Artifact enter as a copy of any artifact on the battlefield.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The optional copy choice is incorrectly modeled as a targeted spell choice.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static GIANT_GROWTH: CardRecord = CardRecord::new(
     cards::GIANT_GROWTH,
     "Giant Growth",
@@ -1103,9 +1200,11 @@ pub(in crate::card::sets) static GIANT_GROWTH: CardRecord = CardRecord::new(
         ManaCost::colored(0, 0, 0, 0, 0, 1),
         "Target creature gets +3/+3 until end of turn.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "Targeting is incorrectly restricted to creatures you control.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static ICY_MANIPULATOR: CardRecord = CardRecord::new(
     cards::ICY_MANIPULATOR,
     "Icy Manipulator",
@@ -1122,9 +1221,11 @@ pub(in crate::card::sets) static ICY_MANIPULATOR: CardRecord = CardRecord::new(
         "Tap {} with Icy Manipulator",
         "Tap an artifact, creature, or land",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The current target selector also permits enchantments.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static LLANOWAR_ELVES: CardRecord = CardRecord::new(
     cards::LLANOWAR_ELVES,
     "Llanowar Elves",
@@ -1140,7 +1241,6 @@ pub(in crate::card::sets) static LLANOWAR_ELVES: CardRecord = CardRecord::new(
     .creature(1, 1),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static SCRYB_SPRITES: CardRecord = CardRecord::new(
     cards::SCRYB_SPRITES,
     "Scryb Sprites",
@@ -1157,7 +1257,6 @@ pub(in crate::card::sets) static SCRYB_SPRITES: CardRecord = CardRecord::new(
     .flying(),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static STONE_RAIN: CardRecord = CardRecord::new(
     cards::STONE_RAIN,
     "Stone Rain",
@@ -1173,7 +1272,6 @@ pub(in crate::card::sets) static STONE_RAIN: CardRecord = CardRecord::new(
 );
 
 // The chosen presentation art is its Beta printing; the definition debuted in Alpha.
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static SEDGE_TROLL: CardRecord = CardRecord::new(
     cards::SEDGE_TROLL,
     "Sedge Troll",
@@ -1184,12 +1282,14 @@ pub(in crate::card::sets) static SEDGE_TROLL: CardRecord = CardRecord::new(
     CardRules::new(
         CardKind::Creature,
         ManaCost::new(2, 1),
-        "Sedge Troll gets +1/+1 as long as you control a Swamp. R: Regenerate Sedge Troll.",
+        "Sedge Troll gets +1/+1 as long as you control a Swamp. B: Regenerate Sedge Troll.",
     )
     .creature(2, 2),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "Its regeneration ability is currently offered and charged as red mana instead of black mana.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static WRATH_OF_GOD: CardRecord = CardRecord::new(
     cards::WRATH_OF_GOD,
     "Wrath of God",

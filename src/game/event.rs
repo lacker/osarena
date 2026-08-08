@@ -49,6 +49,7 @@ pub enum WinReason {
 pub enum StackObjectKind {
     Spell,
     ActivatedAbility,
+    TriggeredAbility,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -107,6 +108,24 @@ pub enum GameEvent {
         /// The activated ability's former game object on the stack.
         object: GameObjectId,
         /// The permanent object that created the ability.
+        source: GameObjectId,
+        definition: CardDefinitionId,
+    },
+    AbilityTriggered {
+        player: PlayerId,
+        trigger: u32,
+        source: GameObjectId,
+        definition: CardDefinitionId,
+    },
+    TriggeredAbilityPutOnStack {
+        player: PlayerId,
+        trigger: u32,
+        object: GameObjectId,
+        source: GameObjectId,
+        definition: CardDefinitionId,
+    },
+    TriggeredAbilityResolved {
+        object: GameObjectId,
         source: GameObjectId,
         definition: CardDefinitionId,
     },

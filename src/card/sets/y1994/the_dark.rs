@@ -1,7 +1,11 @@
 use super::{CardRecord, PrintingRecord};
-use crate::card::{CardArt, CardBehavior, CardKind, CardRules, CardSet, ManaCost, cards};
+use crate::card::{
+    AbilityDef, AppliedEffectDef, CardArt, CardBehavior, CardKind, CardRules, CardSet, EffectDef,
+    EffectDurationDef, EffectRecipientDef, ImplementationStatus, ManaCost, ObjectPredicateDef,
+    PlayerRelation, ZoneKind, cards,
+};
+use crate::ids::AbilityId;
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static BALL_LIGHTNING: CardRecord = CardRecord::new(
     cards::BALL_LIGHTNING,
     "Ball Lightning",
@@ -17,9 +21,27 @@ pub(in crate::card::sets) static BALL_LIGHTNING: CardRecord = CardRecord::new(
     .creature(6, 1)
     .haste()
     .trample(),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The end-step sacrifice trigger currently resolves outside the stack.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
+static BLOOD_MOON_ABILITIES: [AbilityDef; 1] = [AbilityDef::static_ability(
+    AbilityId::PRIMARY,
+    "Nonbasic lands are Mountains.",
+    EffectDef::Apply {
+        recipient: EffectRecipientDef::MatchingObjects {
+            object: ObjectPredicateDef::Special("nonbasic land"),
+            zones: &[ZoneKind::Battlefield],
+            controller: PlayerRelation::Any,
+        },
+        effect: AppliedEffectDef::Special(
+            "Set land subtypes to Mountain and apply the intrinsic Mountain mana ability",
+        ),
+        duration: EffectDurationDef::WhileSourceRemainsInZone,
+    },
+)];
+
 pub(in crate::card::sets) static BLOOD_MOON: CardRecord = CardRecord::new(
     cards::BLOOD_MOON,
     "Blood Moon",
@@ -31,10 +53,13 @@ pub(in crate::card::sets) static BLOOD_MOON: CardRecord = CardRecord::new(
         CardKind::Enchantment,
         ManaCost::new(2, 1),
         "Nonbasic lands are Mountains.",
-    ),
-);
+    )
+    .with_abilities(&BLOOD_MOON_ABILITIES),
+)
+.with_implementation_status(ImplementationStatus::Partial {
+        explanation: "The hard-coded transformation does not yet use the full land-type, ability-loss, and layer system.",
+    });
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static GOBLIN_DIGGING_TEAM: CardRecord = CardRecord::new(
     cards::GOBLIN_DIGGING_TEAM,
     "Goblin Digging Team",
@@ -49,9 +74,11 @@ pub(in crate::card::sets) static GOBLIN_DIGGING_TEAM: CardRecord = CardRecord::n
     )
     .creature(1, 1)
     .goblin(),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The sacrifice ability that destroys a Wall is not implemented.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static GOBLINS_OF_THE_FLARG: CardRecord = CardRecord::new(
     cards::GOBLINS_OF_THE_FLARG,
     "Goblins of the Flarg",
@@ -63,9 +90,11 @@ pub(in crate::card::sets) static GOBLINS_OF_THE_FLARG: CardRecord = CardRecord::
         .creature(1, 1)
         .goblin()
         .mountainwalk(),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+            explanation: "Mountainwalk does not currently recognize Mountains supplied by dual-land subtypes.",
+        });
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static FELLWAR_STONE: CardRecord = CardRecord::new(
     cards::FELLWAR_STONE,
     "Fellwar Stone",
@@ -80,7 +109,6 @@ pub(in crate::card::sets) static FELLWAR_STONE: CardRecord = CardRecord::new(
     ),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static MAZE_OF_ITH: CardRecord = CardRecord::new(
     cards::MAZE_OF_ITH,
     "Maze of Ith",
@@ -94,9 +122,11 @@ pub(in crate::card::sets) static MAZE_OF_ITH: CardRecord = CardRecord::new(
         "Tap: Untap target attacking creature and prevent all combat damage it would deal and receive this turn.",
     )
     .activated("Untap {} and take it out of combat", "Take an attacker out of combat"),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+        explanation: "The implementation removes the attacker from combat instead of creating combat-damage prevention.",
+    });
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static DUST_TO_DUST: CardRecord = CardRecord::new(
     cards::DUST_TO_DUST,
     "Dust to Dust",
@@ -109,7 +139,10 @@ pub(in crate::card::sets) static DUST_TO_DUST: CardRecord = CardRecord::new(
         ManaCost::colored(2, 2, 0, 0, 0, 0),
         "Exile two target artifacts.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "Its implemented mana cost is {2}{W}{W} instead of the printed {1}{W}{W}.",
+});
 
 pub(in crate::card::sets) static CARDS: &[&CardRecord] = &[
     &BALL_LIGHTNING,

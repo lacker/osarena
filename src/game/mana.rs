@@ -1,4 +1,53 @@
-use crate::ManaColor;
+use crate::{AbilityId, GameObjectId, ManaColor, ManaRestrictionDef, ManaSpendEffectDef};
+
+/// The ability and object incarnation that produced one mana. Keeping both
+/// identities lets spend restrictions and riders remain meaningful after the
+/// source changes zones.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ManaSource {
+    pub object: GameObjectId,
+    pub ability: AbilityId,
+}
+
+/// One mana in a player's pool, including the rules attached to spending it.
+///
+/// Runtime storage uses one value per mana rather than grouping production
+/// into lots: three mana from Mishra's Workshop are three identical values,
+/// and each can be spent or retained independently.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct Mana {
+    pub color: ManaColor,
+    pub source: Option<ManaSource>,
+    pub restrictions: &'static [ManaRestrictionDef],
+    pub spend_effects: &'static [ManaSpendEffectDef],
+}
+
+impl Mana {
+    #[must_use]
+    pub const fn unrestricted(color: ManaColor) -> Self {
+        Self {
+            color,
+            source: None,
+            restrictions: &[],
+            spend_effects: &[],
+        }
+    }
+
+    #[must_use]
+    pub const fn from_ability(
+        color: ManaColor,
+        source: ManaSource,
+        restrictions: &'static [ManaRestrictionDef],
+        spend_effects: &'static [ManaSpendEffectDef],
+    ) -> Self {
+        Self {
+            color,
+            source: Some(source),
+            restrictions,
+            spend_effects,
+        }
+    }
+}
 
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub struct ManaPool {

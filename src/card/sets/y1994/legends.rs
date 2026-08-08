@@ -1,7 +1,8 @@
 use super::{CardRecord, PrintingRecord};
-use crate::card::{CardArt, CardBehavior, CardKind, CardRules, CardSet, ManaCost, cards};
+use crate::card::{
+    CardArt, CardBehavior, CardKind, CardRules, CardSet, ImplementationStatus, ManaCost, cards,
+};
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static CHAIN_LIGHTNING: CardRecord = CardRecord::new(
     cards::CHAIN_LIGHTNING,
     "Chain Lightning",
@@ -16,7 +17,6 @@ pub(in crate::card::sets) static CHAIN_LIGHTNING: CardRecord = CardRecord::new(
     ),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static DIVINE_OFFERING: CardRecord = CardRecord::new(
     cards::DIVINE_OFFERING,
     "Divine Offering",
@@ -31,7 +31,6 @@ pub(in crate::card::sets) static DIVINE_OFFERING: CardRecord = CardRecord::new(
     ),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static MANA_DRAIN: CardRecord = CardRecord::new(
     cards::MANA_DRAIN,
     "Mana Drain",
@@ -44,9 +43,11 @@ pub(in crate::card::sets) static MANA_DRAIN: CardRecord = CardRecord::new(
         ManaCost::colored(0, 0, 2, 0, 0, 0),
         "Counter target spell. At your next main phase, add colorless mana equal to its mana value.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+        explanation: "The delayed mana trigger is stored as a scalar and never becomes a stack object.",
+    });
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static RECALL: CardRecord = CardRecord::new(
     cards::RECALL,
     "Recall",
@@ -59,9 +60,11 @@ pub(in crate::card::sets) static RECALL: CardRecord = CardRecord::new(
         ManaCost::variable(0, 0, 1, 0, 0, 0, 2),
         "Discard X cards, then return X cards from your graveyard to your hand. Exile Recall.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The engine incorrectly requires and discards X cards as an additional casting cost instead of discarding during resolution.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static SYLVAN_LIBRARY: CardRecord = CardRecord::new(
     cards::SYLVAN_LIBRARY,
     "Sylvan Library",
@@ -74,9 +77,11 @@ pub(in crate::card::sets) static SYLVAN_LIBRARY: CardRecord = CardRecord::new(
         ManaCost::colored(1, 0, 0, 0, 0, 1),
         "At your draw step, draw two additional cards, then put two cards drawn this turn back unless you pay 4 life for each.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+        explanation: "The draw-step trigger and its choices currently bypass the stack.",
+    });
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static THUNDER_SPIRIT: CardRecord = CardRecord::new(
     cards::THUNDER_SPIRIT,
     "Thunder Spirit",
@@ -94,9 +99,11 @@ pub(in crate::card::sets) static THUNDER_SPIRIT: CardRecord = CardRecord::new(
     )
     .creature(2, 2)
     .flying(),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "First strike is not implemented.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static WHIRLING_DERVISH: CardRecord = CardRecord::new(
     cards::WHIRLING_DERVISH,
     "Whirling Dervish",
@@ -110,9 +117,11 @@ pub(in crate::card::sets) static WHIRLING_DERVISH: CardRecord = CardRecord::new(
         "Protection from black. At each end step, if it damaged an opponent this turn, put a +1/+1 counter on it.",
     )
     .creature(2, 2),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+        explanation: "The end-step trigger currently resolves outside the stack.",
+    });
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static MOAT: CardRecord = CardRecord::new(
     cards::MOAT,
     "Moat",
@@ -127,7 +136,6 @@ pub(in crate::card::sets) static MOAT: CardRecord = CardRecord::new(
     ),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static PENDELHAVEN: CardRecord = CardRecord::new(
     cards::PENDELHAVEN,
     "Pendelhaven",
@@ -145,9 +153,11 @@ pub(in crate::card::sets) static PENDELHAVEN: CardRecord = CardRecord::new(
         "Give {} +1/+2 with Pendelhaven",
         "Give a 1/1 creature +1/+2",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The 1/1 target restriction is checked on activation but is not rechecked when the ability resolves.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static RELIC_BARRIER: CardRecord = CardRecord::new(
     cards::RELIC_BARRIER,
     "Relic Barrier",
@@ -163,7 +173,6 @@ pub(in crate::card::sets) static RELIC_BARRIER: CardRecord = CardRecord::new(
     .activated("Tap {} with Relic Barrier", "Tap an artifact"),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static THE_ABYSS: CardRecord = CardRecord::new(
     cards::THE_ABYSS,
     "The Abyss",
@@ -176,7 +185,10 @@ pub(in crate::card::sets) static THE_ABYSS: CardRecord = CardRecord::new(
         ManaCost::colored(3, 0, 0, 1, 0, 0),
         "At the beginning of each upkeep, destroy target nonartifact creature.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+        explanation: "The target is selected automatically and the upkeep trigger never becomes a stack object.",
+    });
 
 pub(in crate::card::sets) static CARDS: &[&CardRecord] = &[
     &CHAIN_LIGHTNING,

@@ -7,6 +7,10 @@ export type CardArtMetadata = {
   artist: string;
 };
 
+export type StackObjectKind = "Spell" | "ActivatedAbility" | "TriggeredAbility";
+
+export type DecisionKind = "Choice" | "TriggerOrder" | "TriggerPlacement";
+
 export type SpellFormMetadata =
   | { kind: "part"; partId: number }
   | { kind: "combined"; partIds: number[] };
@@ -122,11 +126,18 @@ export type DecisionOption = {
   label: string;
   cardId?: number | null;
   cardName?: string | null;
+  /** Pending trigger identity, when this option represents a trigger. */
+  triggerId?: number | null;
+  /** The exact ability text, when it is narrower than the source card text. */
+  abilityText?: string | null;
   zone: string;
 };
 
 export type DecisionState = {
   id: number;
+  kind: DecisionKind;
+  /** Trigger-order submissions are always listed in desired resolution order. */
+  orderSemantics?: "resolution";
   prompt: string;
   minimum: number;
   maximum: number;
@@ -153,17 +164,21 @@ export type GameState = {
     cardId?: number;
     /** Historical source game-object ID for an ability. */
     sourceId?: number | null;
+    /** Stable identifier of the printed or granted ability that created this object. */
+    abilityId?: number | null;
     signature?: CastSignatureMetadata | null;
     name: string;
     art: CardArtMetadata | null;
     owner: Owner;
-    kind: string;
+    kind: StackObjectKind;
     cardKind: string;
     typeLine?: string;
     metadataOnly?: boolean;
     isLand?: boolean;
     manaCost?: Card["manaCost"];
     rulesText: string;
+    /** Exact stack ability text, when available separately from source rules. */
+    abilityText?: string | null;
     power?: number | null;
     toughness?: number | null;
     x: number;

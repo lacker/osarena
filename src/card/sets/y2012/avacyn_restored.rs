@@ -2,8 +2,11 @@
 
 use super::{CardRecord, PrintingRecord};
 use crate::card::{
-    CardArt, CardBehavior, CardKind, CardRules, CardSet, LandEntry, ManaCost, cards,
+    AbilityCostDef, AbilityDef, AddManaEffectDef, AppliedEffectDef, CardArt, CardBehavior,
+    CardKind, CardRules, CardSet, EffectDef, ImplementationStatus, LandEntry, ManaCost,
+    ManaKindDef, ManaRestrictionDef, ManaSpendEffectDef, cards,
 };
+use crate::ids::AbilityId;
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
 pub(in crate::card::sets) static BONFIRE_OF_THE_DAMNED: CardRecord = CardRecord::new(
@@ -22,7 +25,39 @@ pub(in crate::card::sets) static BONFIRE_OF_THE_DAMNED: CardRecord = CardRecord:
     .metadata_only(),
 );
 
-// Implementation status: Untapped entry and colorless mana production are active; other printed abilities are pending.
+static CAVERN_COLORED_MANA_RESTRICTIONS: [ManaRestrictionDef; 1] =
+    [ManaRestrictionDef::CastCreatureSpellOfChosenType];
+
+static CAVERN_COLORED_MANA_SPEND_EFFECTS: [ManaSpendEffectDef; 1] =
+    [ManaSpendEffectDef::ApplyToPaidSpell(
+        AppliedEffectDef::CannotBeCountered,
+    )];
+
+static CAVERN_OF_SOULS_ABILITIES: [AbilityDef; 2] = [
+    AbilityDef::activated_mana(
+        AbilityId::PRIMARY,
+        "{T}: Add {C}.",
+        &[AbilityCostDef::TapSource],
+        EffectDef::AddMana(AddManaEffectDef::one(ManaKindDef::Colorless)),
+    ),
+    AbilityDef::activated_mana(
+        AbilityId(1),
+        "{T}: Add one mana of any color. Spend it only to cast a creature spell of the chosen type; that spell can't be countered.",
+        &[AbilityCostDef::TapSource],
+        EffectDef::AddMana(
+            AddManaEffectDef::choice(&[
+                ManaKindDef::White,
+                ManaKindDef::Blue,
+                ManaKindDef::Black,
+                ManaKindDef::Red,
+                ManaKindDef::Green,
+            ])
+            .with_restrictions(&CAVERN_COLORED_MANA_RESTRICTIONS)
+            .with_spend_effects(&CAVERN_COLORED_MANA_SPEND_EFFECTS),
+        ),
+    ),
+];
+
 pub(in crate::card::sets) static CAVERN_OF_SOULS: CardRecord = CardRecord::new(
     cards::CAVERN_OF_SOULS,
     "Cavern of Souls",
@@ -38,8 +73,12 @@ pub(in crate::card::sets) static CAVERN_OF_SOULS: CardRecord = CardRecord::new(
     .type_line("Land")
     .produces([false, false, false, false, false, true])
     .land_entry(LandEntry::Untapped)
+    .with_abilities(&CAVERN_OF_SOULS_ABILITIES)
     .metadata_only(),
-);
+)
+.with_implementation_status(ImplementationStatus::MetadataOnly {
+    explanation: "Untapped entry and colorless mana work; the creature-type choice, restricted colored mana, and cannot-be-countered rider are represented but not executed.",
+});
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
 pub(in crate::card::sets) static DEMONIC_RISING: CardRecord = CardRecord::new(

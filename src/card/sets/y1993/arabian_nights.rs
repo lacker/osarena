@@ -1,7 +1,35 @@
 use super::{CardRecord, PrintingRecord};
-use crate::card::{CardArt, CardBehavior, CardKind, CardRules, CardSet, ManaCost, cards};
+use crate::card::{
+    AbilityCostDef, AbilityDef, AddManaEffectDef, CardArt, CardBehavior, CardKind, CardRules,
+    CardSet, EffectDef, EffectRecipientDef, ImplementationStatus, ManaCost, ManaKindDef,
+    ObjectPredicateDef, TriggerEventDef, ValueDef, cards,
+};
+use crate::ids::AbilityId;
 
-// Implementation status: complete — card rules are executed by the engine.
+static CITY_OF_BRASS_ABILITIES: [AbilityDef; 2] = [
+    AbilityDef::activated_mana(
+        AbilityId::PRIMARY,
+        "{T}: Add one mana of any color.",
+        &[AbilityCostDef::TapSource],
+        EffectDef::AddMana(AddManaEffectDef::choice(&[
+            ManaKindDef::White,
+            ManaKindDef::Blue,
+            ManaKindDef::Black,
+            ManaKindDef::Red,
+            ManaKindDef::Green,
+        ])),
+    ),
+    AbilityDef::triggered(
+        AbilityId(1),
+        "Whenever City of Brass becomes tapped, it deals 1 damage to you.",
+        TriggerEventDef::BecomesTapped(ObjectPredicateDef::Source),
+        EffectDef::DealDamage {
+            recipient: EffectRecipientDef::Controller,
+            amount: ValueDef::Constant(1),
+        },
+    ),
+];
+
 pub(in crate::card::sets) static CITY_OF_BRASS: CardRecord = CardRecord::new(
     cards::CITY_OF_BRASS,
     "City of Brass",
@@ -13,10 +41,13 @@ pub(in crate::card::sets) static CITY_OF_BRASS: CardRecord = CardRecord::new(
         CardKind::Land,
         ManaCost::new(0, 0),
         "Whenever City of Brass becomes tapped, it deals 1 damage to you. Tap: Add one mana of any color.",
-    ),
-);
+    )
+    .with_abilities(&CITY_OF_BRASS_ABILITIES),
+)
+.with_implementation_status(ImplementationStatus::Partial {
+        explanation: "The trigger uses the shared tap-event stack path; continuous effects such as Blood Moon do not yet remove its printed abilities correctly.",
+    });
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static ERHNAM_DJINN: CardRecord = CardRecord::new(
     cards::ERHNAM_DJINN,
     "Erhnam Djinn",
@@ -30,9 +61,11 @@ pub(in crate::card::sets) static ERHNAM_DJINN: CardRecord = CardRecord::new(
         "At your upkeep, target opponent's creature gains forestwalk until your next upkeep.",
     )
     .creature(4, 5),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The targeted upkeep trigger is handled outside the stack.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static JUZAM_DJINN: CardRecord = CardRecord::new(
     cards::JUZAM_DJINN,
     "Juzám Djinn",
@@ -46,9 +79,11 @@ pub(in crate::card::sets) static JUZAM_DJINN: CardRecord = CardRecord::new(
         "At your upkeep, Juzám Djinn deals 1 damage to you.",
     )
     .creature(5, 5),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The upkeep damage trigger currently resolves outside the stack.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static LIBRARY_OF_ALEXANDRIA: CardRecord = CardRecord::new(
     cards::LIBRARY_OF_ALEXANDRIA,
     "Library of Alexandria",
@@ -62,9 +97,11 @@ pub(in crate::card::sets) static LIBRARY_OF_ALEXANDRIA: CardRecord = CardRecord:
         "Tap: Add 1. Tap: Draw a card. Activate only with exactly seven cards in hand.",
     )
     .legendary(),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "Library of Alexandria is incorrectly treated as legendary.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static SERENDIB_EFREET: CardRecord = CardRecord::new(
     cards::SERENDIB_EFREET,
     "Serendib Efreet",
@@ -79,9 +116,11 @@ pub(in crate::card::sets) static SERENDIB_EFREET: CardRecord = CardRecord::new(
     )
     .creature(3, 4)
     .flying(),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The upkeep damage trigger currently resolves outside the stack.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static CITY_IN_A_BOTTLE: CardRecord = CardRecord::new(
     cards::CITY_IN_A_BOTTLE,
     "City in a Bottle",
@@ -94,9 +133,11 @@ pub(in crate::card::sets) static CITY_IN_A_BOTTLE: CardRecord = CardRecord::new(
         ManaCost::new(2, 0),
         "At the beginning of each upkeep, destroy each other permanent from Arabian Nights.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+        explanation: "The state trigger currently destroys permanents immediately instead of using the stack.",
+    });
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static KIRD_APE: CardRecord = CardRecord::new(
     cards::KIRD_APE,
     "Kird Ape",

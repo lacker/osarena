@@ -35,6 +35,8 @@ test("staged engine decisions are serialized as generic private choices", async 
   game.act(state.actions.find((action) => action.label === "Cast Demonic Tutor").index);
   state = JSON.parse(game.state_json());
 
+  assert.equal(state.decision.kind, "Choice");
+  assert.equal(state.decision.orderSemantics, undefined);
   assert.equal(state.decision.visibility, "Private");
   // A search never obliges the searcher to find, so the minimum is zero even
   // with a full library. The client relies on this to offer "Choose none".
@@ -49,6 +51,54 @@ test("staged engine decisions are serialized as generic private choices", async 
   const choice = state.decision.options[0];
   game.choose_decision(state.decision.id, JSON.stringify([choice.id]));
   assert.equal(JSON.parse(game.state_json()).decision, null);
+
+  game.free();
+});
+
+test("concurrent triggers expose resolution ordering and frozen stack ability metadata", async () => {
+  await initializeWasm();
+
+  const game = new WebGame("Artifacts", "Goblins", "Random", true, 183);
+  let state = JSON.parse(game.state_json());
+  const act = (label) => {
+    const action = state.actions.find((candidate) => candidate.label.includes(label));
+    assert.ok(action, `${label} is available`);
+    game.act(action.index);
+    state = JSON.parse(game.state_json());
+  };
+
+  act("Keep this hand");
+  act("Cast Black Lotus");
+  act("Cast Mox Sapphire");
+  act("Black Lotus for Red");
+  act("Mox Sapphire for Blue");
+  act("Cast Ankh of Mishra");
+  act("Cast Ankh of Mishra");
+  act("Play Mountain");
+
+  assert.equal(state.decision.kind, "TriggerOrder");
+  assert.equal(state.decision.orderSemantics, "resolution");
+  assert.equal(state.decision.minimum, 2);
+  assert.equal(state.decision.maximum, 2);
+  assert.equal(state.decision.options.length, 2);
+  assert.equal(state.decision.options[0].triggerId, state.decision.options[0].id);
+  assert.match(state.decision.options[0].abilityText, /Whenever a land enters/);
+
+  const desiredResolutionOrder = state.decision.options.map((option) => option.id).reverse();
+  const firstSource = state.decision.options[1].cardId;
+  game.set_autopass(false);
+  game.choose_decision(state.decision.id, JSON.stringify(desiredResolutionOrder));
+  state = JSON.parse(game.state_json());
+
+  assert.equal(state.stack.length, 2);
+  assert.equal(state.stack[0].kind, "TriggeredAbility");
+  assert.equal(state.stack[0].sourceId, firstSource);
+  assert.equal(state.stack[0].abilityId, 0);
+  assert.match(state.stack[0].abilityText, /Whenever a land enters/);
+  assert.ok(
+    state.stack.every((object) => object.kind === "TriggeredAbility"),
+    "both objects remain visibly distinct triggered abilities",
+  );
 
   game.free();
 });

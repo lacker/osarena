@@ -13,6 +13,7 @@ import {
 import type {
   Action,
   Card,
+  DecisionState,
   GameState,
   OpponentAction,
   Owner,
@@ -92,6 +93,16 @@ const singleTargetKey = (action: Action) => {
 };
 const sameTargets = (left: string[], right: string[]) =>
   left.length === right.length && left.every((target) => right.includes(target));
+
+const isTriggerOrderDecision = (
+  decision: DecisionState | null | undefined,
+): decision is DecisionState & { kind: "TriggerOrder"; orderSemantics: "resolution" } =>
+  decision?.kind === "TriggerOrder" && decision.orderSemantics === "resolution";
+
+const isTriggerPlacementDecision = (
+  decision: DecisionState | null | undefined,
+): decision is DecisionState & { kind: "TriggerPlacement" } =>
+  decision?.kind === "TriggerPlacement";
 
 type CardPresentationRect = {
   rect: DOMRect;
@@ -216,6 +227,15 @@ export function GameClient({
     state?.decision?.id === decisionSelectionState.decisionId
       ? decisionSelectionState.options
       : [];
+  const triggerResolutionOrder = isTriggerOrderDecision(state?.decision)
+    ? decisionSelectionState.decisionId === state.decision.id &&
+      decisionSelectionState.options.length === state.decision.options.length &&
+      state.decision.options.every((option) =>
+        decisionSelectionState.options.includes(option.id),
+      )
+      ? decisionSelectionState.options
+      : state.decision.options.map((option) => option.id)
+    : [];
 
   const applyState = useCallback((next: GameState) => {
     displayedState.current = next;
@@ -351,6 +371,7 @@ export function GameClient({
         // unrelated games, and no stale beats should keep playing.
         suppressFlip.current = true;
         setPresentationQueue([]);
+        setDecisionSelectionState({ decisionId: null, options: [] });
         displayedState.current = null;
         game.current?.free();
         game.current = replacement;
@@ -639,6 +660,7 @@ export function GameClient({
         state.decision.id,
         JSON.stringify(options),
       );
+      setDecisionSelectionState({ decisionId: null, options: [] });
       refresh();
     } catch (cause) {
       setError(String(cause));
@@ -843,6 +865,24 @@ export function GameClient({
         decisionId: state.decision!.id,
         options: [...selected, optionId],
       };
+    });
+  };
+
+  const moveTriggerOrderOption = (optionId: number, offset: -1 | 1) => {
+    if (!isTriggerOrderDecision(state?.decision)) return;
+    setDecisionSelectionState((current) => {
+      const optionIds = state.decision!.options.map((option) => option.id);
+      const order =
+        current.decisionId === state.decision!.id &&
+        current.options.length === optionIds.length &&
+        optionIds.every((option) => current.options.includes(option))
+          ? [...current.options]
+          : optionIds;
+      const index = order.indexOf(optionId);
+      const destination = index + offset;
+      if (index < 0 || destination < 0 || destination >= order.length) return current;
+      [order[index], order[destination]] = [order[destination], order[index]];
+      return { decisionId: state.decision!.id, options: order };
     });
   };
 
@@ -1572,45 +1612,53 @@ export function GameClient({
               )}
               {/* The row's own frame says where the stack is; a card sitting
                   in it says what is on it. Neither needs labelling. */}
-              {state.stack.map((item) => (
-                <div className="stack-card-slot" key={item.id}>
-                  <GameCard
-                    card={{
-                      id: item.id,
-                      name: item.name,
-                      art: item.art,
-                      kind: item.cardKind,
-                      typeLine: item.typeLine,
-                      metadataOnly: item.metadataOnly,
-                      isLand: item.isLand,
-                      manaCost: item.manaCost,
-                      rulesText: item.rulesText,
-                      power: item.power,
-                      toughness: item.toughness,
-                      owner: item.owner,
-                      xValue: item.manaCost?.x ? item.x : null,
-                    }}
-                    cardArtMode={cardArtMode}
-                    zone="stack"
-                    targetKey={`stack:${item.id}`}
-                    actionable={isStackTargetable(item.id)}
-                    targetable={isStackTargetable(item.id)}
-                    selected={false}
-                    dragOverTarget={dragOverTarget === `stack:${item.id}`}
-                    onSelect={() => selectStackTarget(item.id)}
-                    onDragOverTarget={handleTargetDragOver}
-                    onDragLeaveTarget={handleTargetDragLeave}
-                    onDropTarget={handleTargetDrop}
-                    compact
-                  />
-                  {item.manaCost?.x ? (
-                    <span className="stack-x-badge">X = {item.x}</span>
-                  ) : null}
-                  <small className="stack-card-owner">
-                    {item.owner === "human" ? "YOU" : "OPPONENT"}
-                  </small>
-                </div>
-              ))}
+              {state.stack.map((item) => {
+                const triggered = item.kind === "TriggeredAbility";
+                return (
+                  <div
+                    className={`stack-card-slot ${triggered ? "is-triggered-ability" : ""}`}
+                    data-stack-kind={item.kind}
+                    key={item.id}
+                  >
+                    <GameCard
+                      card={{
+                        id: item.id,
+                        name: item.name,
+                        art: triggered ? null : item.art,
+                        kind: triggered ? "triggeredability" : item.cardKind,
+                        typeLine: triggered ? "Triggered Ability" : item.typeLine,
+                        metadataOnly: item.metadataOnly,
+                        isLand: triggered ? false : item.isLand,
+                        manaCost: triggered ? null : item.manaCost,
+                        rulesText: item.abilityText ?? item.rulesText,
+                        power: triggered ? null : item.power,
+                        toughness: triggered ? null : item.toughness,
+                        owner: item.owner,
+                        xValue: !triggered && item.manaCost?.x ? item.x : null,
+                      }}
+                      cardArtMode={cardArtMode}
+                      zone="stack"
+                      targetKey={`stack:${item.id}`}
+                      actionable={isStackTargetable(item.id)}
+                      targetable={isStackTargetable(item.id)}
+                      selected={false}
+                      dragOverTarget={dragOverTarget === `stack:${item.id}`}
+                      onSelect={() => selectStackTarget(item.id)}
+                      onDragOverTarget={handleTargetDragOver}
+                      onDragLeaveTarget={handleTargetDragLeave}
+                      onDropTarget={handleTargetDrop}
+                      compact
+                    />
+                    {item.manaCost?.x ? (
+                      <span className="stack-x-badge">X = {item.x}</span>
+                    ) : null}
+                    <small className="stack-card-owner">
+                      {item.owner === "human" ? "YOU" : "OPPONENT"}
+                      {triggered ? " · TRIGGERED" : ""}
+                    </small>
+                  </div>
+                );
+              })}
             </div>
 
             <Zone
@@ -1736,21 +1784,27 @@ export function GameClient({
                     ? actionStepsRemaining > 0
                       ? `${actionStepsRemaining} action${actionStepsRemaining === 1 ? "" : "s"}`
                       : "New turn"
-                    : assigningDamageFor != null
-                      ? `Assign ${cardName(state, assigningDamageFor)} damage`
-                    : declaringBlockers
-                      ? "Assign your blockers"
-                    : preparingBlockers
-                      ? "Prepare your blockers"
-                    : draggingCardId !== null
-                      ? "Drop on a valid target"
-                    : choosingFireballTargets
-                      ? "Select Fireball targets"
-                    : choosingTarget
-                      ? "Choose a highlighted target"
-                      : panelActions.some((action) => action.kind === "primary")
-                        ? "Choose an option"
-                        : "Choose a card or pass"}
+                    : isTriggerOrderDecision(state.decision)
+                      ? "Order your triggers"
+                      : isTriggerPlacementDecision(state.decision)
+                        ? "Put your trigger on the stack"
+                        : assigningDamageFor != null
+                          ? `Assign ${cardName(state, assigningDamageFor)} damage`
+                          : declaringBlockers
+                            ? "Assign your blockers"
+                            : preparingBlockers
+                              ? "Prepare your blockers"
+                              : draggingCardId !== null
+                                ? "Drop on a valid target"
+                                : choosingFireballTargets
+                                  ? "Select Fireball targets"
+                                  : choosingTarget
+                                    ? "Choose a highlighted target"
+                                    : panelActions.some(
+                                          (action) => action.kind === "primary",
+                                        )
+                                      ? "Choose an option"
+                                      : "Choose a card or pass"}
                 </strong>
               </div>
               {watchingOpponent ? (
@@ -1767,65 +1821,149 @@ export function GameClient({
             </div>
             <div className="action-list">
               {state.decision && (
-                <div className="engine-decision" role="group" aria-label={state.decision.prompt}>
-                  <div className="target-prompt" role="status">
-                    <strong>{state.decision.prompt}</strong>
-                    <span>
-                      {state.decision.minimum === state.decision.maximum
-                        ? `Choose ${state.decision.minimum}`
-                        : state.decision.minimum === 0
-                          ? `Choose up to ${state.decision.maximum}`
-                          : `Choose ${state.decision.minimum}–${state.decision.maximum}`}
-                      {state.decision.visibility === "Private" ? " · Private" : ""}
-                    </span>
+                isTriggerOrderDecision(state.decision) ? (
+                  <div
+                    className="engine-decision trigger-order-decision"
+                    role="group"
+                    aria-label={state.decision.prompt}
+                    data-decision-kind="TriggerOrder"
+                  >
+                    <div className="target-prompt" role="status">
+                      <strong>{state.decision.prompt}</strong>
+                      <span>
+                        Arrange the abilities in resolution order. The first resolves first.
+                      </span>
+                    </div>
+                    <ol className="trigger-order-list">
+                      {triggerResolutionOrder.map((optionId, index) => {
+                        const option = state.decision!.options.find(
+                          (candidate) => candidate.id === optionId,
+                        );
+                        if (!option) return null;
+                        const triggerLabel = option.abilityText ?? option.label;
+                        return (
+                          <li key={option.id}>
+                            <span className="trigger-order-position" aria-hidden="true">
+                              {index + 1}
+                            </span>
+                            <span className="trigger-order-label">
+                              <strong title={triggerLabel}>{triggerLabel}</strong>
+                              <small>
+                                {option.cardName ?? "Triggered ability"}
+                                {option.zone !== "None" ? ` · ${option.zone}` : ""}
+                              </small>
+                            </span>
+                            <span className="trigger-order-controls">
+                              <button
+                                type="button"
+                                aria-label={`Move ${triggerLabel} earlier`}
+                                title="Resolve sooner"
+                                disabled={index === 0 || watchingOpponent}
+                                onClick={() => moveTriggerOrderOption(option.id, -1)}
+                              >
+                                ↑
+                              </button>
+                              <button
+                                type="button"
+                                aria-label={`Move ${triggerLabel} later`}
+                                title="Resolve later"
+                                disabled={
+                                  index === triggerResolutionOrder.length - 1 ||
+                                  watchingOpponent
+                                }
+                                onClick={() => moveTriggerOrderOption(option.id, 1)}
+                              >
+                                ↓
+                              </button>
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ol>
+                    <button
+                      className="finalize-decision finalize-trigger-order"
+                      disabled={watchingOpponent}
+                      onClick={() => submitDecision(triggerResolutionOrder)}
+                    >
+                      <strong>Confirm resolution order</strong>
+                      <small>{triggerResolutionOrder.length} mandatory triggers</small>
+                    </button>
                   </div>
-                  <div className="decision-options">
-                    {state.decision.options.map((option) => (
+                ) : (
+                  <div
+                    className={`engine-decision ${
+                      isTriggerPlacementDecision(state.decision)
+                        ? "trigger-placement-decision"
+                        : ""
+                    }`}
+                    role="group"
+                    aria-label={state.decision.prompt}
+                    data-decision-kind={state.decision.kind}
+                  >
+                    <div className="target-prompt" role="status">
+                      <strong>{state.decision.prompt}</strong>
+                      <span>
+                        {state.decision.minimum === state.decision.maximum
+                          ? `Choose ${state.decision.minimum}`
+                          : state.decision.minimum === 0
+                            ? `Choose up to ${state.decision.maximum}`
+                            : `Choose ${state.decision.minimum}–${state.decision.maximum}`}
+                        {isTriggerPlacementDecision(state.decision)
+                          ? " · Put on the stack"
+                          : ""}
+                        {state.decision.visibility === "Private" ? " · Private" : ""}
+                      </span>
+                    </div>
+                    <div className="decision-options">
+                      {state.decision.options.map((option) => (
+                        <button
+                          key={option.id}
+                          className={decisionSelection.includes(option.id) ? "is-selected" : ""}
+                          onClick={() => chooseDecisionOption(option.id)}
+                          disabled={watchingOpponent}
+                        >
+                          <strong>{option.label}</strong>
+                          {(option.abilityText || option.zone !== "None") && (
+                            <small>{option.abilityText ?? option.zone}</small>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                    {/* Every decision that does not submit on the first click
+                        needs a way to commit. A search is the case that made
+                        this matter: it allows exactly one card but does not
+                        require it, so gating on `maximum > 1` left the player
+                        able to select a card and unable to confirm anything. */}
+                    {!(state.decision.minimum === 1 && state.decision.maximum === 1) && (
                       <button
-                        key={option.id}
-                        className={decisionSelection.includes(option.id) ? "is-selected" : ""}
-                        onClick={() => chooseDecisionOption(option.id)}
+                        className="finalize-decision"
+                        disabled={
+                          decisionSelection.length < state.decision.minimum ||
+                          watchingOpponent
+                        }
+                        onClick={() => submitDecision(decisionSelection)}
+                      >
+                        <strong>
+                          {decisionSelection.length === 0 && state.decision.minimum === 0
+                            ? "Choose none"
+                            : "Confirm selection"}
+                        </strong>
+                        <small>
+                          {decisionSelection.length} / {state.decision.maximum} selected
+                        </small>
+                      </button>
+                    )}
+                    {cancelDecisionAction && (
+                      <button
+                        className="cancel-decision"
+                        onClick={() => prepareAction(cancelDecisionAction)}
                         disabled={watchingOpponent}
                       >
-                        <strong>{option.label}</strong>
-                        {option.zone !== "None" && <small>{option.zone}</small>}
+                        Cancel
                       </button>
-                    ))}
+                    )}
                   </div>
-                  {/* Every decision that does not submit on the first click
-                      needs a way to commit. A search is the case that made
-                      this matter: it allows exactly one card but does not
-                      require it, so gating on `maximum > 1` left the player
-                      able to select a card and unable to confirm anything. */}
-                  {!(state.decision.minimum === 1 && state.decision.maximum === 1) && (
-                    <button
-                      className="finalize-decision"
-                      disabled={
-                        decisionSelection.length < state.decision.minimum ||
-                        watchingOpponent
-                      }
-                      onClick={() => submitDecision(decisionSelection)}
-                    >
-                      <strong>
-                        {decisionSelection.length === 0 && state.decision.minimum === 0
-                          ? "Choose none"
-                          : "Confirm selection"}
-                      </strong>
-                      <small>
-                        {decisionSelection.length} / {state.decision.maximum} selected
-                      </small>
-                    </button>
-                  )}
-                  {cancelDecisionAction && (
-                    <button
-                      className="cancel-decision"
-                      onClick={() => prepareAction(cancelDecisionAction)}
-                      disabled={watchingOpponent}
-                    >
-                      Cancel
-                    </button>
-                  )}
-                </div>
+                )
               )}
               {attackAllCount > 0 && !state.canCancelAttackers && (
                 <button className="attack-all" onClick={attackAll} disabled={watchingOpponent}>
@@ -2851,15 +2989,21 @@ function GameCard({
             </span>
           )}
         </span>
-        <CardArt
-          mode={renderedCardArtMode}
-          cardKind={card.kind}
-          scryfallId={validArtId ?? ""}
-          fullImageSizes={compact ? "48px" : "(max-width: 620px) 112px, 132px"}
-          onImageError={() => {
-            if (artRequestKey) setFailedArtRequest(artRequestKey);
-          }}
-        />
+        {card.kind.includes("ability") ? (
+          <span className="card-art" aria-hidden="true">
+            <i>✦</i>
+          </span>
+        ) : (
+          <CardArt
+            mode={renderedCardArtMode}
+            cardKind={card.kind}
+            scryfallId={validArtId ?? ""}
+            fullImageSizes={compact ? "48px" : "(max-width: 620px) 112px, 132px"}
+            onImageError={() => {
+              if (artRequestKey) setFailedArtRequest(artRequestKey);
+            }}
+          />
+        )}
         <span className="card-type">{type}</span>
         <span className="card-text">{card.attacking ? "Attacking" : card.rulesText}</span>
         {card.power !== null && card.power !== undefined && (

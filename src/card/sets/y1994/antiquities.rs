@@ -1,7 +1,11 @@
 use super::{CardRecord, PrintingRecord};
-use crate::card::{CardArt, CardBehavior, CardKind, CardRules, CardSet, ManaCost, cards};
+use crate::card::{
+    AbilityCostDef, AbilityDef, AddManaEffectDef, CardArt, CardBehavior, CardKind, CardRules,
+    CardSet, EffectDef, ImplementationStatus, ManaCost, ManaKindDef, ManaRestrictionDef,
+    ObjectPredicateDef, TriggerEventDef, ZoneKind, cards,
+};
+use crate::ids::AbilityId;
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static ATOG: CardRecord = CardRecord::new(
     cards::ATOG,
     "Atog",
@@ -15,9 +19,11 @@ pub(in crate::card::sets) static ATOG: CardRecord = CardRecord::new(
         "Sacrifice an artifact: Atog gets +2/+2 until end of turn.",
     )
     .creature(1, 2),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The activated ability currently resolves immediately instead of using the stack.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static DETONATE: CardRecord = CardRecord::new(
     cards::DETONATE,
     "Detonate",
@@ -33,9 +39,22 @@ pub(in crate::card::sets) static DETONATE: CardRecord = CardRecord::new(
         ManaCost::with_x(1),
         "Destroy target artifact with mana value X. Its controller takes X damage.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+        explanation: "The no-regeneration clause is absent from both the catalog text and resolution behavior.",
+    });
 
-// Implementation status: complete — card rules are executed by the engine.
+static SU_CHI_ABILITIES: [AbilityDef; 1] = [AbilityDef::triggered(
+    AbilityId::PRIMARY,
+    "When Su-Chi dies, add {C}{C}{C}{C}.",
+    TriggerEventDef::ZoneChanged {
+        object: ObjectPredicateDef::Source,
+        from: Some(ZoneKind::Battlefield),
+        to: Some(ZoneKind::Graveyard),
+    },
+    EffectDef::AddMana(AddManaEffectDef::one(ManaKindDef::Colorless).with_amount(4)),
+)];
+
 pub(in crate::card::sets) static SU_CHI: CardRecord = CardRecord::new(
     cards::SU_CHI,
     "Su-Chi",
@@ -48,10 +67,10 @@ pub(in crate::card::sets) static SU_CHI: CardRecord = CardRecord::new(
         ManaCost::new(4, 0),
         "When Su-Chi dies, add 4.",
     )
-    .creature(4, 4),
+    .creature(4, 4)
+    .with_abilities(&SU_CHI_ABILITIES),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static MISHRA_S_FACTORY: CardRecord = CardRecord::new(
     cards::MISHRA_S_FACTORY,
     "Mishra's Factory",
@@ -65,9 +84,11 @@ pub(in crate::card::sets) static MISHRA_S_FACTORY: CardRecord = CardRecord::new(
         "Tap: Add 1. 1: Becomes a 2/2 Assembly-Worker artifact creature until end of turn. Tap: Target Assembly-Worker gets +1/+1 until end of turn.",
     )
     .activated("Give {} +1/+1 with Mishra's Factory", "Give an Assembly-Worker +1/+1"),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+        explanation: "Its animation and pump activated abilities currently resolve immediately instead of using the stack.",
+    });
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static ORCISH_MECHANICS: CardRecord = CardRecord::new(
     cards::ORCISH_MECHANICS,
     "Orcish Mechanics",
@@ -84,7 +105,6 @@ pub(in crate::card::sets) static ORCISH_MECHANICS: CardRecord = CardRecord::new(
     .activated("Deal 2 damage to {} with Orcish Mechanics", "Deal 2 damage"),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static STRIP_MINE: CardRecord = CardRecord::new(
     cards::STRIP_MINE,
     "Strip Mine",
@@ -100,7 +120,6 @@ pub(in crate::card::sets) static STRIP_MINE: CardRecord = CardRecord::new(
     .activated("Destroy {} with Strip Mine", "Destroy a land"),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static TRISKELION: CardRecord = CardRecord::new(
     cards::TRISKELION,
     "Triskelion",
@@ -117,7 +136,6 @@ pub(in crate::card::sets) static TRISKELION: CardRecord = CardRecord::new(
     .activated("Deal 1 damage to {} with Triskelion", "Deal 1 damage"),
 );
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static IVORY_TOWER: CardRecord = CardRecord::new(
     cards::IVORY_TOWER,
     "Ivory Tower",
@@ -133,9 +151,25 @@ pub(in crate::card::sets) static IVORY_TOWER: CardRecord = CardRecord::new(
         ManaCost::new(1, 0),
         "At the beginning of your upkeep, gain 1 life for each card in your hand beyond four.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The upkeep trigger currently resolves immediately instead of using the stack.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
+static MISHRA_S_WORKSHOP_RESTRICTIONS: [ManaRestrictionDef; 1] =
+    [ManaRestrictionDef::CastSpell(ObjectPredicateDef::Artifact)];
+
+static MISHRA_S_WORKSHOP_ABILITIES: [AbilityDef; 1] = [AbilityDef::activated_mana(
+    AbilityId::PRIMARY,
+    "{T}: Add {C}{C}{C}. Spend this mana only to cast artifact spells.",
+    &[AbilityCostDef::TapSource],
+    EffectDef::AddMana(
+        AddManaEffectDef::one(ManaKindDef::Colorless)
+            .with_amount(3)
+            .with_restrictions(&MISHRA_S_WORKSHOP_RESTRICTIONS),
+    ),
+)];
+
 pub(in crate::card::sets) static MISHRA_S_WORKSHOP: CardRecord = CardRecord::new(
     cards::MISHRA_S_WORKSHOP,
     "Mishra's Workshop",
@@ -147,10 +181,13 @@ pub(in crate::card::sets) static MISHRA_S_WORKSHOP: CardRecord = CardRecord::new
         CardKind::Land,
         ManaCost::new(0, 0),
         "Tap: Add 3. Spend this mana only to cast artifact spells.",
-    ),
-);
+    )
+    .with_abilities(&MISHRA_S_WORKSHOP_ABILITIES),
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "Its produced mana carries the artifact-spell restriction, but payment does not enforce that restriction yet.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static ARGOTHIAN_PIXIES: CardRecord = CardRecord::new(
     cards::ARGOTHIAN_PIXIES,
     "Argothian Pixies",
@@ -161,12 +198,14 @@ pub(in crate::card::sets) static ARGOTHIAN_PIXIES: CardRecord = CardRecord::new(
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(1, 0, 0, 0, 0, 1),
-        "Argothian Pixies can't be blocked by artifact creatures.",
+        "Argothian Pixies can't be blocked by artifact creatures. Prevent all damage that would be dealt to Argothian Pixies by artifact creatures.",
     )
     .creature(2, 1),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The artifact-creature blocking restriction works, but damage from artifact creatures is not prevented.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static HURKYLS_RECALL: CardRecord = CardRecord::new(
     cards::HURKYLS_RECALL,
     "Hurkyl's Recall",
@@ -177,11 +216,13 @@ pub(in crate::card::sets) static HURKYLS_RECALL: CardRecord = CardRecord::new(
     CardRules::new(
         CardKind::Instant,
         ManaCost::colored(1, 0, 1, 0, 0, 0),
-        "Return all artifacts target player controls to their owner's hand.",
+        "Return all artifacts target player owns to their hand.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The resolver currently returns artifacts the targeted player controls instead of artifacts they own.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static SAGE_OF_LAT_NAM: CardRecord = CardRecord::new(
     cards::SAGE_OF_LAT_NAM,
     "Sage of Lat-Nam",
@@ -195,9 +236,11 @@ pub(in crate::card::sets) static SAGE_OF_LAT_NAM: CardRecord = CardRecord::new(
         "Tap, sacrifice an artifact: Draw a card.",
     )
     .creature(1, 1),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The card is incorrectly typed as an artifact creature.",
+});
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static TETRAVUS: CardRecord = CardRecord::new(
     cards::TETRAVUS,
     "Tetravus",
@@ -212,9 +255,11 @@ pub(in crate::card::sets) static TETRAVUS: CardRecord = CardRecord::new(
     )
     .creature(1, 1)
     .flying(),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+        explanation: "The upkeep abilities that create and absorb Tetravite tokens are not implemented or cataloged.",
+    });
 
-// Implementation status: complete — card rules are executed by the engine.
 pub(in crate::card::sets) static ENERGY_FLUX: CardRecord = CardRecord::new(
     cards::ENERGY_FLUX,
     "Energy Flux",
@@ -227,7 +272,10 @@ pub(in crate::card::sets) static ENERGY_FLUX: CardRecord = CardRecord::new(
         ManaCost::colored(2, 0, 1, 0, 0, 0),
         "At the beginning of each player's upkeep, sacrifice each artifact unless you pay 2 for it.",
     ),
-);
+)
+.with_implementation_status(ImplementationStatus::Partial {
+    explanation: "The per-artifact upkeep triggers and payment choices currently resolve outside the stack.",
+});
 
 pub(in crate::card::sets) static CARDS: &[&CardRecord] = &[
     &ATOG,
