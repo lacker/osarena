@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use super::{
     AbilityDef, AbilityTargetDef, CardDefinition, CardPrinting, CardPrintingId, CardSet,
-    CardStructure, PlayActionKind, PlayOptionDef, SpellForm, TargetSlotDef,
+    CardStructure, DeclarativeAbilityDef, PlayActionKind, PlayOptionDef, SpellForm, TargetSlotDef,
 };
 use crate::{
     AbilityId, AdditionalCostId, AlternativeCostId, CardDefinitionId, CardPartId, Format, ModeId,
@@ -232,15 +232,6 @@ fn ascii_fold(lowered: char) -> Option<&'static str> {
 }
 
 fn validate_composition(definition: &CardDefinition) -> Result<(), CatalogError> {
-    if definition
-        .implementation_status
-        .explanation()
-        .is_some_and(|explanation| explanation.trim().is_empty())
-    {
-        return Err(CatalogError::MissingImplementationExplanation(
-            definition.id,
-        ));
-    }
     let mut defined_parts = HashSet::new();
     for part in &definition.parts {
         if !defined_parts.insert(part.id) {
@@ -249,7 +240,7 @@ fn validate_composition(definition: &CardDefinition) -> Result<(), CatalogError>
                 part: part.id,
             });
         }
-        validate_abilities(definition, part.id, part.rules.abilities)?;
+        validate_abilities(definition, part.id, part.rules.ability_clauses())?;
     }
 
     let structure_parts = structure_parts(definition)?;
@@ -301,51 +292,83 @@ fn validate_abilities(
 ) -> Result<(), CatalogError> {
     let mut ids = HashSet::new();
     for ability in abilities {
-        if !ids.insert(ability.id()) {
+        if !ids.insert(ability.id) {
             return Err(CatalogError::DuplicateAbilityId {
                 definition: definition.id,
                 part,
-                ability: ability.id(),
+                ability: ability.id,
             });
         }
 
-        let (source_zones, targets, is_mana_ability) = match ability {
-            AbilityDef::Spell(spell) => (None, spell.targets, false),
-            AbilityDef::ActivatedMana(activated) => {
+        if ability.text.trim().is_empty() {
+            return Err(CatalogError::EmptyAbilityText {
+                definition: definition.id,
+                part,
+                ability: ability.id,
+            });
+        }
+        if ability
+            .implementation
+            .explanation()
+            .is_some_and(|explanation| explanation.trim().is_empty())
+        {
+            return Err(CatalogError::MissingImplementationExplanation {
+                definition: definition.id,
+                part,
+                ability: ability.id,
+            });
+        }
+        if ability.activation_text.is_some()
+            && !matches!(ability.definition, DeclarativeAbilityDef::Activated(_))
+        {
+            return Err(CatalogError::ActivationTextOnNonActivatedAbility {
+                definition: definition.id,
+                part,
+                ability: ability.id,
+            });
+        }
+
+        let (source_zones, targets, is_mana_ability) = match &ability.definition {
+            DeclarativeAbilityDef::Spell(spell) => (None, spell.targets, false),
+            DeclarativeAbilityDef::ActivatedMana(activated) => {
                 (Some(activated.source_zones), activated.targets, true)
             }
-            AbilityDef::TriggeredMana(triggered) => {
+            DeclarativeAbilityDef::TriggeredMana(triggered) => {
                 (Some(triggered.source_zones), triggered.targets, true)
             }
-            AbilityDef::Activated(activated) => {
+            DeclarativeAbilityDef::Activated(activated) => {
                 (Some(activated.source_zones), activated.targets, false)
             }
-            AbilityDef::Triggered(triggered) => {
+            DeclarativeAbilityDef::Triggered(triggered) => {
                 (Some(triggered.source_zones), triggered.targets, false)
             }
-            AbilityDef::Static(static_ability) => {
+            DeclarativeAbilityDef::Static(static_ability) => {
                 (Some(static_ability.source_zones), &[][..], false)
             }
-            AbilityDef::SpecialAction(special_action) => {
+            DeclarativeAbilityDef::Replacement(replacement) => {
+                (Some(replacement.source_zones), &[][..], false)
+            }
+            DeclarativeAbilityDef::SpecialAction(special_action) => {
                 (Some(special_action.source_zones), &[][..], false)
             }
+            DeclarativeAbilityDef::Legacy => (None, &[][..], false),
         };
 
         if source_zones.is_some_and(<[super::ZoneKind]>::is_empty) {
             return Err(CatalogError::AbilityHasNoSourceZone {
                 definition: definition.id,
                 part,
-                ability: ability.id(),
+                ability: ability.id,
             });
         }
         if is_mana_ability && !targets.is_empty() {
             return Err(CatalogError::ManaAbilityHasTargets {
                 definition: definition.id,
                 part,
-                ability: ability.id(),
+                ability: ability.id,
             });
         }
-        validate_ability_targets(definition, part, ability.id(), targets)?;
+        validate_ability_targets(definition, part, ability.id, targets)?;
     }
     Ok(())
 }
@@ -666,7 +689,21 @@ pub enum CatalogError {
         printing: CardPrintingId,
     },
     OrphanPrinting(CardPrintingId),
-    MissingImplementationExplanation(CardDefinitionId),
+    EmptyAbilityText {
+        definition: CardDefinitionId,
+        part: CardPartId,
+        ability: AbilityId,
+    },
+    MissingImplementationExplanation {
+        definition: CardDefinitionId,
+        part: CardPartId,
+        ability: AbilityId,
+    },
+    ActivationTextOnNonActivatedAbility {
+        definition: CardDefinitionId,
+        part: CardPartId,
+        ability: AbilityId,
+    },
     DuplicatePartId {
         definition: CardDefinitionId,
         part: CardPartId,
@@ -826,9 +863,29 @@ impl fmt::Display for CatalogError {
                 formatter,
                 "card printing {id:?} references an unknown definition"
             ),
-            Self::MissingImplementationExplanation(definition) => write!(
+            Self::EmptyAbilityText {
+                definition,
+                part,
+                ability,
+            } => write!(
                 formatter,
-                "card definition {definition:?} has a non-complete implementation status without an explanation"
+                "ability {ability:?} on part {part:?} of card definition {definition:?} has empty rules text"
+            ),
+            Self::MissingImplementationExplanation {
+                definition,
+                part,
+                ability,
+            } => write!(
+                formatter,
+                "ability {ability:?} on part {part:?} of card definition {definition:?} has a non-declarative implementation without an explanation"
+            ),
+            Self::ActivationTextOnNonActivatedAbility {
+                definition,
+                part,
+                ability,
+            } => write!(
+                formatter,
+                "ability {ability:?} on part {part:?} of card definition {definition:?} has activated-action text but is not an activated ability"
             ),
             Self::DuplicatePartId { definition, part } => write!(
                 formatter,
@@ -1030,11 +1087,11 @@ impl Error for CatalogError {}
 mod tests {
     use super::{CardCatalog, CatalogError};
     use crate::card::{
-        AbilityCostDef, AbilityDef, AbilityTargetDef, AbilityTargetPredicate, ActivatedAbilityDef,
-        AdditionalCostDef, AlternateSpellKind, AlternativeCostDef, CardBehavior, CardDefinition,
-        CardEffectStatus, CardPart, CardPrinting, CardPrintingId, CardSet, CardStructure,
-        DoubleFacedKind, EffectDef, ManaCost, ModeDef, ModeSetDef, PlayOptionDef, PlayerRelation,
-        SpellForm, TargetPredicate, TargetSlotDef,
+        AbilityCostDef, AbilityDef, AbilityTargetDef, AbilityTargetPredicate, AdditionalCostDef,
+        AlternateSpellKind, AlternativeCostDef, CardBehavior, CardDefinition, CardEffectStatus,
+        CardPart, CardPrinting, CardPrintingId, CardSet, CardStructure, DoubleFacedKind, EffectDef,
+        ManaCost, ModeDef, ModeSetDef, PlayOptionDef, PlayerRelation, SpellForm, TargetPredicate,
+        TargetSlotDef,
     };
     use crate::{
         AbilityId, AdditionalCostId, AlternativeCostId, CardDefinitionId, CardPartId, Format,
@@ -1237,21 +1294,39 @@ mod tests {
             "target player",
             AbilityTargetPredicate::Player(PlayerRelation::Any),
         )];
-        static ABILITIES: [AbilityDef; 1] = [AbilityDef::ActivatedMana(
-            ActivatedAbilityDef::new(
-                AbilityId::PRIMARY,
-                "Target player adds mana.",
-                &COSTS,
-                EffectDef::None,
-            )
-            .with_targets(&TARGETS),
-        )];
+        static ABILITIES: [AbilityDef; 1] = [AbilityDef::activated_mana(
+            AbilityId::PRIMARY,
+            "Target player adds mana.",
+            &COSTS,
+            EffectDef::None,
+        )
+        .with_targets(&TARGETS)];
         let mut card = definition(1, "Test Card", CardSet::Alpha);
         card.parts[0].rules = card.parts[0].rules.with_abilities(&ABILITIES);
 
         assert_eq!(
             error(card),
             CatalogError::ManaAbilityHasTargets {
+                definition: CardDefinitionId(1),
+                part: CardPartId::PRIMARY,
+                ability: AbilityId::PRIMARY,
+            }
+        );
+    }
+
+    #[test]
+    fn activated_action_text_belongs_to_the_exact_activated_clause() {
+        static ABILITIES: [AbilityDef; 1] =
+            [
+                AbilityDef::spell(AbilityId::PRIMARY, "A spell ability.", EffectDef::None)
+                    .with_activation_text("Target {}", "Choose a target"),
+            ];
+        let mut card = definition(1, "Test Card", CardSet::Alpha);
+        card.parts[0].rules = card.parts[0].rules.with_abilities(&ABILITIES);
+
+        assert_eq!(
+            error(card),
+            CatalogError::ActivationTextOnNonActivatedAbility {
                 definition: CardDefinitionId(1),
                 part: CardPartId::PRIMARY,
                 ability: AbilityId::PRIMARY,

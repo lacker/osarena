@@ -162,11 +162,11 @@ pub(super) fn additional_printings() -> Vec<CardPrinting> {
         .collect()
 }
 
-// This is deliberately only an index: every rules value lives with its card.
+// This is deliberately only an index: special hooks and the legacy
+// CardDefinition::new compatibility keys resolve to card-local rules.
 #[allow(clippy::too_many_lines)]
 pub(super) const fn rules(behavior: CardBehavior) -> &'static CardRules {
     match behavior {
-        CardBehavior::AnkhOfMishra => &y1993::alpha::ANKH_OF_MISHRA.rules,
         CardBehavior::Atog => &y1994::antiquities::ATOG.rules,
         CardBehavior::BallLightning => &y1994::the_dark::BALL_LIGHTNING.rules,
         CardBehavior::BlackVise => &y1993::alpha::BLACK_VISE.rules,
@@ -179,31 +179,20 @@ pub(super) const fn rules(behavior: CardBehavior) -> &'static CardRules {
         CardBehavior::GlassesOfUrza => &y1993::alpha::GLASSES_OF_URZA.rules,
         CardBehavior::IronStar => &y1993::alpha::IRON_STAR.rules,
         CardBehavior::LightningBolt => &y1993::alpha::LIGHTNING_BOLT.rules,
-        CardBehavior::Mountain => &y1993::alpha::MOUNTAIN.rules,
         CardBehavior::RedElementalBlast => &y1993::alpha::RED_ELEMENTAL_BLAST.rules,
         CardBehavior::Shatter => &y1993::alpha::SHATTER.rules,
         CardBehavior::Smoke => &y1993::alpha::SMOKE.rules,
         CardBehavior::StoneGiant => &y1993::alpha::STONE_GIANT.rules,
-        CardBehavior::SuChi => &y1994::antiquities::SU_CHI.rules,
         CardBehavior::WinterOrb => &y1993::alpha::WINTER_ORB.rules,
-        CardBehavior::BlackLotus => &y1993::alpha::BLACK_LOTUS.rules,
         CardBehavior::ChaosOrb => &y1993::alpha::CHAOS_ORB.rules,
         CardBehavior::DragonWhelp => &y1993::alpha::DRAGON_WHELP.rules,
         CardBehavior::GoblinBalloonBrigade => &y1993::alpha::GOBLIN_BALLOON_BRIGADE.rules,
-        CardBehavior::GoblinDiggingTeam => &y1994::the_dark::GOBLIN_DIGGING_TEAM.rules,
         CardBehavior::GoblinGrenade => &y1994::fallen_empires::GOBLIN_GRENADE.rules,
         CardBehavior::GoblinKing => &y1993::alpha::GOBLIN_KING.rules,
-        CardBehavior::GoblinsOfTheFlarg => &y1994::the_dark::GOBLINS_OF_THE_FLARG.rules,
         CardBehavior::GraniteGargoyle => &y1993::alpha::GRANITE_GARGOYLE.rules,
         CardBehavior::IronclawOrcs => &y1993::alpha::IRONCLAW_ORCS.rules,
         CardBehavior::MishrasFactory => &y1994::antiquities::MISHRA_S_FACTORY.rules,
-        CardBehavior::MoxEmerald => &y1993::alpha::MOX_EMERALD.rules,
-        CardBehavior::MoxJet => &y1993::alpha::MOX_JET.rules,
-        CardBehavior::MoxPearl => &y1993::alpha::MOX_PEARL.rules,
-        CardBehavior::MoxRuby => &y1993::alpha::MOX_RUBY.rules,
-        CardBehavior::MoxSapphire => &y1993::alpha::MOX_SAPPHIRE.rules,
         CardBehavior::OrcishMechanics => &y1994::antiquities::ORCISH_MECHANICS.rules,
-        CardBehavior::SolRing => &y1993::alpha::SOL_RING.rules,
         CardBehavior::StripMine => &y1994::antiquities::STRIP_MINE.rules,
         CardBehavior::WheelOfFortune => &y1993::alpha::WHEEL_OF_FORTUNE.rules,
         CardBehavior::Juggernaut => &y1993::alpha::JUGGERNAUT.rules,
@@ -214,24 +203,15 @@ pub(super) const fn rules(behavior: CardBehavior) -> &'static CardRules {
         CardBehavior::Counterspell => &y1993::alpha::COUNTERSPELL.rules,
         CardBehavior::Disenchant => &y1993::alpha::DISENCHANT.rules,
         CardBehavior::FellwarStone => &y1994::the_dark::FELLWAR_STONE.rules,
-        CardBehavior::Island => &y1993::alpha::ISLAND.rules,
         CardBehavior::IvoryTower => &y1994::antiquities::IVORY_TOWER.rules,
         CardBehavior::JayemdaeTome => &y1993::alpha::JAYEMDAE_TOME.rules,
-        CardBehavior::Plains => &y1993::alpha::PLAINS.rules,
-        CardBehavior::SerraAngel => &y1993::alpha::SERRA_ANGEL.rules,
         CardBehavior::SwordsToPlowshares => &y1993::alpha::SWORDS_TO_PLOWSHARES.rules,
         CardBehavior::TimeWalk => &y1993::alpha::TIME_WALK.rules,
-        CardBehavior::Tundra => &y1993::alpha::TUNDRA.rules,
-        CardBehavior::VolcanicIsland => &y1993::beta::VOLCANIC_ISLAND.rules,
         CardBehavior::Armageddon => &y1993::alpha::ARMAGEDDON.rules,
-        CardBehavior::Badlands => &y1993::alpha::BADLANDS.rules,
         CardBehavior::Balance => &y1993::alpha::BALANCE.rules,
-        CardBehavior::Bayou => &y1993::alpha::BAYOU.rules,
         CardBehavior::BlackKnight => &y1993::alpha::BLACK_KNIGHT.rules,
-        CardBehavior::BirdsOfParadise => &y1993::alpha::BIRDS_OF_PARADISE.rules,
         CardBehavior::BlueElementalBlast => &y1993::alpha::BLUE_ELEMENTAL_BLAST.rules,
         CardBehavior::Channel => &y1993::alpha::CHANNEL.rules,
-        CardBehavior::CityOfBrass => &y1993::arabian_nights::CITY_OF_BRASS.rules,
         CardBehavior::Crusade => &y1993::alpha::CRUSADE.rules,
         CardBehavior::DarkRitual => &y1993::alpha::DARK_RITUAL.rules,
         CardBehavior::DemonicTutor => &y1993::alpha::DEMONIC_TUTOR.rules,
@@ -239,7 +219,6 @@ pub(super) const fn rules(behavior: CardBehavior) -> &'static CardRules {
         CardBehavior::DrainLife => &y1993::alpha::DRAIN_LIFE.rules,
         CardBehavior::Earthquake => &y1993::alpha::EARTHQUAKE.rules,
         CardBehavior::ErhnamDjinn => &y1993::arabian_nights::ERHNAM_DJINN.rules,
-        CardBehavior::Forest => &y1993::alpha::FOREST.rules,
         CardBehavior::HymnToTourach => &y1994::fallen_empires::HYMN_TO_TOURACH.rules,
         CardBehavior::HypnoticSpecter => &y1993::alpha::HYPNOTIC_SPECTER.rules,
         CardBehavior::IcatianJavelineers => &y1994::fallen_empires::ICATIAN_JAVELINEERS.rules,
@@ -248,29 +227,18 @@ pub(super) const fn rules(behavior: CardBehavior) -> &'static CardRules {
         CardBehavior::ManaDrain => &y1994::legends::MANA_DRAIN.rules,
         CardBehavior::MazeOfIth => &y1994::the_dark::MAZE_OF_ITH.rules,
         CardBehavior::MindTwist => &y1993::alpha::MIND_TWIST.rules,
-        CardBehavior::MishrasWorkshop => &y1994::antiquities::MISHRA_S_WORKSHOP.rules,
         CardBehavior::NevinyrralsDisk => &y1993::alpha::NEVINYRRALS_DISK.rules,
         CardBehavior::OrderOfLeitbur => &y1994::fallen_empires::ORDER_OF_LEITBUR.rules,
         CardBehavior::OrderOfTheEbonHand => &y1994::fallen_empires::ORDER_OF_THE_EBON_HAND.rules,
-        CardBehavior::Plateau => &y1993::alpha::PLATEAU.rules,
         CardBehavior::PsionicBlast => &y1993::alpha::PSIONIC_BLAST.rules,
         CardBehavior::Recall => &y1994::legends::RECALL.rules,
         CardBehavior::Regrowth => &y1993::alpha::REGROWTH.rules,
-        CardBehavior::Savannah => &y1993::alpha::SAVANNAH.rules,
-        CardBehavior::SavannahLions => &y1993::alpha::SAVANNAH_LIONS.rules,
-        CardBehavior::Scrubland => &y1993::alpha::SCRUBLAND.rules,
         CardBehavior::SerendibEfreet => &y1993::arabian_nights::SERENDIB_EFREET.rules,
-        CardBehavior::SengirVampire => &y1993::alpha::SENGIR_VAMPIRE.rules,
         CardBehavior::Sinkhole => &y1993::alpha::SINKHOLE.rules,
-        CardBehavior::Swamp => &y1993::alpha::SWAMP.rules,
         CardBehavior::SylvanLibrary => &y1994::legends::SYLVAN_LIBRARY.rules,
-        CardBehavior::Taiga => &y1993::alpha::TAIGA.rules,
         CardBehavior::Terror => &y1993::alpha::TERROR.rules,
-        CardBehavior::ThunderSpirit => &y1994::legends::THUNDER_SPIRIT.rules,
         CardBehavior::TimeVault => &y1993::alpha::TIME_VAULT.rules,
         CardBehavior::Timetwister => &y1993::alpha::TIMETWISTER.rules,
-        CardBehavior::TropicalIsland => &y1993::alpha::TROPICAL_ISLAND.rules,
-        CardBehavior::UndergroundSea => &y1993::alpha::UNDERGROUND_SEA.rules,
         CardBehavior::WhirlingDervish => &y1994::legends::WHIRLING_DERVISH.rules,
         CardBehavior::WhiteKnight => &y1993::alpha::WHITE_KNIGHT.rules,
         CardBehavior::ArgothianPixies => &y1994::antiquities::ARGOTHIAN_PIXIES.rules,
@@ -283,137 +251,17 @@ pub(super) const fn rules(behavior: CardBehavior) -> &'static CardRules {
         CardBehavior::HurkylsRecall => &y1994::antiquities::HURKYLS_RECALL.rules,
         CardBehavior::IcyManipulator => &y1993::alpha::ICY_MANIPULATOR.rules,
         CardBehavior::KirdApe => &y1993::arabian_nights::KIRD_APE.rules,
-        CardBehavior::LlanowarElves => &y1993::alpha::LLANOWAR_ELVES.rules,
         CardBehavior::Moat => &y1994::legends::MOAT.rules,
         CardBehavior::Pendelhaven => &y1994::legends::PENDELHAVEN.rules,
         CardBehavior::RelicBarrier => &y1994::legends::RELIC_BARRIER.rules,
         CardBehavior::SageOfLatNam => &y1994::antiquities::SAGE_OF_LAT_NAM.rules,
         CardBehavior::SedgeTroll => &y1993::alpha::SEDGE_TROLL.rules,
-        CardBehavior::ScrybSprites => &y1993::alpha::SCRYB_SPRITES.rules,
         CardBehavior::StoneRain => &y1993::alpha::STONE_RAIN.rules,
         CardBehavior::Tetravus => &y1994::antiquities::TETRAVUS.rules,
         CardBehavior::TheAbyss => &y1994::legends::THE_ABYSS.rules,
         CardBehavior::WrathOfGod => &y1993::alpha::WRATH_OF_GOD.rules,
-        CardBehavior::AbruptDecay => &y2012::return_to_ravnica::ABRUPT_DECAY.rules,
-        CardBehavior::Aetherling => &y2013::dragons_maze::AETHERLING.rules,
-        CardBehavior::AngelOfSerenity => &y2012::return_to_ravnica::ANGEL_OF_SERENITY.rules,
-        CardBehavior::ArborElf => &y2012::magic_2013::ARBOR_ELF.rules,
-        CardBehavior::ArchangelOfThune => &y2013::magic_2014::ARCHANGEL_OF_THUNE.rules,
-        CardBehavior::AssembleTheLegion => &y2013::gatecrash::ASSEMBLE_THE_LEGION.rules,
-        CardBehavior::AugurOfBolas => &y2012::magic_2013::AUGUR_OF_BOLAS.rules,
-        CardBehavior::AureliasFury => &y2013::gatecrash::AURELIAS_FURY.rules,
-        CardBehavior::AureliaTheWarleader => &y2013::gatecrash::AURELIA_THE_WARLEADER.rules,
-        CardBehavior::AvacynsPilgrim => &y2011::innistrad::AVACYNS_PILGRIM.rules,
-        CardBehavior::AzoriusCharm => &y2012::return_to_ravnica::AZORIUS_CHARM.rules,
-        CardBehavior::BlasphemousAct => &y2011::innistrad::BLASPHEMOUS_ACT.rules,
-        CardBehavior::BlindObedience => &y2013::gatecrash::BLIND_OBEDIENCE.rules,
-        CardBehavior::BloodBaronOfVizkopa => &y2013::dragons_maze::BLOOD_BARON_OF_VIZKOPA.rules,
-        CardBehavior::BonfireOfTheDamned => &y2012::avacyn_restored::BONFIRE_OF_THE_DAMNED.rules,
-        CardBehavior::BorosCharm => &y2013::gatecrash::BOROS_CHARM.rules,
-        CardBehavior::BorosReckoner => &y2013::gatecrash::BOROS_RECKONER.rules,
-        CardBehavior::BurningEarth => &y2013::magic_2014::BURNING_EARTH.rules,
-        CardBehavior::CavernOfSouls => &y2012::avacyn_restored::CAVERN_OF_SOULS.rules,
-        CardBehavior::CelestialFlare => &y2013::magic_2014::CELESTIAL_FLARE.rules,
-        CardBehavior::ClifftopRetreat => &y2011::innistrad::CLIFFTOP_RETREAT.rules,
-        CardBehavior::Counterflux => &y2012::return_to_ravnica::COUNTERFLUX.rules,
-        CardBehavior::DemonicRising => &y2012::avacyn_restored::DEMONIC_RISING.rules,
-        CardBehavior::DesecrationDemon => &y2012::return_to_ravnica::DESECRATION_DEMON.rules,
-        CardBehavior::DetentionSphere => &y2012::return_to_ravnica::DETENTION_SPHERE.rules,
-        CardBehavior::DiscipleOfBolas => &y2012::magic_2013::DISCIPLE_OF_BOLAS.rules,
-        CardBehavior::Dispel => &y2012::return_to_ravnica::DISPEL.rules,
-        CardBehavior::Dissipate => &y2011::innistrad::DISSIPATE.rules,
-        CardBehavior::DomriRade => &y2013::gatecrash::DOMRI_RADE.rules,
-        CardBehavior::DoomBlade => &y2013::magic_2014::DOOM_BLADE.rules,
-        CardBehavior::Duress => &y2012::magic_2013::DURESS.rules,
-        CardBehavior::ElvishMystic => &y2013::magic_2014::ELVISH_MYSTIC.rules,
-        CardBehavior::EncroachingWastes => &y2013::magic_2014::ENCROACHING_WASTES.rules,
-        CardBehavior::EssenceScatter => &y2012::magic_2013::ESSENCE_SCATTER.rules,
-        CardBehavior::FlamesOfTheFirebrand => &y2012::magic_2013::FLAMES_OF_THE_FIREBRAND.rules,
-        CardBehavior::FlinthoofBoar => &y2012::magic_2013::FLINTHOOF_BOAR.rules,
-        CardBehavior::GarrukRelentless => &y2011::innistrad::GARRUK_RELENTLESS.rules,
-        CardBehavior::GavonyTownship => &y2011::innistrad::GAVONY_TOWNSHIP.rules,
-        CardBehavior::GazeOfGranite => &y2013::dragons_maze::GAZE_OF_GRANITE.rules,
-        CardBehavior::GhorClanRampager => &y2013::gatecrash::GHOR_CLAN_RAMPAGER.rules,
-        CardBehavior::GhostQuarter => &y2011::innistrad::GHOST_QUARTER.rules,
-        CardBehavior::GlacialFortress => &y2012::magic_2013::GLACIAL_FORTRESS.rules,
-        CardBehavior::GodlessShrine => &y2013::gatecrash::GODLESS_SHRINE.rules,
-        CardBehavior::GolgariGuildgate => &y2012::return_to_ravnica::GOLGARI_GUILDGATE.rules,
-        CardBehavior::GrislySalvage => &y2012::return_to_ravnica::GRISLY_SALVAGE.rules,
-        CardBehavior::HallowedFountain => &y2012::return_to_ravnica::HALLOWED_FOUNTAIN.rules,
-        CardBehavior::Hellrider => &y2012::dark_ascension::HELLRIDER.rules,
-        CardBehavior::HuntmasterOfTheFells => &y2012::dark_ascension::HUNTMASTER_OF_THE_FELLS.rules,
-        CardBehavior::IsolatedChapel => &y2011::innistrad::ISOLATED_CHAPEL.rules,
-        CardBehavior::IzzetCharm => &y2012::return_to_ravnica::IZZET_CHARM.rules,
-        CardBehavior::IzzetStaticaster => &y2012::return_to_ravnica::IZZET_STATICASTER.rules,
-        CardBehavior::JaceArchitectOfThought => {
-            &y2012::return_to_ravnica::JACE_ARCHITECT_OF_THOUGHT.rules
-        }
-        CardBehavior::JaceMemoryAdept => &y2012::magic_2013::JACE_MEMORY_ADEPT.rules,
-        CardBehavior::KessigWolfRun => &y2011::innistrad::KESSIG_WOLF_RUN.rules,
-        CardBehavior::LifebaneZombie => &y2013::magic_2014::LIFEBANE_ZOMBIE.rules,
-        CardBehavior::LilianaOfTheVeil => &y2011::innistrad::LILIANA_OF_THE_VEIL.rules,
-        CardBehavior::LoxodonSmiter => &y2012::return_to_ravnica::LOXODON_SMITER.rules,
-        CardBehavior::MizziumMortars => &y2012::return_to_ravnica::MIZZIUM_MORTARS.rules,
-        CardBehavior::MoorlandHaunt => &y2011::innistrad::MOORLAND_HAUNT.rules,
-        CardBehavior::Mulch => &y2011::innistrad::MULCH.rules,
-        CardBehavior::Mutavault => &y2013::magic_2014::MUTAVAULT.rules,
-        CardBehavior::Mutilate => &y2012::magic_2013::MUTILATE.rules,
-        CardBehavior::Negate => &y2012::magic_2013::NEGATE.rules,
-        CardBehavior::OblivionRing => &y2012::magic_2013::OBLIVION_RING.rules,
-        CardBehavior::ObzedatGhostCouncil => &y2013::gatecrash::OBZEDAT_GHOST_COUNCIL.rules,
-        CardBehavior::OvergrownTomb => &y2012::return_to_ravnica::OVERGROWN_TOMB.rules,
-        CardBehavior::PillarOfFlame => &y2012::avacyn_restored::PILLAR_OF_FLAME.rules,
-        CardBehavior::PithingNeedle => &y2012::return_to_ravnica::PITHING_NEEDLE.rules,
-        CardBehavior::PrimevalBounty => &y2013::magic_2014::PRIMEVAL_BOUNTY.rules,
-        CardBehavior::Putrefy => &y2013::dragons_maze::PUTREFY.rules,
-        CardBehavior::Quicken => &y2013::magic_2014::QUICKEN.rules,
-        CardBehavior::RatchetBomb => &y2013::magic_2014::RATCHET_BOMB.rules,
-        CardBehavior::RayOfRevelation => &y2012::dark_ascension::RAY_OF_REVELATION.rules,
-        CardBehavior::RestInPeace => &y2012::return_to_ravnica::REST_IN_PEACE.rules,
-        CardBehavior::RestorationAngel => &y2012::avacyn_restored::RESTORATION_ANGEL.rules,
-        CardBehavior::RhoxFaithmender => &y2012::magic_2013::RHOX_FAITHMENDER.rules,
-        CardBehavior::RootboundCrag => &y2012::magic_2013::ROOTBOUND_CRAG.rules,
-        CardBehavior::RuricTharTheUnbowed => &y2013::dragons_maze::RURIC_THAR_THE_UNBOWED.rules,
-        CardBehavior::SacredFoundry => &y2013::gatecrash::SACRED_FOUNDRY.rules,
-        CardBehavior::ScavengingOoze => &y2013::magic_2014::SCAVENGING_OOZE.rules,
-        CardBehavior::SelesnyaCharm => &y2012::return_to_ravnica::SELESNYA_CHARM.rules,
-        CardBehavior::SepulchralPrimordial => &y2013::gatecrash::SEPULCHRAL_PRIMORDIAL.rules,
-        CardBehavior::ShadowbornDemon => &y2013::magic_2014::SHADOWBORN_DEMON.rules,
-        CardBehavior::SigardaHostOfHerons => &y2012::avacyn_restored::SIGARDA_HOST_OF_HERONS.rules,
-        CardBehavior::SignInBlood => &y2012::magic_2013::SIGN_IN_BLOOD.rules,
-        CardBehavior::SinCollector => &y2013::dragons_maze::SIN_COLLECTOR.rules,
-        CardBehavior::SnapcasterMage => &y2011::innistrad::SNAPCASTER_MAGE.rules,
-        CardBehavior::SphinxsRevelation => &y2012::return_to_ravnica::SPHINXS_REVELATION.rules,
-        CardBehavior::SteamVents => &y2012::return_to_ravnica::STEAM_VENTS.rules,
-        CardBehavior::StompingGround => &y2013::gatecrash::STOMPING_GROUND.rules,
-        CardBehavior::StranglerootGeist => &y2012::dark_ascension::STRANGLEROOT_GEIST.rules,
-        CardBehavior::SulfurFalls => &y2011::innistrad::SULFUR_FALLS.rules,
-        CardBehavior::SunpetalGrove => &y2012::magic_2013::SUNPETAL_GROVE.rules,
-        CardBehavior::SupremeVerdict => &y2012::return_to_ravnica::SUPREME_VERDICT.rules,
-        CardBehavior::Syncopate => &y2012::return_to_ravnica::SYNCOPATE.rules,
-        CardBehavior::TempleGarden => &y2012::return_to_ravnica::TEMPLE_GARDEN.rules,
-        CardBehavior::Terminus => &y2012::avacyn_restored::TERMINUS.rules,
-        CardBehavior::ThinkTwice => &y2011::innistrad::THINK_TWICE.rules,
-        CardBehavior::Thragtusk => &y2012::magic_2013::THRAGTUSK.rules,
-        CardBehavior::ThundermawHellkite => &y2012::magic_2013::THUNDERMAW_HELLKITE.rules,
-        CardBehavior::TragicSlip => &y2012::dark_ascension::TRAGIC_SLIP.rules,
-        CardBehavior::TurnBurn => &y2013::dragons_maze::TURN_BURN.rules,
-        CardBehavior::UltimatePrice => &y2012::return_to_ravnica::ULTIMATE_PRICE.rules,
-        CardBehavior::UnburialRites => &y2011::innistrad::UNBURIAL_RITES.rules,
-        CardBehavior::UnderworldConnections => {
-            &y2012::return_to_ravnica::UNDERWORLD_CONNECTIONS.rules
-        }
-        CardBehavior::UnflinchingCourage => &y2013::dragons_maze::UNFLINCHING_COURAGE.rules,
-        CardBehavior::UrgentExorcism => &y2011::innistrad::URGENT_EXORCISM.rules,
-        CardBehavior::VampireNighthawk => &y2012::magic_2013::VAMPIRE_NIGHTHAWK.rules,
-        CardBehavior::VaultOfTheArchangel => &y2012::dark_ascension::VAULT_OF_THE_ARCHANGEL.rules,
-        CardBehavior::VoiceOfResurgence => &y2013::dragons_maze::VOICE_OF_RESURGENCE.rules,
-        CardBehavior::VolcanicStrength => &y2012::magic_2013::VOLCANIC_STRENGTH.rules,
-        CardBehavior::VraskaTheUnseen => &y2012::return_to_ravnica::VRASKA_THE_UNSEEN.rules,
-        CardBehavior::WarPriestOfThune => &y2012::magic_2013::WAR_PRIEST_OF_THUNE.rules,
-        CardBehavior::WarleadersHelix => &y2013::dragons_maze::WARLEADERS_HELIX.rules,
-        CardBehavior::WoodlandCemetery => &y2011::innistrad::WOODLAND_CEMETERY.rules,
-        CardBehavior::ZealousConscripts => &y2012::avacyn_restored::ZEALOUS_CONSCRIPTS.rules,
+        CardBehavior::Mountain => &y1993::alpha::MOUNTAIN.rules,
+        CardBehavior::Plains => &y1993::alpha::PLAINS.rules,
         CardBehavior::Unsupported => &UNSUPPORTED_RULES,
     }
 }
@@ -422,12 +270,14 @@ pub(super) const fn rules(behavior: CardBehavior) -> &'static CardRules {
 mod tests {
     use std::collections::HashSet;
 
-    use super::{CardRecord, SET_MODULES, y1993, y2011, y2012, y2013};
+    use super::{CardRecord, SET_MODULES, y1993, y1994, y2011, y2012, y2013};
     use crate::card::{
-        CardEffectStatus, CardPrinting, CardPrintingId, CardStructure, DoubleFacedKind,
-        ImplementationStatus, PlayActionKind, PlayRestriction, SpellForm, TargetPredicate, cards,
+        AbilityImplementationDef, AppliedEffectDef, CardEffectStatus, CardPrinting, CardPrintingId,
+        CardStructure, DeclarativeAbilityDef, DoubleFacedKind, EffectDef, ImplementationStatus,
+        ManaKindDef, ManaRestrictionDef, ManaSelectionDef, ManaSpendEffectDef, PlayActionKind,
+        PlayRestriction, SpellForm, TargetPredicate, cards,
     };
-    use crate::{CardDefinitionId, CardPartId, CardSet, Format, ModeId, PlayOptionId};
+    use crate::{AbilityId, CardDefinitionId, CardPartId, CardSet, Format, ModeId, PlayOptionId};
 
     fn standard_records() -> Vec<&'static CardRecord> {
         let mut records = SET_MODULES
@@ -520,14 +370,6 @@ mod tests {
                 .len(),
             records.len()
         );
-        assert_eq!(
-            records
-                .iter()
-                .map(|record| record.behavior)
-                .collect::<HashSet<_>>()
-                .len(),
-            records.len()
-        );
     }
 
     #[test]
@@ -553,7 +395,7 @@ mod tests {
     }
 
     #[test]
-    fn every_non_complete_card_explains_its_status() {
+    fn every_non_declarative_clause_explains_its_implementation() {
         let records = SET_MODULES
             .iter()
             .flat_map(|module| module.cards.iter().copied())
@@ -561,14 +403,21 @@ mod tests {
         assert_eq!(records.len(), 244);
 
         for record in records {
-            match record.implementation_status {
-                ImplementationStatus::Complete => {}
-                ImplementationStatus::Partial { explanation }
-                | ImplementationStatus::MetadataOnly { explanation } => assert!(
-                    !explanation.trim().is_empty(),
-                    "{} has a non-complete status without an explanation",
-                    record.name
-                ),
+            let definition = record.definition();
+            for part in &definition.parts {
+                for ability in part.rules.ability_clauses() {
+                    if !matches!(ability.implementation, AbilityImplementationDef::Definition) {
+                        assert!(
+                            ability
+                                .implementation
+                                .explanation()
+                                .is_some_and(|explanation| !explanation.trim().is_empty()),
+                            "{} has a non-declarative clause without an explanation: {}",
+                            record.name,
+                            ability.text
+                        );
+                    }
+                }
             }
         }
     }
@@ -579,14 +428,14 @@ mod tests {
         assert_eq!(records.len(), 116);
 
         let mut names = HashSet::new();
-        let mut behaviors = HashSet::new();
         for (offset, record) in records.iter().enumerate() {
             assert_eq!(usize::from(record.id.0), 129 + offset);
             assert!(names.insert(record.name));
-            assert!(behaviors.insert(record.behavior));
             assert!(!record.is_basic_land);
             assert!(Format::IsdRtrStandard.allows_set(record.set));
-            assert_eq!(record.behavior.rules(), &record.rules);
+            if let Some(behavior) = record.rules.special_behavior {
+                assert_eq!(behavior.rules(), &record.rules);
+            }
             assert_eq!(record.rules.effect_status, CardEffectStatus::MetadataOnly);
         }
 
@@ -727,13 +576,248 @@ mod tests {
     }
 
     #[test]
-    fn cavern_records_only_its_unrestricted_mana_ability() {
-        let production = y2012::avacyn_restored::CAVERN_OF_SOULS
+    fn cavern_records_both_mana_abilities_and_the_colored_mana_riders() {
+        let abilities = y2012::avacyn_restored::CAVERN_OF_SOULS
             .rules
-            .mana_production
-            .unwrap();
-        assert_eq!(production.colors, [false, false, false, false, false, true]);
-        assert_eq!(production.amount, 1);
+            .ability_clauses();
+        assert_eq!(abilities.len(), 3);
+        assert!(matches!(
+            abilities[1].definition,
+            DeclarativeAbilityDef::ActivatedMana(_)
+        ));
+        assert!(matches!(
+            abilities[1].effect,
+            EffectDef::AddMana(mana)
+                if mana.mana == ManaSelectionDef::One(ManaKindDef::Colorless)
+                    && mana.amount == 1
+                    && mana.restrictions.is_empty()
+                    && mana.spend_effects.is_empty()
+        ));
+        assert!(matches!(
+            abilities[2].definition,
+            DeclarativeAbilityDef::ActivatedMana(_)
+        ));
+        assert!(matches!(
+            abilities[2].effect,
+            EffectDef::AddMana(mana)
+                if mana.mana == ManaSelectionDef::Choice(&[
+                    ManaKindDef::White,
+                    ManaKindDef::Blue,
+                    ManaKindDef::Black,
+                    ManaKindDef::Red,
+                    ManaKindDef::Green,
+                ])
+                    && mana.amount == 1
+                    && mana.restrictions
+                        == [ManaRestrictionDef::CastCreatureSpellOfChosenType]
+                    && mana.spend_effects
+                        == [ManaSpendEffectDef::ApplyToPaidSpell(
+                            AppliedEffectDef::CannotBeCountered,
+                        )]
+        ));
+    }
+
+    #[test]
+    fn every_builtin_land_declares_its_mana_through_subtypes_or_ability_clauses() {
+        let lands = SET_MODULES
+            .iter()
+            .flat_map(|module| module.cards.iter().copied())
+            .filter(|record| record.rules.kind == crate::card::CardKind::Land)
+            .collect::<Vec<_>>();
+        assert_eq!(lands.len(), 45);
+
+        let subtype_land_count = lands
+            .iter()
+            .filter(|record| record.rules.land_types.into_iter().any(|present| present))
+            .count();
+        assert_eq!(subtype_land_count, 22);
+
+        let explicit_mana_clause_count = lands
+            .iter()
+            .flat_map(|record| record.rules.ability_clauses())
+            .filter(|ability| matches!(ability.definition, DeclarativeAbilityDef::ActivatedMana(_)))
+            .count();
+        assert_eq!(explicit_mana_clause_count, 23);
+
+        let lands_without_mana = lands
+            .iter()
+            .filter(|record| {
+                !record.rules.land_types.into_iter().any(|present| present)
+                    && !record.rules.ability_clauses().iter().any(|ability| {
+                        matches!(ability.definition, DeclarativeAbilityDef::ActivatedMana(_))
+                    })
+            })
+            .map(|record| record.name)
+            .collect::<Vec<_>>();
+        assert_eq!(lands_without_mana, ["Maze of Ith"]);
+    }
+
+    #[test]
+    fn every_nonland_mana_permanent_has_an_activated_mana_clause() {
+        let records = [
+            &y1993::alpha::BLACK_LOTUS,
+            &y1993::alpha::MOX_EMERALD,
+            &y1993::alpha::MOX_JET,
+            &y1993::alpha::MOX_PEARL,
+            &y1993::alpha::MOX_RUBY,
+            &y1993::alpha::MOX_SAPPHIRE,
+            &y1993::alpha::SOL_RING,
+            &y1993::alpha::MANA_VAULT,
+            &y1993::alpha::BIRDS_OF_PARADISE,
+            &y1993::alpha::LLANOWAR_ELVES,
+            &y1994::the_dark::FELLWAR_STONE,
+            &y2011::innistrad::AVACYNS_PILGRIM,
+            &y2013::magic_2014::ELVISH_MYSTIC,
+        ];
+        assert_eq!(records.len(), 13);
+        for record in records {
+            assert!(
+                record.rules.ability_clauses().iter().any(|ability| {
+                    matches!(ability.definition, DeclarativeAbilityDef::ActivatedMana(_))
+                }),
+                "{} is missing its activated mana clause",
+                record.name
+            );
+        }
+    }
+
+    #[test]
+    fn activation_presentation_lives_on_the_exact_activated_clause() {
+        let cases = [
+            (
+                &y1993::alpha::GLASSES_OF_URZA,
+                AbilityId::PRIMARY,
+                "Look at {}'s hand with Glasses of Urza",
+                "Look at a player's hand",
+            ),
+            (
+                &y1993::alpha::STONE_GIANT,
+                AbilityId::PRIMARY,
+                "Give {} flying with Stone Giant",
+                "Give a smaller creature flying",
+            ),
+            (
+                &y1993::alpha::CHAOS_ORB,
+                AbilityId::PRIMARY,
+                "Flip Chaos Orb onto {}",
+                "Flip Chaos Orb onto a permanent",
+            ),
+            (
+                &y1993::alpha::ICY_MANIPULATOR,
+                AbilityId::PRIMARY,
+                "Tap {} with Icy Manipulator",
+                "Tap an artifact, creature, or land",
+            ),
+            (
+                &y1994::antiquities::MISHRA_S_FACTORY,
+                AbilityId(2),
+                "Give {} +1/+1 with Mishra's Factory",
+                "Give an Assembly-Worker +1/+1",
+            ),
+            (
+                &y1994::antiquities::ORCISH_MECHANICS,
+                AbilityId::PRIMARY,
+                "Deal 2 damage to {} with Orcish Mechanics",
+                "Deal 2 damage",
+            ),
+            (
+                &y1994::antiquities::STRIP_MINE,
+                AbilityId(1),
+                "Destroy {} with Strip Mine",
+                "Destroy a land",
+            ),
+            (
+                &y1994::antiquities::TRISKELION,
+                AbilityId(1),
+                "Deal 1 damage to {} with Triskelion",
+                "Deal 1 damage",
+            ),
+            (
+                &y1994::fallen_empires::ICATIAN_JAVELINEERS,
+                AbilityId(1),
+                "Deal 1 damage to {} with Icatian Javelineers",
+                "Deal 1 damage",
+            ),
+            (
+                &y1994::legends::PENDELHAVEN,
+                AbilityId(1),
+                "Give {} +1/+2 with Pendelhaven",
+                "Give a 1/1 creature +1/+2",
+            ),
+            (
+                &y1994::legends::RELIC_BARRIER,
+                AbilityId::PRIMARY,
+                "Tap {} with Relic Barrier",
+                "Tap an artifact",
+            ),
+            (
+                &y1994::the_dark::MAZE_OF_ITH,
+                AbilityId::PRIMARY,
+                "Untap {} and take it out of combat",
+                "Take an attacker out of combat",
+            ),
+        ];
+
+        for (record, ability_id, targeted, summary) in cases {
+            let ability = record
+                .rules
+                .ability_clauses()
+                .iter()
+                .find(|ability| ability.id == ability_id)
+                .unwrap_or_else(|| panic!("{} is missing ability {ability_id:?}", record.name));
+            assert!(matches!(
+                ability.definition,
+                DeclarativeAbilityDef::Activated(_)
+            ));
+            let presentation = ability.activation_text.unwrap();
+            assert_eq!(presentation.targeted, targeted);
+            assert_eq!(presentation.summary, summary);
+        }
+
+        let presentation_count = SET_MODULES
+            .iter()
+            .flat_map(|module| module.cards.iter())
+            .flat_map(|record| record.rules.ability_clauses())
+            .filter(|ability| ability.activation_text.is_some())
+            .count();
+        assert_eq!(presentation_count, cases.len());
+    }
+
+    #[test]
+    fn migrated_activated_cards_preserve_their_derived_implementation_status() {
+        let partial = [
+            &y1993::alpha::GLASSES_OF_URZA,
+            &y1993::alpha::STONE_GIANT,
+            &y1993::alpha::CHAOS_ORB,
+            &y1993::alpha::ICY_MANIPULATOR,
+            &y1994::antiquities::MISHRA_S_FACTORY,
+            &y1994::fallen_empires::ICATIAN_JAVELINEERS,
+            &y1994::legends::PENDELHAVEN,
+            &y1994::the_dark::MAZE_OF_ITH,
+        ];
+        let complete = [
+            &y1994::antiquities::ORCISH_MECHANICS,
+            &y1994::antiquities::STRIP_MINE,
+            &y1994::antiquities::TRISKELION,
+            &y1994::legends::RELIC_BARRIER,
+        ];
+
+        for record in partial {
+            assert_eq!(
+                record.rules.implementation_status(),
+                ImplementationStatus::Partial,
+                "{} should remain partially implemented",
+                record.name
+            );
+        }
+        for record in complete {
+            assert_eq!(
+                record.rules.implementation_status(),
+                ImplementationStatus::Complete,
+                "{} should remain completely implemented",
+                record.name
+            );
+        }
     }
 
     #[test]

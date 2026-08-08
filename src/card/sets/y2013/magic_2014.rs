@@ -2,8 +2,10 @@
 
 use super::{CardRecord, PrintingRecord};
 use crate::card::{
-    CardArt, CardBehavior, CardKind, CardRules, CardSet, LandEntry, ManaCost, cards,
+    AbilityCostDef, AbilityDef, AddManaEffectDef, CardArt, CardEffectStatus, CardKind, CardRules,
+    CardSet, EffectDef, LandEntry, ManaCost, ManaKindDef, cards,
 };
+use crate::ids::AbilityId;
 
 // Implementation status: Baseline creature casting/combat and declaratively modeled traits are active; remaining printed abilities are pending.
 pub(in crate::card::sets) static ARCHANGEL_OF_THUNE: CardRecord = CardRecord::new(
@@ -12,7 +14,6 @@ pub(in crate::card::sets) static ARCHANGEL_OF_THUNE: CardRecord = CardRecord::ne
     CardArt::new("531cba81-afd7-4be4-adec-87edb77ba2a9", "James Ryman"),
     CardSet::Magic2014,
     false,
-    CardBehavior::ArchangelOfThune,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(3, 2, 0, 0, 0, 0),
@@ -32,7 +33,6 @@ pub(in crate::card::sets) static BURNING_EARTH: CardRecord = CardRecord::new(
     CardArt::new("1df3a7c9-5c8d-438c-a5ad-3c9754c6ea5d", "rk post"),
     CardSet::Magic2014,
     false,
-    CardBehavior::BurningEarth,
     CardRules::new(
         CardKind::Enchantment,
         ManaCost::colored(3, 0, 0, 0, 1, 0),
@@ -49,7 +49,6 @@ pub(in crate::card::sets) static CELESTIAL_FLARE: CardRecord = CardRecord::new(
     CardArt::new("6c8d1320-0f1a-4c66-86c9-9f8da0f1d9ef", "Clint Cearley"),
     CardSet::Magic2014,
     false,
-    CardBehavior::CelestialFlare,
     CardRules::new(
         CardKind::Instant,
         ManaCost::colored(0, 2, 0, 0, 0, 0),
@@ -66,7 +65,6 @@ pub(in crate::card::sets) static DOOM_BLADE: CardRecord = CardRecord::new(
     CardArt::new("75d96a37-bdbe-46ae-926f-8742699a0b20", "Chippy"),
     CardSet::Magic2014,
     false,
-    CardBehavior::DoomBlade,
     CardRules::new(
         CardKind::Instant,
         ManaCost::colored(1, 0, 0, 1, 0, 0),
@@ -83,16 +81,16 @@ pub(in crate::card::sets) static ELVISH_MYSTIC: CardRecord = CardRecord::new(
     CardArt::new("60d0e6a6-629a-45a7-bfcb-25ba7156788b", "Wesley Burt"),
     CardSet::Magic2014,
     false,
-    CardBehavior::ElvishMystic,
-    CardRules::new(
-        CardKind::Creature,
-        ManaCost::colored(0, 0, 0, 0, 0, 1),
-        "{T}: Add {G}.",
-    )
-    .type_line("Creature — Elf Druid")
-    .creature(1, 1)
-    .produces([false, false, false, false, true, false])
-    .metadata_only(),
+    CardRules::new(CardKind::Creature, ManaCost::colored(0, 0, 0, 0, 0, 1), "")
+        .type_line("Creature — Elf Druid")
+        .creature(1, 1)
+        .with_abilities(&[AbilityDef::activated_mana(
+            AbilityId::PRIMARY,
+            "{T}: Add {G}.",
+            &[AbilityCostDef::TapSource],
+            EffectDef::AddMana(AddManaEffectDef::one(ManaKindDef::Green)),
+        )])
+        .with_effect_status(CardEffectStatus::MetadataOnly),
 );
 
 // Implementation status: Land entry and mana production are active; other printed abilities are pending.
@@ -102,16 +100,23 @@ pub(in crate::card::sets) static ENCROACHING_WASTES: CardRecord = CardRecord::ne
     CardArt::new("1ad5a84b-ae9b-4ed1-a4de-b91bbf8ed0a5", "Noah Bradley"),
     CardSet::Magic2014,
     false,
-    CardBehavior::EncroachingWastes,
-    CardRules::new(
-        CardKind::Land,
-        ManaCost::colored(0, 0, 0, 0, 0, 0),
-        "{T}: Add {C}.\n{4}, {T}, Sacrifice this land: Destroy target nonbasic land.",
-    )
-    .type_line("Land")
-    .produces([false, false, false, false, false, true])
-    .land_entry(LandEntry::Untapped)
-    .metadata_only(),
+    CardRules::new(CardKind::Land, ManaCost::colored(0, 0, 0, 0, 0, 0), "")
+        .type_line("Land")
+        .land_entry(LandEntry::Untapped)
+        .with_abilities(&[
+            AbilityDef::activated_mana(
+                AbilityId::PRIMARY,
+                "{T}: Add {C}.",
+                &[AbilityCostDef::TapSource],
+                EffectDef::AddMana(AddManaEffectDef::one(ManaKindDef::Colorless)),
+            ),
+            AbilityDef::not_implemented(
+                AbilityId(1),
+                "{4}, {T}, Sacrifice this land: Destroy target nonbasic land.",
+                "The land-destruction activated ability is not executed.",
+            ),
+        ])
+        .with_effect_status(CardEffectStatus::MetadataOnly),
 );
 
 // Implementation status: Baseline creature casting/combat and declaratively modeled traits are active; remaining printed abilities are pending.
@@ -121,7 +126,6 @@ pub(in crate::card::sets) static LIFEBANE_ZOMBIE: CardRecord = CardRecord::new(
     CardArt::new("98370735-5303-40d4-9e80-cdb40dee18e2", "Min Yum"),
     CardSet::Magic2014,
     false,
-    CardBehavior::LifebaneZombie,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(1, 0, 0, 2, 0, 0),
@@ -140,16 +144,23 @@ pub(in crate::card::sets) static MUTAVAULT: CardRecord = CardRecord::new(
     CardArt::new("927ed667-c228-4b96-a9f6-7cbadade8134", "Fred Fields"),
     CardSet::Magic2014,
     false,
-    CardBehavior::Mutavault,
-    CardRules::new(
-        CardKind::Land,
-        ManaCost::colored(0, 0, 0, 0, 0, 0),
-        "{T}: Add {C}.\n{1}: This land becomes a 2/2 creature with all creature types until end of turn. It's still a land.",
-    )
+    CardRules::new(CardKind::Land, ManaCost::colored(0, 0, 0, 0, 0, 0), "")
     .type_line("Land")
-    .produces([false, false, false, false, false, true])
     .land_entry(LandEntry::Untapped)
-    .metadata_only(),
+    .with_abilities(&[
+        AbilityDef::activated_mana(
+            AbilityId::PRIMARY,
+            "{T}: Add {C}.",
+            &[AbilityCostDef::TapSource],
+            EffectDef::AddMana(AddManaEffectDef::one(ManaKindDef::Colorless)),
+        ),
+        AbilityDef::not_implemented(
+            AbilityId(1),
+            "{1}: This land becomes a 2/2 creature with all creature types until end of turn. It's still a land.",
+            "The animation activated ability is not executed.",
+        ),
+    ])
+    .with_effect_status(CardEffectStatus::MetadataOnly),
 );
 
 // Implementation status: Metadata only; this spell is withheld from legal actions.
@@ -159,7 +170,6 @@ pub(in crate::card::sets) static PRIMEVAL_BOUNTY: CardRecord = CardRecord::new(
     CardArt::new("e750d55d-d5e8-4abe-99cf-f6b8ba86cf16", "Christine Choi"),
     CardSet::Magic2014,
     false,
-    CardBehavior::PrimevalBounty,
     CardRules::new(
         CardKind::Enchantment,
         ManaCost::colored(5, 0, 0, 0, 0, 1),
@@ -176,7 +186,6 @@ pub(in crate::card::sets) static QUICKEN: CardRecord = CardRecord::new(
     CardArt::new("066bef3d-c785-4b25-9b91-8f676aa9906f", "Aleksi Briclot"),
     CardSet::Magic2014,
     false,
-    CardBehavior::Quicken,
     CardRules::new(
         CardKind::Instant,
         ManaCost::colored(0, 0, 1, 0, 0, 0),
@@ -193,7 +202,6 @@ pub(in crate::card::sets) static RATCHET_BOMB: CardRecord = CardRecord::new(
     CardArt::new("3e9045df-3eff-4236-9bbb-77537b302e27", "Austin Hsu"),
     CardSet::Magic2014,
     false,
-    CardBehavior::RatchetBomb,
     CardRules::new(
         CardKind::Artifact,
         ManaCost::colored(2, 0, 0, 0, 0, 0),
@@ -210,7 +218,6 @@ pub(in crate::card::sets) static SCAVENGING_OOZE: CardRecord = CardRecord::new(
     CardArt::new("ec30153a-36b5-42f8-beed-9efab09f1051", "Austin Hsu"),
     CardSet::Magic2014,
     false,
-    CardBehavior::ScavengingOoze,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(1, 0, 0, 0, 0, 1),
@@ -228,7 +235,6 @@ pub(in crate::card::sets) static SHADOWBORN_DEMON: CardRecord = CardRecord::new(
     CardArt::new("3884c05b-c10e-4f1d-a8bd-8b5118657972", "Lucas Graciano"),
     CardSet::Magic2014,
     false,
-    CardBehavior::ShadowbornDemon,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(3, 0, 0, 2, 0, 0),

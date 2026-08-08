@@ -1,4 +1,4 @@
-use crate::{AbilityId, GameObjectId, ManaColor, ManaRestrictionDef, ManaSpendEffectDef};
+use crate::{AbilityOrigin, GameObjectId, ManaColor, ManaRestrictionDef, ManaSpendEffectDef};
 
 /// The ability and object incarnation that produced one mana. Keeping both
 /// identities lets spend restrictions and riders remain meaningful after the
@@ -6,7 +6,7 @@ use crate::{AbilityId, GameObjectId, ManaColor, ManaRestrictionDef, ManaSpendEff
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct ManaSource {
     pub object: GameObjectId,
-    pub ability: AbilityId,
+    pub ability: AbilityOrigin,
 }
 
 /// One mana in a player's pool, including the rules attached to spending it.

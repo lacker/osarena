@@ -14,20 +14,21 @@ pub mod protocol;
 mod rng;
 pub mod rules;
 
-pub use action::{Action, ActionError, CombatDamageAssignment, ManaColor, Target};
+pub use action::{AbilityOrigin, Action, ActionError, CombatDamageAssignment, ManaColor, Target};
 pub use card::{
-    AbilityCostDef, AbilityDef, AbilityTargetDef, AbilityTargetPredicate, ActivatedAbilityDef,
-    ActivatedAbilityText, AddManaEffectDef, AdditionalCostDef, AlternateManaCost,
-    AlternateSpellKind, AlternativeCostDef, AppliedEffectDef, CardArt, CardBehavior, CardCatalog,
-    CardComposition, CardDefinition, CardEffectStatus, CardKind, CardPart, CardPrinting,
-    CardPrintingId, CardRules, CardSet, CardStructure, CatalogError, CharacteristicContext,
-    CharacteristicError, CreatureStats, DoubleFacedKind, EffectDef, EffectDurationDef,
-    EffectRecipientDef, ImplementationStatus, LandEntry, ManaCost, ManaKindDef, ManaProduction,
-    ManaRestrictionDef, ManaSelectionDef, ManaSpendEffectDef, MeldComponentDef, MeldRecipeDef,
-    MeldResultDef, ModeDef, ModeSetDef, ObjectPredicateDef, PlayActionKind, PlayOptionDef,
-    PlayRestriction, PlayerRelation, PrintedManaCost, SpecialActionDef, SpellAbilityDef, SpellForm,
+    AbilityCostDef, AbilityDef, AbilityImplementationDef, AbilityTargetDef, AbilityTargetPredicate,
+    ActivatedAbilityDef, ActivatedAbilityText, AddManaEffectDef, AdditionalCostDef,
+    AlternateManaCost, AlternateSpellKind, AlternativeCostDef, AppliedEffectDef, BasicLandType,
+    CardAbilityList, CardArt, CardBehavior, CardCatalog, CardComposition, CardDefinition,
+    CardEffectStatus, CardKind, CardPart, CardPrinting, CardPrintingId, CardRules, CardSet,
+    CardStructure, CatalogError, CharacteristicContext, CharacteristicError, CreatureStats,
+    DeclarativeAbilityDef, DoubleFacedKind, EffectDef, EffectDurationDef, EffectRecipientDef,
+    ImplementationStatus, LandEntry, ManaCost, ManaKindDef, ManaRestrictionDef, ManaSelectionDef,
+    ManaSpendEffectDef, MeldComponentDef, MeldRecipeDef, MeldResultDef, ModeDef, ModeSetDef,
+    ObjectPredicateDef, PlayActionKind, PlayOptionDef, PlayRestriction, PlayerRelation,
+    PrintedManaCost, ReplacementAbilityDef, SpecialActionDef, SpellAbilityDef, SpellForm,
     StaticAbilityDef, TargetPredicate, TargetSlotDef, TriggerEventDef, TriggeredAbilityDef,
-    TurnStepDef, ValueDef, ZoneKind, applicable_part_ids,
+    TurnStepDef, ValueDef, ZoneKind, applicable_part_ids, intrinsic_basic_land_mana_ability,
 };
 pub use casting::{
     CastChoices, CastSignature, CostConfiguration, TargetReplacementError, TargetSelection,

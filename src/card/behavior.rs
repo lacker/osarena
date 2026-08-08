@@ -1,4 +1,4 @@
-use super::{ActivatedAbilityText, CardBehavior, CardKind, CardRules, CreatureStats, ManaCost};
+use super::{CardBehavior, CardKind, CardRules, CreatureStats, ManaCost};
 use crate::card::sets;
 
 impl CardBehavior {
@@ -14,13 +14,8 @@ impl CardBehavior {
     }
 
     #[must_use]
-    pub const fn activated_ability_text(self) -> Option<ActivatedAbilityText> {
-        self.rules().activated_ability_text
-    }
-
-    #[must_use]
-    pub const fn rules_text(self) -> &'static str {
-        self.rules().text
+    pub fn rules_text(self) -> std::borrow::Cow<'static, str> {
+        self.rules().rules_text()
     }
 
     #[must_use]

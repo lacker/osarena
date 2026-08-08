@@ -1627,7 +1627,7 @@ export function GameClient({
                         art: triggered ? null : item.art,
                         kind: triggered ? "triggeredability" : item.cardKind,
                         typeLine: triggered ? "Triggered Ability" : item.typeLine,
-                        metadataOnly: item.metadataOnly,
+                        implementationStatus: item.implementationStatus,
                         isLand: triggered ? false : item.isLand,
                         manaCost: triggered ? null : item.manaCost,
                         rulesText: item.abilityText ?? item.rulesText,
@@ -2858,6 +2858,12 @@ function GameCard({
     card.damage ? `${card.damage} damage marked` : null,
     card.enteredThisTurn ? "Played this turn." : null,
   ].filter(Boolean);
+  const implementationCoverage =
+    card.implementationStatus === "partial"
+      ? "Partial support: some printed rules are not active."
+      : card.implementationStatus === "metadataOnly"
+        ? "Metadata only: printed rules are cataloged but not active."
+        : null;
 
   const showPreview = (element: HTMLButtonElement) => {
     const bounds = element.getBoundingClientRect();
@@ -3024,10 +3030,8 @@ function GameCard({
             <strong>{card.name}</strong>
             <span className="card-hover-type">{type}</span>
             <span className="card-hover-rules">{card.rulesText}</span>
-            {card.metadataOnly && (
-              <span className="card-hover-support">
-                Staged support: only baseline creature and land/mana behavior is active.
-              </span>
+            {implementationCoverage && (
+              <span className="card-hover-support">{implementationCoverage}</span>
             )}
             <span className="card-hover-details">
               <span><b>Cost</b> {manaCost}</span>

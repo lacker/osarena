@@ -2,8 +2,11 @@
 
 use super::{CardRecord, PrintingRecord};
 use crate::card::{
-    CardArt, CardBehavior, CardKind, CardRules, CardSet, LandEntry, ManaCost, cards,
+    AbilityCostDef, AbilityDef, AbilityImplementationDef, AddManaEffectDef, CardArt,
+    CardEffectStatus, CardKind, CardRules, CardSet, EffectDef, LandEntry, ManaCost, ManaKindDef,
+    cards,
 };
+use crate::ids::AbilityId;
 
 // Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
 pub(in crate::card::sets) static ARBOR_ELF: CardRecord = CardRecord::new(
@@ -12,7 +15,6 @@ pub(in crate::card::sets) static ARBOR_ELF: CardRecord = CardRecord::new(
     CardArt::new("b7d6b117-0c14-4455-92fc-29555ee75d97", "rk post"),
     CardSet::Magic2013,
     false,
-    CardBehavior::ArborElf,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(0, 0, 0, 0, 0, 1),
@@ -30,7 +32,6 @@ pub(in crate::card::sets) static AUGUR_OF_BOLAS: CardRecord = CardRecord::new(
     CardArt::new("2e6ec8a6-ad88-45c9-ab4b-dd7de2418bb7", "Slawomir Maniak"),
     CardSet::Magic2013,
     false,
-    CardBehavior::AugurOfBolas,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(1, 0, 1, 0, 0, 0),
@@ -48,7 +49,6 @@ pub(in crate::card::sets) static DISCIPLE_OF_BOLAS: CardRecord = CardRecord::new
     CardArt::new("c4dd57f8-27bc-4ad9-a79e-48a68af33b02", "Slawomir Maniak"),
     CardSet::Magic2013,
     false,
-    CardBehavior::DiscipleOfBolas,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(3, 0, 0, 1, 0, 0),
@@ -66,7 +66,6 @@ pub(in crate::card::sets) static DURESS: CardRecord = CardRecord::new(
     CardArt::new("f7201d43-ae2e-4faa-a508-8555079c3bc7", "Steven Belledin"),
     CardSet::Magic2013,
     false,
-    CardBehavior::Duress,
     CardRules::new(
         CardKind::Sorcery,
         ManaCost::colored(0, 0, 0, 1, 0, 0),
@@ -83,7 +82,6 @@ pub(in crate::card::sets) static ESSENCE_SCATTER: CardRecord = CardRecord::new(
     CardArt::new("fcd965f9-bdaa-4434-a9c8-53fc57e997db", "Jon Foster"),
     CardSet::Magic2013,
     false,
-    CardBehavior::EssenceScatter,
     CardRules::new(
         CardKind::Instant,
         ManaCost::colored(1, 0, 1, 0, 0, 0),
@@ -100,7 +98,6 @@ pub(in crate::card::sets) static FLAMES_OF_THE_FIREBRAND: CardRecord = CardRecor
     CardArt::new("aca215b1-7b98-49ce-afae-eeb61058125a", "Steve Argyle"),
     CardSet::Magic2013,
     false,
-    CardBehavior::FlamesOfTheFirebrand,
     CardRules::new(
         CardKind::Sorcery,
         ManaCost::colored(2, 0, 0, 0, 1, 0),
@@ -117,7 +114,6 @@ pub(in crate::card::sets) static FLINTHOOF_BOAR: CardRecord = CardRecord::new(
     CardArt::new("7e380b99-0173-4083-a4a2-222ad98b904a", "Erica Yang"),
     CardSet::Magic2013,
     false,
-    CardBehavior::FlinthoofBoar,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(1, 0, 0, 0, 0, 1),
@@ -135,18 +131,31 @@ pub(in crate::card::sets) static GLACIAL_FORTRESS: CardRecord = CardRecord::new(
     CardArt::new("bc9d29ee-1a21-4c3e-99c1-f815d40e8f19", "Franz Vohwinkel"),
     CardSet::Magic2013,
     false,
-    CardBehavior::GlacialFortress,
-    CardRules::new(
-        CardKind::Land,
-        ManaCost::colored(0, 0, 0, 0, 0, 0),
-        "This land enters tapped unless you control a Plains or an Island.\n{T}: Add {W} or {U}.",
-    )
+    CardRules::new(CardKind::Land, ManaCost::colored(0, 0, 0, 0, 0, 0), "")
     .type_line("Land")
-    .produces([true, true, false, false, false, false])
     .land_entry(LandEntry::TappedUnlessControlsLandType([
         true, true, false, false, false,
     ]))
-    .metadata_only(),
+    .with_abilities(&[
+        AbilityDef::replacement(
+            AbilityId::PRIMARY,
+            "This land enters tapped unless you control a Plains or an Island.",
+            EffectDef::Special("Apply the declared conditional land-entry procedure"),
+        )
+        .with_implementation(AbilityImplementationDef::CustomFull {
+            explanation: "The conditional land-entry procedure is implemented by shared land-entry rules.",
+        }),
+        AbilityDef::activated_mana(
+            AbilityId(1),
+            "{T}: Add {W} or {U}.",
+            &[AbilityCostDef::TapSource],
+            EffectDef::AddMana(AddManaEffectDef::choice(&[
+                ManaKindDef::White,
+                ManaKindDef::Blue,
+            ])),
+        ),
+    ])
+    .with_effect_status(CardEffectStatus::MetadataOnly),
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
@@ -156,7 +165,6 @@ pub(in crate::card::sets) static JACE_MEMORY_ADEPT: CardRecord = CardRecord::new
     CardArt::new("96b2a335-2f01-4ba7-a037-453dbb1045e9", "D. Alexander Gregory"),
     CardSet::Magic2013,
     false,
-    CardBehavior::JaceMemoryAdept,
     CardRules::new(
         CardKind::Planeswalker,
         ManaCost::colored(3, 0, 2, 0, 0, 0),
@@ -175,7 +183,6 @@ pub(in crate::card::sets) static MUTILATE: CardRecord = CardRecord::new(
     CardArt::new("c48bc86b-df0a-4a9c-8aad-c3ffb742a5ff", "Tyler Jacobson"),
     CardSet::Magic2013,
     false,
-    CardBehavior::Mutilate,
     CardRules::new(
         CardKind::Sorcery,
         ManaCost::colored(2, 0, 0, 2, 0, 0),
@@ -192,7 +199,6 @@ pub(in crate::card::sets) static NEGATE: CardRecord = CardRecord::new(
     CardArt::new("8da17a86-3666-46b8-932e-daafd6a0cd69", "Jeremy Jarvis"),
     CardSet::Magic2013,
     false,
-    CardBehavior::Negate,
     CardRules::new(
         CardKind::Instant,
         ManaCost::colored(1, 0, 1, 0, 0, 0),
@@ -209,7 +215,6 @@ pub(in crate::card::sets) static OBLIVION_RING: CardRecord = CardRecord::new(
     CardArt::new("1e2a73ec-39be-4d23-8c25-17d7c174dcee", "Franz Vohwinkel"),
     CardSet::Magic2013,
     false,
-    CardBehavior::OblivionRing,
     CardRules::new(
         CardKind::Enchantment,
         ManaCost::colored(2, 1, 0, 0, 0, 0),
@@ -226,7 +231,6 @@ pub(in crate::card::sets) static RHOX_FAITHMENDER: CardRecord = CardRecord::new(
     CardArt::new("85ea185a-7b38-49f3-be73-be8180fb6295", "Wesley Burt"),
     CardSet::Magic2013,
     false,
-    CardBehavior::RhoxFaithmender,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(3, 1, 0, 0, 0, 0),
@@ -245,18 +249,31 @@ pub(in crate::card::sets) static ROOTBOUND_CRAG: CardRecord = CardRecord::new(
     CardArt::new("76364643-bfcb-4c50-9224-bf9e35648ddf", "Matt Stewart"),
     CardSet::Magic2013,
     false,
-    CardBehavior::RootboundCrag,
-    CardRules::new(
-        CardKind::Land,
-        ManaCost::colored(0, 0, 0, 0, 0, 0),
-        "This land enters tapped unless you control a Mountain or a Forest.\n{T}: Add {R} or {G}.",
-    )
+    CardRules::new(CardKind::Land, ManaCost::colored(0, 0, 0, 0, 0, 0), "")
     .type_line("Land")
-    .produces([false, false, false, true, true, false])
     .land_entry(LandEntry::TappedUnlessControlsLandType([
         false, false, false, true, true,
     ]))
-    .metadata_only(),
+    .with_abilities(&[
+        AbilityDef::replacement(
+            AbilityId::PRIMARY,
+            "This land enters tapped unless you control a Mountain or a Forest.",
+            EffectDef::Special("Apply the declared conditional land-entry procedure"),
+        )
+        .with_implementation(AbilityImplementationDef::CustomFull {
+            explanation: "The conditional land-entry procedure is implemented by shared land-entry rules.",
+        }),
+        AbilityDef::activated_mana(
+            AbilityId(1),
+            "{T}: Add {R} or {G}.",
+            &[AbilityCostDef::TapSource],
+            EffectDef::AddMana(AddManaEffectDef::choice(&[
+                ManaKindDef::Red,
+                ManaKindDef::Green,
+            ])),
+        ),
+    ])
+    .with_effect_status(CardEffectStatus::MetadataOnly),
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
@@ -266,7 +283,6 @@ pub(in crate::card::sets) static SIGN_IN_BLOOD: CardRecord = CardRecord::new(
     CardArt::new("64f6600b-36c4-43bd-8c01-cfbca402ecd6", "Howard Lyon"),
     CardSet::Magic2013,
     false,
-    CardBehavior::SignInBlood,
     CardRules::new(
         CardKind::Sorcery,
         ManaCost::colored(0, 0, 0, 2, 0, 0),
@@ -283,18 +299,31 @@ pub(in crate::card::sets) static SUNPETAL_GROVE: CardRecord = CardRecord::new(
     CardArt::new("15663129-9deb-4c34-84a0-f94cf1a723f0", "Jason Chan"),
     CardSet::Magic2013,
     false,
-    CardBehavior::SunpetalGrove,
-    CardRules::new(
-        CardKind::Land,
-        ManaCost::colored(0, 0, 0, 0, 0, 0),
-        "This land enters tapped unless you control a Forest or a Plains.\n{T}: Add {G} or {W}.",
-    )
+    CardRules::new(CardKind::Land, ManaCost::colored(0, 0, 0, 0, 0, 0), "")
     .type_line("Land")
-    .produces([true, false, false, false, true, false])
     .land_entry(LandEntry::TappedUnlessControlsLandType([
         true, false, false, false, true,
     ]))
-    .metadata_only(),
+    .with_abilities(&[
+        AbilityDef::replacement(
+            AbilityId::PRIMARY,
+            "This land enters tapped unless you control a Forest or a Plains.",
+            EffectDef::Special("Apply the declared conditional land-entry procedure"),
+        )
+        .with_implementation(AbilityImplementationDef::CustomFull {
+            explanation: "The conditional land-entry procedure is implemented by shared land-entry rules.",
+        }),
+        AbilityDef::activated_mana(
+            AbilityId(1),
+            "{T}: Add {G} or {W}.",
+            &[AbilityCostDef::TapSource],
+            EffectDef::AddMana(AddManaEffectDef::choice(&[
+                ManaKindDef::Green,
+                ManaKindDef::White,
+            ])),
+        ),
+    ])
+    .with_effect_status(CardEffectStatus::MetadataOnly),
 );
 
 // Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
@@ -304,7 +333,6 @@ pub(in crate::card::sets) static THRAGTUSK: CardRecord = CardRecord::new(
     CardArt::new("28667c8b-d02c-4e57-a050-1549207b65d1", "Nils Hamm"),
     CardSet::Magic2013,
     false,
-    CardBehavior::Thragtusk,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(4, 0, 0, 0, 0, 1),
@@ -322,7 +350,6 @@ pub(in crate::card::sets) static THUNDERMAW_HELLKITE: CardRecord = CardRecord::n
     CardArt::new("d0476e0f-61df-46a6-aaf1-8ee79c701160", "Svetlin Velinov"),
     CardSet::Magic2013,
     false,
-    CardBehavior::ThundermawHellkite,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(3, 0, 0, 0, 2, 0),
@@ -342,7 +369,6 @@ pub(in crate::card::sets) static VAMPIRE_NIGHTHAWK: CardRecord = CardRecord::new
     CardArt::new("9ba96d96-8d9e-47c8-ab39-17479564aadf", "Jason Chan"),
     CardSet::Magic2013,
     false,
-    CardBehavior::VampireNighthawk,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(1, 0, 0, 2, 0, 0),
@@ -363,7 +389,6 @@ pub(in crate::card::sets) static VOLCANIC_STRENGTH: CardRecord = CardRecord::new
     CardArt::new("f1963f08-1765-4f3e-92be-479773de47a0", "Izzy"),
     CardSet::Magic2013,
     false,
-    CardBehavior::VolcanicStrength,
     CardRules::new(
         CardKind::Enchantment,
         ManaCost::colored(1, 0, 0, 0, 1, 0),
@@ -380,7 +405,6 @@ pub(in crate::card::sets) static WAR_PRIEST_OF_THUNE: CardRecord = CardRecord::n
     CardArt::new("d28eb320-aea7-466e-8718-de8652a2b191", "Izzy"),
     CardSet::Magic2013,
     false,
-    CardBehavior::WarPriestOfThune,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(1, 1, 0, 0, 0, 0),

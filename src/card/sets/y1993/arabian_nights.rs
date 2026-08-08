@@ -1,34 +1,10 @@
 use super::{CardRecord, PrintingRecord};
 use crate::card::{
-    AbilityCostDef, AbilityDef, AddManaEffectDef, CardArt, CardBehavior, CardKind, CardRules,
-    CardSet, EffectDef, EffectRecipientDef, ImplementationStatus, ManaCost, ManaKindDef,
+    AbilityCostDef, AbilityDef, AbilityImplementationDef, AddManaEffectDef, CardArt, CardBehavior,
+    CardKind, CardRules, CardSet, EffectDef, EffectRecipientDef, ManaCost, ManaKindDef,
     ObjectPredicateDef, TriggerEventDef, ValueDef, cards,
 };
 use crate::ids::AbilityId;
-
-static CITY_OF_BRASS_ABILITIES: [AbilityDef; 2] = [
-    AbilityDef::activated_mana(
-        AbilityId::PRIMARY,
-        "{T}: Add one mana of any color.",
-        &[AbilityCostDef::TapSource],
-        EffectDef::AddMana(AddManaEffectDef::choice(&[
-            ManaKindDef::White,
-            ManaKindDef::Blue,
-            ManaKindDef::Black,
-            ManaKindDef::Red,
-            ManaKindDef::Green,
-        ])),
-    ),
-    AbilityDef::triggered(
-        AbilityId(1),
-        "Whenever City of Brass becomes tapped, it deals 1 damage to you.",
-        TriggerEventDef::BecomesTapped(ObjectPredicateDef::Source),
-        EffectDef::DealDamage {
-            recipient: EffectRecipientDef::Controller,
-            amount: ValueDef::Constant(1),
-        },
-    ),
-];
 
 pub(in crate::card::sets) static CITY_OF_BRASS: CardRecord = CardRecord::new(
     cards::CITY_OF_BRASS,
@@ -36,17 +12,30 @@ pub(in crate::card::sets) static CITY_OF_BRASS: CardRecord = CardRecord::new(
     CardArt::new("f4e32327-380d-471e-813b-4c27477787ce", "Mark Tedin"),
     CardSet::ArabianNights,
     false,
-    CardBehavior::CityOfBrass,
-    CardRules::new(
-        CardKind::Land,
-        ManaCost::new(0, 0),
-        "Whenever City of Brass becomes tapped, it deals 1 damage to you. Tap: Add one mana of any color.",
-    )
-    .with_abilities(&CITY_OF_BRASS_ABILITIES),
-)
-.with_implementation_status(ImplementationStatus::Partial {
-        explanation: "The trigger uses the shared tap-event stack path; continuous effects such as Blood Moon do not yet remove its printed abilities correctly.",
-    });
+    CardRules::new(CardKind::Land, ManaCost::new(0, 0), "").with_abilities(&[
+        AbilityDef::triggered(
+            AbilityId(1),
+            "Whenever City of Brass becomes tapped, it deals 1 damage to you.",
+            TriggerEventDef::BecomesTapped(ObjectPredicateDef::Source),
+            EffectDef::DealDamage {
+                recipient: EffectRecipientDef::Controller,
+                amount: ValueDef::Constant(1),
+            },
+        ),
+        AbilityDef::activated_mana(
+            AbilityId::PRIMARY,
+            "{T}: Add one mana of any color.",
+            &[AbilityCostDef::TapSource],
+            EffectDef::AddMana(AddManaEffectDef::choice(&[
+                ManaKindDef::White,
+                ManaKindDef::Blue,
+                ManaKindDef::Black,
+                ManaKindDef::Red,
+                ManaKindDef::Green,
+            ])),
+        ),
+    ]),
+);
 
 pub(in crate::card::sets) static ERHNAM_DJINN: CardRecord = CardRecord::new(
     cards::ERHNAM_DJINN,
@@ -54,17 +43,15 @@ pub(in crate::card::sets) static ERHNAM_DJINN: CardRecord = CardRecord::new(
     CardArt::new("42bc0c3f-0a52-4bdc-83da-6484bf3102f3", "Ken Meyer, Jr."),
     CardSet::ArabianNights,
     false,
-    CardBehavior::ErhnamDjinn,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(3, 0, 0, 0, 0, 1),
         "At your upkeep, target opponent's creature gains forestwalk until your next upkeep.",
     )
-    .creature(4, 5),
-)
-.with_implementation_status(ImplementationStatus::Partial {
-    explanation: "The targeted upkeep trigger is handled outside the stack.",
-});
+    .creature(4, 5)
+    .partial("The targeted upkeep trigger is handled outside the stack.")
+    .with_special_behavior(CardBehavior::ErhnamDjinn),
+);
 
 pub(in crate::card::sets) static JUZAM_DJINN: CardRecord = CardRecord::new(
     cards::JUZAM_DJINN,
@@ -72,17 +59,15 @@ pub(in crate::card::sets) static JUZAM_DJINN: CardRecord = CardRecord::new(
     CardArt::new("31bf3f14-b5df-498b-a1bb-965885c82401", "Mark Tedin"),
     CardSet::ArabianNights,
     false,
-    CardBehavior::JuzamDjinn,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(2, 0, 0, 2, 0, 0),
         "At your upkeep, Juzám Djinn deals 1 damage to you.",
     )
-    .creature(5, 5),
-)
-.with_implementation_status(ImplementationStatus::Partial {
-    explanation: "The upkeep damage trigger currently resolves outside the stack.",
-});
+    .creature(5, 5)
+    .partial("The upkeep damage trigger currently resolves outside the stack.")
+    .with_special_behavior(CardBehavior::JuzamDjinn),
+);
 
 pub(in crate::card::sets) static LIBRARY_OF_ALEXANDRIA: CardRecord = CardRecord::new(
     cards::LIBRARY_OF_ALEXANDRIA,
@@ -90,17 +75,27 @@ pub(in crate::card::sets) static LIBRARY_OF_ALEXANDRIA: CardRecord = CardRecord:
     CardArt::new("ee266113-34ce-4189-84e7-ee2c86a2722c", "Mark Poole"),
     CardSet::ArabianNights,
     false,
-    CardBehavior::LibraryOfAlexandria,
-    CardRules::new(
-        CardKind::Land,
-        ManaCost::new(0, 0),
-        "Tap: Add 1. Tap: Draw a card. Activate only with exactly seven cards in hand.",
-    )
-    .legendary(),
-)
-.with_implementation_status(ImplementationStatus::Partial {
-    explanation: "Library of Alexandria is incorrectly treated as legendary.",
-});
+    CardRules::new(CardKind::Land, ManaCost::new(0, 0), "").with_abilities(&[
+        AbilityDef::activated_mana(
+            AbilityId::PRIMARY,
+            "{T}: Add {C}.",
+            &[AbilityCostDef::TapSource],
+            EffectDef::AddMana(AddManaEffectDef::one(ManaKindDef::Colorless)),
+        ),
+        AbilityDef::activated(
+            AbilityId(1),
+            "Tap: Draw a card. Activate only with exactly seven cards in hand.",
+            &[AbilityCostDef::TapSource],
+            EffectDef::DrawCards {
+                recipient: EffectRecipientDef::Controller,
+                amount: ValueDef::Constant(1),
+            },
+        )
+        .with_implementation(AbilityImplementationDef::CustomFull {
+            explanation: "The seven-card activation restriction and card draw are implemented by the legacy activated-ability resolver.",
+        }),
+    ]).with_special_behavior(CardBehavior::LibraryOfAlexandria),
+);
 
 pub(in crate::card::sets) static SERENDIB_EFREET: CardRecord = CardRecord::new(
     cards::SERENDIB_EFREET,
@@ -108,18 +103,16 @@ pub(in crate::card::sets) static SERENDIB_EFREET: CardRecord = CardRecord::new(
     CardArt::new("cf56e862-3169-4f63-acd0-731080fa32f2", "Anson Maddocks"),
     CardSet::ArabianNights,
     false,
-    CardBehavior::SerendibEfreet,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(2, 0, 1, 0, 0, 0),
         "Flying. At your upkeep, Serendib Efreet deals 1 damage to you.",
     )
     .creature(3, 4)
-    .flying(),
-)
-.with_implementation_status(ImplementationStatus::Partial {
-    explanation: "The upkeep damage trigger currently resolves outside the stack.",
-});
+    .flying()
+    .partial("The upkeep damage trigger currently resolves outside the stack.")
+    .with_special_behavior(CardBehavior::SerendibEfreet),
+);
 
 pub(in crate::card::sets) static CITY_IN_A_BOTTLE: CardRecord = CardRecord::new(
     cards::CITY_IN_A_BOTTLE,
@@ -127,16 +120,16 @@ pub(in crate::card::sets) static CITY_IN_A_BOTTLE: CardRecord = CardRecord::new(
     CardArt::new("9598b346-a47d-4c4c-9571-156824e86b9c", "Drew Tucker"),
     CardSet::ArabianNights,
     false,
-    CardBehavior::CityInABottle,
     CardRules::new(
         CardKind::Artifact,
         ManaCost::new(2, 0),
         "At the beginning of each upkeep, destroy each other permanent from Arabian Nights.",
-    ),
-)
-.with_implementation_status(ImplementationStatus::Partial {
-        explanation: "The state trigger currently destroys permanents immediately instead of using the stack.",
-    });
+    )
+    .partial(
+        "The state trigger currently destroys permanents immediately instead of using the stack.",
+    )
+    .with_special_behavior(CardBehavior::CityInABottle),
+);
 
 pub(in crate::card::sets) static KIRD_APE: CardRecord = CardRecord::new(
     cards::KIRD_APE,
@@ -144,13 +137,13 @@ pub(in crate::card::sets) static KIRD_APE: CardRecord = CardRecord::new(
     CardArt::new("ebe8845e-df1c-481c-949c-aab84af99a05", "Ken Meyer, Jr."),
     CardSet::ArabianNights,
     false,
-    CardBehavior::KirdApe,
     CardRules::new(
         CardKind::Creature,
         ManaCost::new(0, 1),
         "Kird Ape gets +1/+2 as long as you control a Forest.",
     )
-    .creature(1, 1),
+    .creature(1, 1)
+    .with_special_behavior(CardBehavior::KirdApe),
 );
 
 pub(in crate::card::sets) static CARDS: &[&CardRecord] = &[

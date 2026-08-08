@@ -3,8 +3,8 @@ use penta::deck::{Deck, DeckError};
 use penta::game::{GameResult, WinReason};
 use penta::poc;
 use penta::{
-    Action, CardDefinitionId, CastChoices, Format, Game, GameError, GameEvent, PlayOptionId,
-    PlayerId, Step, Target, TargetSelection, TargetSlotId,
+    AbilityOrigin, Action, BasicLandType, CardDefinitionId, CastChoices, Format, Game, GameError,
+    GameEvent, PlayOptionId, PlayerId, Step, Target, TargetSelection, TargetSlotId,
 };
 
 fn catalog() -> CardCatalog {
@@ -369,6 +369,7 @@ fn mountain_casts_and_resolves_lightning_bolt() {
         PlayerId::One,
         Action::ActivateManaAbility {
             source: mountain,
+            ability: AbilityOrigin::IntrinsicBasicLand(BasicLandType::Mountain),
             color: penta::ManaColor::Red,
         },
     )
@@ -483,6 +484,7 @@ fn unspent_mana_burns_at_the_end_of_a_phase() {
         PlayerId::One,
         Action::ActivateManaAbility {
             source: mountain,
+            ability: AbilityOrigin::IntrinsicBasicLand(BasicLandType::Mountain),
             color: penta::ManaColor::Red,
         },
     )
@@ -532,6 +534,7 @@ fn mana_emptying_and_burn_follow_the_games_format() {
             PlayerId::One,
             Action::ActivateManaAbility {
                 source: mountain,
+                ability: AbilityOrigin::IntrinsicBasicLand(BasicLandType::Mountain),
                 color: penta::ManaColor::Red,
             },
         )

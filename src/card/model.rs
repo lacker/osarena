@@ -392,6 +392,60 @@ pub enum ManaKindDef {
     Colorless,
 }
 
+/// A basic land subtype. The rules grant a permanent one intrinsic mana
+/// ability for every basic land subtype it currently has.
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub enum BasicLandType {
+    Plains,
+    Island,
+    Swamp,
+    Mountain,
+    Forest,
+}
+
+impl BasicLandType {
+    pub const ALL: [Self; 5] = [
+        Self::Plains,
+        Self::Island,
+        Self::Swamp,
+        Self::Mountain,
+        Self::Forest,
+    ];
+
+    #[must_use]
+    pub const fn index(self) -> usize {
+        match self {
+            Self::Plains => 0,
+            Self::Island => 1,
+            Self::Swamp => 2,
+            Self::Mountain => 3,
+            Self::Forest => 4,
+        }
+    }
+
+    #[must_use]
+    pub const fn mana_kind(self) -> ManaKindDef {
+        match self {
+            Self::Plains => ManaKindDef::White,
+            Self::Island => ManaKindDef::Blue,
+            Self::Swamp => ManaKindDef::Black,
+            Self::Mountain => ManaKindDef::Red,
+            Self::Forest => ManaKindDef::Green,
+        }
+    }
+
+    #[must_use]
+    pub const fn ability_text(self) -> &'static str {
+        match self {
+            Self::Plains => "{T}: Add {W}.",
+            Self::Island => "{T}: Add {U}.",
+            Self::Swamp => "{T}: Add {B}.",
+            Self::Mountain => "{T}: Add {R}.",
+            Self::Forest => "{T}: Add {G}.",
+        }
+    }
+}
+
 /// Which kind of mana an effect adds. A choice is made as the mana ability
 /// resolves; it is not modeled as several interchangeable colors already in
 /// the pool.
@@ -595,21 +649,13 @@ pub enum TriggerEventDef {
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct SpellAbilityDef {
-    pub id: AbilityId,
-    pub text: &'static str,
     pub targets: &'static [AbilityTargetDef],
-    pub effect: EffectDef,
 }
 
 impl SpellAbilityDef {
     #[must_use]
-    pub const fn new(id: AbilityId, text: &'static str, effect: EffectDef) -> Self {
-        Self {
-            id,
-            text,
-            targets: &[],
-            effect,
-        }
+    pub const fn new() -> Self {
+        Self { targets: &[] }
     }
 
     #[must_use]
@@ -619,31 +665,26 @@ impl SpellAbilityDef {
     }
 }
 
+impl Default for SpellAbilityDef {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct ActivatedAbilityDef {
-    pub id: AbilityId,
-    pub text: &'static str,
     pub source_zones: &'static [ZoneKind],
     pub costs: &'static [AbilityCostDef],
     pub targets: &'static [AbilityTargetDef],
-    pub effect: EffectDef,
 }
 
 impl ActivatedAbilityDef {
     #[must_use]
-    pub const fn new(
-        id: AbilityId,
-        text: &'static str,
-        costs: &'static [AbilityCostDef],
-        effect: EffectDef,
-    ) -> Self {
+    pub const fn new(costs: &'static [AbilityCostDef]) -> Self {
         Self {
-            id,
-            text,
             source_zones: &[ZoneKind::Battlefield],
             costs,
             targets: &[],
-            effect,
         }
     }
 
@@ -662,29 +703,18 @@ impl ActivatedAbilityDef {
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct TriggeredAbilityDef {
-    pub id: AbilityId,
-    pub text: &'static str,
     pub source_zones: &'static [ZoneKind],
     pub event: TriggerEventDef,
     pub targets: &'static [AbilityTargetDef],
-    pub effect: EffectDef,
 }
 
 impl TriggeredAbilityDef {
     #[must_use]
-    pub const fn new(
-        id: AbilityId,
-        text: &'static str,
-        event: TriggerEventDef,
-        effect: EffectDef,
-    ) -> Self {
+    pub const fn new(event: TriggerEventDef) -> Self {
         Self {
-            id,
-            text,
             source_zones: &[ZoneKind::Battlefield],
             event,
             targets: &[],
-            effect,
         }
     }
 
@@ -703,10 +733,30 @@ impl TriggeredAbilityDef {
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct StaticAbilityDef {
-    pub id: AbilityId,
-    pub text: &'static str,
     pub source_zones: &'static [ZoneKind],
-    pub effect: EffectDef,
+}
+
+/// A replacement ability changes how an event happens and never uses the
+/// stack. It is modeled separately from a triggered ability even when both
+/// watch the same event.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ReplacementAbilityDef {
+    pub source_zones: &'static [ZoneKind],
+}
+
+impl ReplacementAbilityDef {
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            source_zones: &[ZoneKind::Battlefield],
+        }
+    }
+}
+
+impl Default for ReplacementAbilityDef {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 /// A rules-defined action a player may take without using the stack, such as
@@ -715,40 +765,25 @@ pub struct StaticAbilityDef {
 /// inferred from its cost or effect.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct SpecialActionDef {
-    pub id: AbilityId,
-    pub text: &'static str,
     pub source_zones: &'static [ZoneKind],
     pub costs: &'static [AbilityCostDef],
-    pub effect: EffectDef,
 }
 
 impl SpecialActionDef {
     #[must_use]
-    pub const fn new(
-        id: AbilityId,
-        text: &'static str,
-        source_zones: &'static [ZoneKind],
-        costs: &'static [AbilityCostDef],
-        effect: EffectDef,
-    ) -> Self {
+    pub const fn new(source_zones: &'static [ZoneKind], costs: &'static [AbilityCostDef]) -> Self {
         Self {
-            id,
-            text,
             source_zones,
             costs,
-            effect,
         }
     }
 }
 
 impl StaticAbilityDef {
     #[must_use]
-    pub const fn new(id: AbilityId, text: &'static str, effect: EffectDef) -> Self {
+    pub const fn new() -> Self {
         Self {
-            id,
-            text,
             source_zones: &[ZoneKind::Battlefield],
-            effect,
         }
     }
 
@@ -759,23 +794,88 @@ impl StaticAbilityDef {
     }
 }
 
-/// The rules category of an ability is explicit. In particular, adding mana
-/// does not cause the engine to infer that an ability is a mana ability.
+impl Default for StaticAbilityDef {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// The rules category and structural procedure of an ability. Text, identity,
+/// and implementation coverage live on [`AbilityDef`] so every printed clause
+/// has one canonical text string regardless of how it executes.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub enum AbilityDef {
+pub enum DeclarativeAbilityDef {
     Spell(SpellAbilityDef),
     ActivatedMana(ActivatedAbilityDef),
     TriggeredMana(TriggeredAbilityDef),
     Activated(ActivatedAbilityDef),
     Triggered(TriggeredAbilityDef),
     Static(StaticAbilityDef),
+    Replacement(ReplacementAbilityDef),
     SpecialAction(SpecialActionDef),
+    /// Transitional structural marker for a clause still dispatched through
+    /// the owning card's legacy custom behavior.
+    Legacy,
+}
+
+/// How completely one printed rules clause is implemented.
+///
+/// Fully declarative clauses need no explanation: their structure and effect
+/// are the implementation. Every other variant explains the escape hatch or
+/// remaining gap beside the clause that owns it.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum AbilityImplementationDef {
+    Definition,
+    CustomFull { explanation: &'static str },
+    CustomPartial { explanation: &'static str },
+    NotImplemented { explanation: &'static str },
+}
+
+impl AbilityImplementationDef {
+    #[must_use]
+    pub const fn explanation(self) -> Option<&'static str> {
+        match self {
+            Self::Definition => None,
+            Self::CustomFull { explanation }
+            | Self::CustomPartial { explanation }
+            | Self::NotImplemented { explanation } => Some(explanation),
+        }
+    }
+
+    #[must_use]
+    pub const fn is_executable(self) -> bool {
+        !matches!(self, Self::NotImplemented { .. })
+    }
+}
+
+/// One printed rules clause and its implementation.
+///
+/// The category is explicit even when the implementation remains custom; the
+/// engine never infers stack behavior from costs, targets, or effects.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct AbilityDef {
+    pub id: AbilityId,
+    pub text: &'static str,
+    /// Optional action-menu wording for a targeted activated ability. This is
+    /// presentation attached to the exact ability, not a second rules text.
+    pub activation_text: Option<ActivatedAbilityText>,
+    pub definition: DeclarativeAbilityDef,
+    pub effect: EffectDef,
+    pub implementation: AbilityImplementationDef,
 }
 
 impl AbilityDef {
+    const LEGACY_EXPLANATION: &'static str =
+        "Implemented by legacy card-local metadata or a special behavior hook.";
+
     #[must_use]
     pub const fn spell(id: AbilityId, text: &'static str, effect: EffectDef) -> Self {
-        Self::Spell(SpellAbilityDef::new(id, text, effect))
+        Self::defined(
+            id,
+            text,
+            DeclarativeAbilityDef::Spell(SpellAbilityDef::new()),
+            effect,
+        )
     }
 
     #[must_use]
@@ -785,7 +885,12 @@ impl AbilityDef {
         costs: &'static [AbilityCostDef],
         effect: EffectDef,
     ) -> Self {
-        Self::ActivatedMana(ActivatedAbilityDef::new(id, text, costs, effect))
+        Self::defined(
+            id,
+            text,
+            DeclarativeAbilityDef::ActivatedMana(ActivatedAbilityDef::new(costs)),
+            effect,
+        )
     }
 
     #[must_use]
@@ -795,7 +900,12 @@ impl AbilityDef {
         event: TriggerEventDef,
         effect: EffectDef,
     ) -> Self {
-        Self::TriggeredMana(TriggeredAbilityDef::new(id, text, event, effect))
+        Self::defined(
+            id,
+            text,
+            DeclarativeAbilityDef::TriggeredMana(TriggeredAbilityDef::new(event)),
+            effect,
+        )
     }
 
     #[must_use]
@@ -805,7 +915,12 @@ impl AbilityDef {
         costs: &'static [AbilityCostDef],
         effect: EffectDef,
     ) -> Self {
-        Self::Activated(ActivatedAbilityDef::new(id, text, costs, effect))
+        Self::defined(
+            id,
+            text,
+            DeclarativeAbilityDef::Activated(ActivatedAbilityDef::new(costs)),
+            effect,
+        )
     }
 
     #[must_use]
@@ -815,12 +930,32 @@ impl AbilityDef {
         event: TriggerEventDef,
         effect: EffectDef,
     ) -> Self {
-        Self::Triggered(TriggeredAbilityDef::new(id, text, event, effect))
+        Self::defined(
+            id,
+            text,
+            DeclarativeAbilityDef::Triggered(TriggeredAbilityDef::new(event)),
+            effect,
+        )
     }
 
     #[must_use]
     pub const fn static_ability(id: AbilityId, text: &'static str, effect: EffectDef) -> Self {
-        Self::Static(StaticAbilityDef::new(id, text, effect))
+        Self::defined(
+            id,
+            text,
+            DeclarativeAbilityDef::Static(StaticAbilityDef::new()),
+            effect,
+        )
+    }
+
+    #[must_use]
+    pub const fn replacement(id: AbilityId, text: &'static str, effect: EffectDef) -> Self {
+        Self::defined(
+            id,
+            text,
+            DeclarativeAbilityDef::Replacement(ReplacementAbilityDef::new()),
+            effect,
+        )
     }
 
     #[must_use]
@@ -831,38 +966,159 @@ impl AbilityDef {
         costs: &'static [AbilityCostDef],
         effect: EffectDef,
     ) -> Self {
-        Self::SpecialAction(SpecialActionDef::new(id, text, source_zones, costs, effect))
+        Self::defined(
+            id,
+            text,
+            DeclarativeAbilityDef::SpecialAction(SpecialActionDef::new(source_zones, costs)),
+            effect,
+        )
     }
 
     #[must_use]
-    pub const fn id(self) -> AbilityId {
-        match self {
-            Self::Spell(definition) => definition.id,
-            Self::ActivatedMana(definition) | Self::Activated(definition) => definition.id,
-            Self::TriggeredMana(definition) | Self::Triggered(definition) => definition.id,
-            Self::Static(definition) => definition.id,
-            Self::SpecialAction(definition) => definition.id,
+    pub const fn defined(
+        id: AbilityId,
+        text: &'static str,
+        definition: DeclarativeAbilityDef,
+        effect: EffectDef,
+    ) -> Self {
+        Self {
+            id,
+            text,
+            activation_text: None,
+            definition,
+            effect,
+            implementation: AbilityImplementationDef::Definition,
         }
     }
 
     #[must_use]
-    pub const fn text(self) -> &'static str {
-        match self {
-            Self::Spell(definition) => definition.text,
-            Self::ActivatedMana(definition) | Self::Activated(definition) => definition.text,
-            Self::TriggeredMana(definition) | Self::Triggered(definition) => definition.text,
-            Self::Static(definition) => definition.text,
-            Self::SpecialAction(definition) => definition.text,
+    pub const fn custom_full(id: AbilityId, text: &'static str, explanation: &'static str) -> Self {
+        Self {
+            id,
+            text,
+            activation_text: None,
+            definition: DeclarativeAbilityDef::Legacy,
+            effect: EffectDef::None,
+            implementation: AbilityImplementationDef::CustomFull { explanation },
         }
+    }
+
+    #[must_use]
+    pub const fn legacy(id: AbilityId, text: &'static str) -> Self {
+        Self::custom_full(id, text, Self::LEGACY_EXPLANATION)
+    }
+
+    #[must_use]
+    pub const fn custom_partial(
+        id: AbilityId,
+        text: &'static str,
+        explanation: &'static str,
+    ) -> Self {
+        Self {
+            id,
+            text,
+            activation_text: None,
+            definition: DeclarativeAbilityDef::Legacy,
+            effect: EffectDef::None,
+            implementation: AbilityImplementationDef::CustomPartial { explanation },
+        }
+    }
+
+    #[must_use]
+    pub const fn not_implemented(
+        id: AbilityId,
+        text: &'static str,
+        explanation: &'static str,
+    ) -> Self {
+        Self {
+            id,
+            text,
+            activation_text: None,
+            definition: DeclarativeAbilityDef::Legacy,
+            effect: EffectDef::None,
+            implementation: AbilityImplementationDef::NotImplemented { explanation },
+        }
+    }
+
+    #[must_use]
+    pub const fn with_implementation(mut self, implementation: AbilityImplementationDef) -> Self {
+        self.implementation = implementation;
+        self
+    }
+
+    #[must_use]
+    pub const fn with_activation_text(
+        mut self,
+        targeted: &'static str,
+        summary: &'static str,
+    ) -> Self {
+        self.activation_text = Some(ActivatedAbilityText { targeted, summary });
+        self
+    }
+
+    #[must_use]
+    pub const fn with_targets(mut self, targets: &'static [AbilityTargetDef]) -> Self {
+        match &mut self.definition {
+            DeclarativeAbilityDef::Spell(definition) => definition.targets = targets,
+            DeclarativeAbilityDef::ActivatedMana(definition)
+            | DeclarativeAbilityDef::Activated(definition) => definition.targets = targets,
+            DeclarativeAbilityDef::TriggeredMana(definition)
+            | DeclarativeAbilityDef::Triggered(definition) => definition.targets = targets,
+            DeclarativeAbilityDef::Static(_)
+            | DeclarativeAbilityDef::Replacement(_)
+            | DeclarativeAbilityDef::SpecialAction(_)
+            | DeclarativeAbilityDef::Legacy => {}
+        }
+        self
+    }
+
+    #[must_use]
+    pub const fn with_source_zones(mut self, source_zones: &'static [ZoneKind]) -> Self {
+        match &mut self.definition {
+            DeclarativeAbilityDef::ActivatedMana(definition)
+            | DeclarativeAbilityDef::Activated(definition) => {
+                definition.source_zones = source_zones;
+            }
+            DeclarativeAbilityDef::TriggeredMana(definition)
+            | DeclarativeAbilityDef::Triggered(definition) => {
+                definition.source_zones = source_zones;
+            }
+            DeclarativeAbilityDef::Static(definition) => {
+                definition.source_zones = source_zones;
+            }
+            DeclarativeAbilityDef::Replacement(definition) => {
+                definition.source_zones = source_zones;
+            }
+            DeclarativeAbilityDef::SpecialAction(definition) => {
+                definition.source_zones = source_zones;
+            }
+            DeclarativeAbilityDef::Spell(_) | DeclarativeAbilityDef::Legacy => {}
+        }
+        self
     }
 
     #[must_use]
     pub const fn uses_stack(self) -> bool {
         matches!(
-            self,
-            Self::Spell(_) | Self::Activated(_) | Self::Triggered(_)
+            self.definition,
+            DeclarativeAbilityDef::Spell(_)
+                | DeclarativeAbilityDef::Activated(_)
+                | DeclarativeAbilityDef::Triggered(_)
         )
     }
+}
+
+/// Returns the fully declarative mana ability intrinsically granted by one
+/// basic land subtype. Its runtime origin, rather than this local ID, is what
+/// distinguishes multiple intrinsic abilities on a dual land.
+#[must_use]
+pub const fn intrinsic_basic_land_mana_ability(land_type: BasicLandType) -> AbilityDef {
+    AbilityDef::activated_mana(
+        AbilityId::PRIMARY,
+        land_type.ability_text(),
+        &[AbilityCostDef::TapSource],
+        EffectDef::AddMana(AddManaEffectDef::one(land_type.mana_kind())),
+    )
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -1130,11 +1386,6 @@ pub struct CardDefinition {
     pub set: CardSet,
     pub printings: Vec<CardPrinting>,
     pub is_basic_land: bool,
-    pub behavior: CardBehavior,
-    /// Card-level implementation coverage. This intentionally lives outside
-    /// `CardRules`: multipart cards have one audit status rather than mutable
-    /// copies on each part.
-    pub implementation_status: ImplementationStatus,
     /// Compatibility view of the primary/front part. Contextual rules should
     /// use `parts` once the game engine is part-aware.
     pub rules: CardRules,
@@ -1163,20 +1414,11 @@ impl CardDefinition {
             set,
             printings: vec![CardPrinting::new(id, set)],
             is_basic_land,
-            behavior,
-            implementation_status: ImplementationStatus::for_effect_status(rules.effect_status),
             rules,
             parts: composition.parts,
             structure: composition.structure,
             play_options: composition.play_options,
         }
-    }
-
-    /// Overrides the default card-level implementation coverage.
-    #[must_use]
-    pub fn with_implementation_status(mut self, status: ImplementationStatus) -> Self {
-        self.implementation_status = status;
-        self
     }
 
     #[must_use]
@@ -1187,6 +1429,22 @@ impl CardDefinition {
     #[must_use]
     pub fn play_option(&self, id: PlayOptionId) -> Option<&PlayOptionDef> {
         self.play_options.iter().find(|option| option.id == id)
+    }
+
+    /// Derives card-level coverage from every ordered clause on every part.
+    /// A mix of complete and unimplemented parts is partial; a card is
+    /// metadata-only only when every represented clause is unimplemented.
+    #[must_use]
+    pub fn implementation_status(&self) -> ImplementationStatus {
+        let mut statuses = self
+            .parts
+            .iter()
+            .map(|part| part.rules.implementation_status());
+        statuses
+            .next()
+            .map_or(ImplementationStatus::Complete, |first| {
+                statuses.fold(first, ImplementationStatus::combine)
+            })
     }
 
     #[must_use]
@@ -1212,26 +1470,20 @@ impl CardDefinition {
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum CardBehavior {
     AncestralRecall,
-    AnkhOfMishra,
     ArgothianPixies,
     Armageddon,
     Atog,
-    Badlands,
     BallLightning,
     Balance,
     Berserk,
-    Bayou,
-    BlackLotus,
     BlackKnight,
     BlackVise,
-    BirdsOfParadise,
     BlueElementalBlast,
     Braingeyser,
     BloodMoon,
     ChainLightning,
     Channel,
     ChaosOrb,
-    CityOfBrass,
     CityInABottle,
     CopperTablet,
     CopyArtifact,
@@ -1248,16 +1500,13 @@ pub enum CardBehavior {
     EnergyFlux,
     Earthquake,
     ErhnamDjinn,
-    Forest,
     Fireball,
     Fork,
     GiantGrowth,
     GlassesOfUrza,
     GoblinBalloonBrigade,
-    GoblinDiggingTeam,
     GoblinGrenade,
     GoblinKing,
-    GoblinsOfTheFlarg,
     GraniteGargoyle,
     HurkylsRecall,
     HymnToTourach,
@@ -1266,71 +1515,45 @@ pub enum CardBehavior {
     IcatianJavelineers,
     IronStar,
     IronclawOrcs,
-    Island,
     IvoryTower,
     JayemdaeTome,
     Juggernaut,
     JuzamDjinn,
     KirdApe,
-    LlanowarElves,
     LibraryOfAlexandria,
     ManaDrain,
     ManaVault,
     MazeOfIth,
     MindTwist,
-    MishrasWorkshop,
     Moat,
     NevinyrralsDisk,
     OrderOfLeitbur,
     OrderOfTheEbonHand,
     Pendelhaven,
-    Plateau,
     PsionicBlast,
     Recall,
     Regrowth,
     RelicBarrier,
     SageOfLatNam,
-    Savannah,
-    SavannahLions,
-    Scrubland,
     SerendibEfreet,
     SedgeTroll,
-    SengirVampire,
-    ScrybSprites,
     Sinkhole,
     StoneRain,
-    Swamp,
     SylvanLibrary,
-    Taiga,
     Terror,
-    ThunderSpirit,
     TimeVault,
     Timetwister,
-    TropicalIsland,
-    UndergroundSea,
-    VolcanicIsland,
     FellwarStone,
-    Mountain,
     LightningBolt,
     MishrasFactory,
-    MoxEmerald,
-    MoxJet,
-    MoxPearl,
-    MoxRuby,
-    MoxSapphire,
     OrcishMechanics,
-    Plains,
     RedElementalBlast,
     Shatter,
     Smoke,
-    SolRing,
-    SerraAngel,
     StoneGiant,
     StripMine,
-    SuChi,
     SwordsToPlowshares,
     TimeWalk,
-    Tundra,
     Triskelion,
     Tetravus,
     TheAbyss,
@@ -1339,122 +1562,10 @@ pub enum CardBehavior {
     WhiteKnight,
     WinterOrb,
     WrathOfGod,
-    AbruptDecay,
-    Aetherling,
-    AngelOfSerenity,
-    ArborElf,
-    ArchangelOfThune,
-    AssembleTheLegion,
-    AugurOfBolas,
-    AureliasFury,
-    AureliaTheWarleader,
-    AvacynsPilgrim,
-    AzoriusCharm,
-    BlasphemousAct,
-    BlindObedience,
-    BloodBaronOfVizkopa,
-    BonfireOfTheDamned,
-    BorosCharm,
-    BorosReckoner,
-    BurningEarth,
-    CavernOfSouls,
-    CelestialFlare,
-    ClifftopRetreat,
-    Counterflux,
-    DemonicRising,
-    DesecrationDemon,
-    DetentionSphere,
-    DiscipleOfBolas,
-    Dispel,
-    Dissipate,
-    DomriRade,
-    DoomBlade,
-    Duress,
-    ElvishMystic,
-    EncroachingWastes,
-    EssenceScatter,
-    FlamesOfTheFirebrand,
-    FlinthoofBoar,
-    GarrukRelentless,
-    GavonyTownship,
-    GazeOfGranite,
-    GhorClanRampager,
-    GhostQuarter,
-    GlacialFortress,
-    GodlessShrine,
-    GolgariGuildgate,
-    GrislySalvage,
-    HallowedFountain,
-    Hellrider,
-    HuntmasterOfTheFells,
-    IsolatedChapel,
-    IzzetCharm,
-    IzzetStaticaster,
-    JaceArchitectOfThought,
-    JaceMemoryAdept,
-    KessigWolfRun,
-    LifebaneZombie,
-    LilianaOfTheVeil,
-    LoxodonSmiter,
-    MizziumMortars,
-    MoorlandHaunt,
-    Mulch,
-    Mutavault,
-    Mutilate,
-    Negate,
-    OblivionRing,
-    ObzedatGhostCouncil,
-    OvergrownTomb,
-    PillarOfFlame,
-    PithingNeedle,
-    PrimevalBounty,
-    Putrefy,
-    Quicken,
-    RatchetBomb,
-    RayOfRevelation,
-    RestInPeace,
-    RestorationAngel,
-    RhoxFaithmender,
-    RootboundCrag,
-    RuricTharTheUnbowed,
-    SacredFoundry,
-    ScavengingOoze,
-    SelesnyaCharm,
-    SepulchralPrimordial,
-    ShadowbornDemon,
-    SigardaHostOfHerons,
-    SignInBlood,
-    SinCollector,
-    SnapcasterMage,
-    SphinxsRevelation,
-    SteamVents,
-    StompingGround,
-    StranglerootGeist,
-    SulfurFalls,
-    SunpetalGrove,
-    SupremeVerdict,
-    Syncopate,
-    TempleGarden,
-    Terminus,
-    ThinkTwice,
-    Thragtusk,
-    ThundermawHellkite,
-    TragicSlip,
-    TurnBurn,
-    UltimatePrice,
-    UnburialRites,
-    UnderworldConnections,
-    UnflinchingCourage,
-    UrgentExorcism,
-    VampireNighthawk,
-    VaultOfTheArchangel,
-    VoiceOfResurgence,
-    VolcanicStrength,
-    VraskaTheUnseen,
-    WarPriestOfThune,
-    WarleadersHelix,
-    WoodlandCemetery,
-    ZealousConscripts,
+    // Compatibility rules keys retained while CardDefinition::new still
+    // accepts CardBehavior instead of CardRules directly.
+    Mountain,
+    Plains,
     Unsupported,
 }
 
@@ -1472,49 +1583,27 @@ pub enum CardKind {
 
 /// How completely the engine implements a card or independently modeled part.
 ///
-/// Ordinary construction defaults to [`Self::Complete`]. Both non-complete
-/// states carry an explanation so catalog inspection can say what remains
-/// rather than relying on a source-code comment beside the record.
+/// Ordinary construction defaults to [`Self::Complete`]. Explanations live on
+/// the non-declarative clause implementations that caused a non-complete
+/// aggregate status, rather than being duplicated at card level.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub enum ImplementationStatus {
     #[default]
     Complete,
-    Partial {
-        explanation: &'static str,
-    },
-    MetadataOnly {
-        explanation: &'static str,
-    },
+    Partial,
+    MetadataOnly,
 }
 
 impl ImplementationStatus {
-    const METADATA_ONLY_EXPLANATION: &'static str =
-        "Printed rules are cataloged but are not executed by the engine.";
-
-    pub(crate) const fn for_effect_status(status: CardEffectStatus) -> Self {
-        match status {
-            CardEffectStatus::Implemented => Self::Complete,
-            CardEffectStatus::MetadataOnly => Self::MetadataOnly {
-                explanation: Self::METADATA_ONLY_EXPLANATION,
-            },
-        }
-    }
-
     #[must_use]
-    pub const fn partial(explanation: &'static str) -> Self {
-        Self::Partial { explanation }
-    }
-
-    #[must_use]
-    pub const fn metadata_only(explanation: &'static str) -> Self {
-        Self::MetadataOnly { explanation }
-    }
-
-    #[must_use]
-    pub const fn explanation(self) -> Option<&'static str> {
-        match self {
-            Self::Complete => None,
-            Self::Partial { explanation } | Self::MetadataOnly { explanation } => Some(explanation),
+    pub const fn combine(self, other: Self) -> Self {
+        match (self, other) {
+            (Self::Partial, _)
+            | (_, Self::Partial)
+            | (Self::Complete, Self::MetadataOnly)
+            | (Self::MetadataOnly, Self::Complete) => Self::Partial,
+            (Self::MetadataOnly, Self::MetadataOnly) => Self::MetadataOnly,
+            (Self::Complete, Self::Complete) => Self::Complete,
         }
     }
 
@@ -1693,17 +1782,6 @@ impl ManaCost {
     }
 }
 
-/// Mana a permanent can produce through its ordinary tap ability.
-///
-/// Colors use `[white, blue, black, red, green, colorless]` order. Restricted
-/// mana abilities remain described in rules text until the payment engine can
-/// model their restriction; the unrestricted ability is recorded here.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct ManaProduction {
-    pub colors: [bool; 6],
-    pub amount: u16,
-}
-
 /// How a land enters the battlefield before replacement effects are applied.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum LandEntry {
@@ -1743,10 +1821,35 @@ pub struct CreatureStats {
 /// `targeted` is a template with `{}` where the target's name goes, so a menu
 /// can name the effect instead of the card; `summary` is the same effect with
 /// no particular target picked yet.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct ActivatedAbilityText {
     pub targeted: &'static str,
     pub summary: &'static str,
+}
+
+/// Const-friendly storage for the ordered rules clauses of one card part.
+///
+/// Most legacy records begin as one custom clause. Migrated cards use an
+/// inline promoted slice, preserving source order without heap allocation.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+// `One` keeps legacy card construction const-friendly without preserving a
+// second card-level rules-text field. Migrated records use the slice variant.
+#[allow(clippy::large_enum_variant)]
+pub enum CardAbilityList {
+    None,
+    One(AbilityDef),
+    Many(&'static [AbilityDef]),
+}
+
+impl CardAbilityList {
+    #[must_use]
+    pub fn as_slice(&self) -> &[AbilityDef] {
+        match self {
+            Self::None => &[],
+            Self::One(ability) => std::slice::from_ref(ability),
+            Self::Many(abilities) => abilities,
+        }
+    }
 }
 
 /// Declarative rules metadata kept beside a card's catalog identity.
@@ -1755,21 +1858,20 @@ pub struct ActivatedAbilityText {
 pub struct CardRules {
     pub kind: CardKind,
     pub effect_status: CardEffectStatus,
+    /// Narrow compatibility hook for rules that still need bespoke engine
+    /// code. Fully declarative and metadata-only cards leave this unset.
+    pub special_behavior: Option<CardBehavior>,
     pub type_line: &'static str,
     pub mana_cost: ManaCost,
     pub alternate_mana_costs: &'static [AlternateManaCost],
-    pub mana_production: Option<ManaProduction>,
     /// Basic land types in `[Plains, Island, Swamp, Mountain, Forest]` order.
     pub land_types: [bool; 5],
     pub land_entry: LandEntry,
     pub starting_loyalty: Option<u16>,
     pub creature_stats: Option<CreatureStats>,
-    pub text: &'static str,
-    pub activated_ability_text: Option<ActivatedAbilityText>,
-    /// Printed and characteristic-defining abilities declared by this part.
-    /// Intrinsic abilities supplied by the rules (for example, basic land
-    /// types) are derived separately from these printed definitions.
-    pub abilities: &'static [AbilityDef],
+    /// Ordered printed rules clauses. Intrinsic abilities supplied by the
+    /// rules (for example, basic land types) are derived separately.
+    pub abilities: CardAbilityList,
     pub is_legendary: bool,
     pub is_goblin: bool,
     pub has_flying: bool,
@@ -1794,6 +1896,7 @@ impl CardRules {
         Self {
             kind,
             effect_status: CardEffectStatus::Implemented,
+            special_behavior: None,
             type_line: match kind {
                 CardKind::Land => "Land",
                 CardKind::Creature => "Creature",
@@ -1806,14 +1909,15 @@ impl CardRules {
             },
             mana_cost,
             alternate_mana_costs: &[],
-            mana_production: None,
             land_types: [false; 5],
             land_entry: LandEntry::Untapped,
             starting_loyalty: None,
             creature_stats: None,
-            text,
-            activated_ability_text: None,
-            abilities: &[],
+            abilities: if text.is_empty() {
+                CardAbilityList::None
+            } else {
+                CardAbilityList::One(AbilityDef::legacy(AbilityId::PRIMARY, text))
+            },
             is_legendary: false,
             is_goblin: false,
             has_flying: false,
@@ -1840,16 +1944,147 @@ impl CardRules {
     /// Marks printed effects that are cataloged but not executed by the game
     /// engine yet. Lands can still use declarative entry/mana metadata and
     /// creatures can still be cast as their baseline bodies.
+    ///
+    /// # Panics
+    ///
+    /// Panics unless this rule set contains the one legacy aggregate clause
+    /// created from `CardRules::new` text. Explicit clause lists must declare
+    /// implementation coverage on each clause instead.
     #[must_use]
     pub const fn metadata_only(mut self) -> Self {
         self.effect_status = CardEffectStatus::MetadataOnly;
+        self.abilities = match self.abilities {
+            CardAbilityList::None => panic!(
+                "metadata_only() requires legacy rules text; explicit clauses own their coverage"
+            ),
+            CardAbilityList::One(ability) => CardAbilityList::One(ability.with_implementation(
+                AbilityImplementationDef::NotImplemented {
+                    explanation: "Printed rules are cataloged but are not executed by the engine.",
+                },
+            )),
+            CardAbilityList::Many(_) => panic!(
+                "metadata_only() cannot follow with_abilities(); set implementation coverage on each clause"
+            ),
+        };
+        self
+    }
+
+    /// Overrides whether the compatibility play-option layer may execute this
+    /// part without changing the implementation coverage of its clauses.
+    #[must_use]
+    pub const fn with_effect_status(mut self, effect_status: CardEffectStatus) -> Self {
+        self.effect_status = effect_status;
         self
     }
 
     #[must_use]
     pub const fn with_abilities(mut self, abilities: &'static [AbilityDef]) -> Self {
-        self.abilities = abilities;
+        self.abilities = if abilities.is_empty() {
+            CardAbilityList::None
+        } else {
+            CardAbilityList::Many(abilities)
+        };
         self
+    }
+
+    /// Associates the remaining bespoke procedure with the rules clauses it
+    /// implements. Prefer declarative ability definitions whenever their
+    /// primitives can express the card.
+    #[must_use]
+    pub const fn with_special_behavior(mut self, behavior: CardBehavior) -> Self {
+        self.special_behavior = Some(behavior);
+        self
+    }
+
+    /// Marks the part's one legacy aggregate clause as only partially
+    /// implemented. Migrated multi-clause cards put coverage on each clause.
+    ///
+    /// # Panics
+    ///
+    /// Panics unless this rule set contains the one legacy aggregate clause
+    /// created from `CardRules::new` text. Explicit clause lists must declare
+    /// implementation coverage on each clause instead.
+    #[must_use]
+    pub const fn partial(mut self, explanation: &'static str) -> Self {
+        self.abilities = match self.abilities {
+            CardAbilityList::One(ability) => CardAbilityList::One(
+                ability
+                    .with_implementation(AbilityImplementationDef::CustomPartial { explanation }),
+            ),
+            CardAbilityList::None => {
+                panic!("partial() requires legacy rules text; explicit clauses own their coverage")
+            }
+            CardAbilityList::Many(_) => panic!(
+                "partial() cannot follow with_abilities(); set implementation coverage on each clause"
+            ),
+        };
+        self
+    }
+
+    #[must_use]
+    pub fn ability_clauses(&self) -> &[AbilityDef] {
+        self.abilities.as_slice()
+    }
+
+    /// Renders the ordered card text from the same clauses used by execution
+    /// and implementation auditing. Mana abilities granted by basic land
+    /// subtypes are appended from those subtypes instead of being duplicated
+    /// as printed clauses on every basic, dual, and shock land.
+    #[must_use]
+    pub fn rules_text(&self) -> std::borrow::Cow<'static, str> {
+        let intrinsic = BasicLandType::ALL
+            .into_iter()
+            .filter(|land_type| self.land_types[land_type.index()])
+            .map(BasicLandType::ability_text);
+        match self.abilities {
+            CardAbilityList::None if self.land_types == [false; 5] => {
+                std::borrow::Cow::Borrowed("")
+            }
+            CardAbilityList::One(ability) if self.land_types == [false; 5] => {
+                std::borrow::Cow::Borrowed(ability.text)
+            }
+            CardAbilityList::None => {
+                std::borrow::Cow::Owned(intrinsic.collect::<Vec<_>>().join("\n"))
+            }
+            CardAbilityList::One(ability) => std::borrow::Cow::Owned(
+                std::iter::once(ability.text)
+                    .chain(intrinsic)
+                    .collect::<Vec<_>>()
+                    .join("\n"),
+            ),
+            CardAbilityList::Many(abilities) => std::borrow::Cow::Owned(
+                abilities
+                    .iter()
+                    .map(|ability| ability.text)
+                    .chain(intrinsic)
+                    .collect::<Vec<_>>()
+                    .join("\n"),
+            ),
+        }
+    }
+
+    #[must_use]
+    pub fn implementation_status(&self) -> ImplementationStatus {
+        // Playing a land and casting/using a modeled creature body are shared,
+        // executable rules even when every card-specific clause is deferred.
+        let mut has_full = self.kind == CardKind::Land || self.creature_stats.is_some();
+        let mut has_partial = false;
+        let mut has_unimplemented = false;
+        for ability in self.ability_clauses() {
+            match ability.implementation {
+                AbilityImplementationDef::Definition
+                | AbilityImplementationDef::CustomFull { .. } => has_full = true,
+                AbilityImplementationDef::CustomPartial { .. } => has_partial = true,
+                AbilityImplementationDef::NotImplemented { .. } => has_unimplemented = true,
+            }
+        }
+        if has_partial || (has_full && has_unimplemented) {
+            ImplementationStatus::Partial
+        } else if has_unimplemented {
+            ImplementationStatus::MetadataOnly
+        } else {
+            ImplementationStatus::Complete
+        }
     }
 
     #[must_use]
@@ -1879,18 +2114,6 @@ impl CardRules {
             self.colors[4] = self.colors[4] || cost.green > 0;
             index += 1;
         }
-        self
-    }
-
-    #[must_use]
-    pub const fn produces(mut self, colors: [bool; 6]) -> Self {
-        self.mana_production = Some(ManaProduction { colors, amount: 1 });
-        self
-    }
-
-    #[must_use]
-    pub const fn produces_amount(mut self, colors: [bool; 6], amount: u16) -> Self {
-        self.mana_production = Some(ManaProduction { colors, amount });
         self
     }
 
@@ -2019,12 +2242,6 @@ impl CardRules {
         self
     }
 
-    #[must_use]
-    pub const fn activated(mut self, targeted: &'static str, summary: &'static str) -> Self {
-        self.activated_ability_text = Some(ActivatedAbilityText { targeted, summary });
-        self
-    }
-
     pub(super) const fn unsupported() -> Self {
         let mut rules = Self::new(
             CardKind::Artifact,
@@ -2046,6 +2263,12 @@ mod tests {
         ManaRestrictionDef, ObjectPredicateDef, PrintedManaCost, TriggerEventDef,
     };
     use crate::{AbilityId, CardDefinitionId, CardPartId};
+
+    static DEFERRED_CLAUSE: [AbilityDef; 1] = [AbilityDef::not_implemented(
+        AbilityId::PRIMARY,
+        "A deferred card-specific ability.",
+        "The card-specific ability is not executed.",
+    )];
 
     #[test]
     fn printing_ids_distinguish_variants_within_one_set() {
@@ -2110,7 +2333,12 @@ mod tests {
             ImplementationStatus::Complete
         );
 
-        let metadata_only = implemented.metadata_only();
+        let metadata_only = CardRules::new(
+            CardKind::Instant,
+            ManaCost::default(),
+            "A deferred spell effect.",
+        )
+        .metadata_only();
         assert_eq!(metadata_only.effect_status, CardEffectStatus::MetadataOnly);
         let metadata_definition = CardDefinition::new(
             CardDefinitionId(8),
@@ -2119,24 +2347,86 @@ mod tests {
             false,
             CardBehavior::Unsupported,
         );
-        assert!(matches!(
-            metadata_definition.implementation_status,
-            ImplementationStatus::MetadataOnly { explanation }
-                if !explanation.is_empty()
-        ));
-
-        let partial = CardDefinition::new(
-            CardDefinitionId(9),
-            "Mountain",
-            CardSet::Alpha,
-            true,
-            CardBehavior::Mountain,
-        )
-        .with_implementation_status(ImplementationStatus::partial("One rider is deferred."));
         assert_eq!(
-            partial.implementation_status.explanation(),
+            metadata_definition.implementation_status(),
+            ImplementationStatus::MetadataOnly
+        );
+
+        let partial = CardRules::new(
+            CardKind::Land,
+            ManaCost::default(),
+            "A custom clause with one deferred rider.",
+        )
+        .partial("One rider is deferred.");
+        assert_eq!(
+            partial.ability_clauses()[0].implementation.explanation(),
             Some("One rider is deferred.")
         );
+        assert_eq!(
+            partial.implementation_status(),
+            ImplementationStatus::Partial
+        );
+    }
+
+    #[test]
+    fn vanilla_creature_body_is_complete() {
+        let rules = CardRules::new(CardKind::Creature, ManaCost::default(), "").creature(2, 2);
+
+        assert_eq!(
+            rules.implementation_status(),
+            ImplementationStatus::Complete
+        );
+    }
+
+    #[test]
+    fn creature_body_with_an_unimplemented_clause_is_partial() {
+        let rules = CardRules::new(CardKind::Creature, ManaCost::default(), "")
+            .creature(2, 2)
+            .with_abilities(&DEFERRED_CLAUSE)
+            .with_effect_status(CardEffectStatus::MetadataOnly);
+
+        assert_eq!(rules.implementation_status(), ImplementationStatus::Partial);
+    }
+
+    #[test]
+    fn noncreature_with_only_an_unimplemented_clause_is_metadata_only() {
+        let rules = CardRules::new(CardKind::Enchantment, ManaCost::default(), "")
+            .with_abilities(&DEFERRED_CLAUSE)
+            .with_effect_status(CardEffectStatus::MetadataOnly);
+
+        assert_eq!(
+            rules.implementation_status(),
+            ImplementationStatus::MetadataOnly
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "metadata_only() cannot follow with_abilities()")]
+    fn metadata_only_rejects_explicit_clause_lists() {
+        let _ = CardRules::new(CardKind::Enchantment, ManaCost::default(), "")
+            .with_abilities(&DEFERRED_CLAUSE)
+            .metadata_only();
+    }
+
+    #[test]
+    #[should_panic(expected = "metadata_only() requires legacy rules text")]
+    fn metadata_only_rejects_missing_legacy_clause() {
+        let _ = CardRules::new(CardKind::Enchantment, ManaCost::default(), "").metadata_only();
+    }
+
+    #[test]
+    #[should_panic(expected = "partial() cannot follow with_abilities()")]
+    fn partial_rejects_explicit_clause_lists() {
+        let _ = CardRules::new(CardKind::Enchantment, ManaCost::default(), "")
+            .with_abilities(&DEFERRED_CLAUSE)
+            .partial("This explanation belongs on the clause.");
+    }
+
+    #[test]
+    #[should_panic(expected = "partial() requires legacy rules text")]
+    fn partial_rejects_missing_legacy_clause() {
+        let _ = CardRules::new(CardKind::Enchantment, ManaCost::default(), "")
+            .partial("There is no clause to receive this explanation.");
     }
 
     #[test]
@@ -2198,9 +2488,9 @@ mod tests {
 
         let rules =
             CardRules::new(CardKind::Creature, ManaCost::default(), "").with_abilities(&ABILITIES);
-        assert_eq!(rules.abilities[0].id(), AbilityId::PRIMARY);
-        assert_eq!(rules.abilities[1].id(), AbilityId(1));
-        assert_eq!(rules.abilities[2].id(), AbilityId(2));
+        assert_eq!(rules.ability_clauses()[0].id, AbilityId::PRIMARY);
+        assert_eq!(rules.ability_clauses()[1].id, AbilityId(1));
+        assert_eq!(rules.ability_clauses()[2].id, AbilityId(2));
     }
 
     #[test]

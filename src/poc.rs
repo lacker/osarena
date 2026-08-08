@@ -19,7 +19,7 @@ mod tests {
         lions_dib, lions_dib_bolt, mono_black, robots, sligh, the_deck, troll_disk, white_weenie,
     };
     use crate::rules;
-    use crate::{CardBehavior, CardDefinitionId, CardSet, CreatureStats, ManaCost};
+    use crate::{CardDefinitionId, CardEffectStatus, CardSet, CreatureStats, ManaCost};
 
     #[test]
     fn built_in_decks_have_tournament_sizes() {
@@ -38,15 +38,22 @@ mod tests {
     }
 
     #[test]
-    fn every_poc_card_has_engine_behavior() {
+    fn every_poc_card_has_executable_rules() {
         let catalog = catalog().unwrap();
         let mut scryfall_ids = HashSet::new();
         for raw_id in 1..=128 {
             let card = catalog.get(CardDefinitionId(raw_id)).unwrap();
-            assert_ne!(card.behavior, CardBehavior::Unsupported, "{}", card.name);
-            assert_eq!(card.rules, *card.behavior.rules(), "{}", card.name);
+            assert_eq!(
+                card.rules.effect_status,
+                CardEffectStatus::Implemented,
+                "{}",
+                card.name
+            );
+            if let Some(behavior) = card.rules.special_behavior {
+                assert_eq!(card.rules, *behavior.rules(), "{}", card.name);
+            }
             assert!(
-                !card.rules.text.is_empty(),
+                !card.rules.rules_text().is_empty(),
                 "{} is missing rules text",
                 card.name
             );

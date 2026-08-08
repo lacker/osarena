@@ -1,7 +1,4 @@
-use super::{
-    CardArt, CardBehavior, CardComposition, CardDefinition, CardPrinting, CardRules, CardSet,
-    ImplementationStatus,
-};
+use super::{CardArt, CardComposition, CardDefinition, CardPrinting, CardRules, CardSet};
 use crate::CardDefinitionId;
 
 type CompositionBuilder = fn() -> CardComposition;
@@ -13,20 +10,18 @@ pub(super) struct CardRecord {
     pub(super) art: CardArt,
     pub(super) set: CardSet,
     pub(super) is_basic_land: bool,
-    pub(super) behavior: CardBehavior,
     pub(super) rules: CardRules,
-    pub(super) implementation_status: ImplementationStatus,
     composition: Option<CompositionBuilder>,
 }
 
 impl CardRecord {
+    #[allow(clippy::large_types_passed_by_value)]
     pub(super) const fn new(
         id: CardDefinitionId,
         name: &'static str,
         art: CardArt,
         set: CardSet,
         is_basic_land: bool,
-        behavior: CardBehavior,
         rules: CardRules,
     ) -> Self {
         Self {
@@ -35,9 +30,7 @@ impl CardRecord {
             art,
             set,
             is_basic_land,
-            behavior,
             rules,
-            implementation_status: ImplementationStatus::for_effect_status(rules.effect_status),
             composition: None,
         }
     }
@@ -46,14 +39,6 @@ impl CardRecord {
     #[must_use]
     pub(super) const fn with_composition(mut self, builder: CompositionBuilder) -> Self {
         self.composition = Some(builder);
-        self
-    }
-
-    /// Overrides the default complete status without adding a required
-    /// argument to [`Self::new`].
-    #[must_use]
-    pub(super) const fn with_implementation_status(mut self, status: ImplementationStatus) -> Self {
-        self.implementation_status = status;
         self
     }
 
@@ -69,8 +54,6 @@ impl CardRecord {
             set: self.set,
             printings: vec![CardPrinting::new(self.id, self.set)],
             is_basic_land: self.is_basic_land,
-            behavior: self.behavior,
-            implementation_status: self.implementation_status,
             rules: self.rules,
             parts: composition.parts,
             structure: composition.structure,

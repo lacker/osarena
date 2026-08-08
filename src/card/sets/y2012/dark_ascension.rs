@@ -2,10 +2,11 @@
 
 use super::{CardRecord, PrintingRecord};
 use crate::card::{
-    CardArt, CardBehavior, CardComposition, CardEffectStatus, CardKind, CardPart, CardRules,
-    CardSet, CardStructure, DoubleFacedKind, LandEntry, ManaCost, PlayOptionDef, SpellForm, cards,
+    AbilityCostDef, AbilityDef, AddManaEffectDef, CardArt, CardComposition, CardEffectStatus,
+    CardKind, CardPart, CardRules, CardSet, CardStructure, DoubleFacedKind, EffectDef, LandEntry,
+    ManaCost, ManaKindDef, PlayOptionDef, SpellForm, cards,
 };
-use crate::ids::{CardPartId, PlayOptionId};
+use crate::ids::{AbilityId, CardPartId, PlayOptionId};
 
 // Implementation status: Baseline creature is playable; card-specific printed abilities are pending.
 pub(in crate::card::sets) static HELLRIDER: CardRecord = CardRecord::new(
@@ -14,7 +15,6 @@ pub(in crate::card::sets) static HELLRIDER: CardRecord = CardRecord::new(
     CardArt::new("0ec8d800-7f06-44e0-b22d-cdff0a9b153d", "Svetlin Velinov"),
     CardSet::DarkAscension,
     false,
-    CardBehavior::Hellrider,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(2, 0, 0, 0, 2, 0),
@@ -76,7 +76,6 @@ pub(in crate::card::sets) static HUNTMASTER_OF_THE_FELLS: CardRecord = CardRecor
     CardArt::new("aae6fb12-b252-453b-bca7-1ea2a0d6c8dc", "Chris Rahn"),
     CardSet::DarkAscension,
     false,
-    CardBehavior::HuntmasterOfTheFells,
     huntmaster_front_rules(),
 )
 .with_composition(huntmaster_composition);
@@ -88,7 +87,6 @@ pub(in crate::card::sets) static RAY_OF_REVELATION: CardRecord = CardRecord::new
     CardArt::new("d7e2c5a4-cf92-46bd-9033-8036436488cb", "Cliff Childs"),
     CardSet::DarkAscension,
     false,
-    CardBehavior::RayOfRevelation,
     CardRules::new(
         CardKind::Instant,
         ManaCost::colored(1, 1, 0, 0, 0, 0),
@@ -105,7 +103,6 @@ pub(in crate::card::sets) static STRANGLEROOT_GEIST: CardRecord = CardRecord::ne
     CardArt::new("bf1fb137-205c-480f-b6dc-dfa137793ae3", "Jason Chan"),
     CardSet::DarkAscension,
     false,
-    CardBehavior::StranglerootGeist,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(0, 0, 0, 0, 0, 2),
@@ -125,7 +122,6 @@ pub(in crate::card::sets) static TRAGIC_SLIP: CardRecord = CardRecord::new(
     CardArt::new("09666671-601e-4fca-bdfb-fb288bf2672c", "Christopher Moeller"),
     CardSet::DarkAscension,
     false,
-    CardBehavior::TragicSlip,
     CardRules::new(
         CardKind::Instant,
         ManaCost::colored(0, 0, 0, 1, 0, 0),
@@ -142,16 +138,23 @@ pub(in crate::card::sets) static VAULT_OF_THE_ARCHANGEL: CardRecord = CardRecord
     CardArt::new("35a65437-430a-42ef-854f-6e66f8e1a04a", "John Avon"),
     CardSet::DarkAscension,
     false,
-    CardBehavior::VaultOfTheArchangel,
-    CardRules::new(
-        CardKind::Land,
-        ManaCost::colored(0, 0, 0, 0, 0, 0),
-        "{T}: Add {C}.\n{2}{W}{B}, {T}: Creatures you control gain deathtouch and lifelink until end of turn.",
-    )
+    CardRules::new(CardKind::Land, ManaCost::colored(0, 0, 0, 0, 0, 0), "")
     .type_line("Land")
-    .produces([false, false, false, false, false, true])
     .land_entry(LandEntry::Untapped)
-    .metadata_only(),
+    .with_abilities(&[
+        AbilityDef::activated_mana(
+            AbilityId::PRIMARY,
+            "{T}: Add {C}.",
+            &[AbilityCostDef::TapSource],
+            EffectDef::AddMana(AddManaEffectDef::one(ManaKindDef::Colorless)),
+        ),
+        AbilityDef::not_implemented(
+            AbilityId(1),
+            "{2}{W}{B}, {T}: Creatures you control gain deathtouch and lifelink until end of turn.",
+            "The deathtouch- and lifelink-granting activated ability is not executed.",
+        ),
+    ])
+    .with_effect_status(CardEffectStatus::MetadataOnly),
 );
 pub(in crate::card::sets) static CARDS: &[&CardRecord] = &[
     &HELLRIDER,

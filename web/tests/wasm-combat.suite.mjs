@@ -76,7 +76,7 @@ test("attack all declares every currently legal attacker", async () => {
 test("the attacker button counts the attack instead of naming the step", async () => {
   await initializeWasm();
 
-  const game = new WebGame("Goblins", "The Deck", "Handcrafted", true, 9394);
+  const game = new WebGame("Goblins", "The Deck", "Handcrafted", true, 1);
   const seen = new Set();
   for (let turn = 0; turn < 500; turn++) {
     const state = JSON.parse(game.state_json());
@@ -84,6 +84,17 @@ test("the attacker button counts the attack instead of naming the step", async (
     for (const action of state.actions) {
       assert.notEqual(action.label, "Finish attacking", "the step name is gone");
       if (/^(No attacks|Attack with )/.test(action.label)) seen.add(action.label);
+    }
+    if (state.decision) {
+      game.choose_decision(
+        state.decision.id,
+        JSON.stringify(
+          state.decision.options
+            .slice(0, state.decision.minimum)
+            .map((option) => option.id),
+        ),
+      );
+      continue;
     }
     const actions = state.actions.filter((action) => action.kind !== "danger");
     const next =
@@ -157,7 +168,7 @@ test("combat damage is only asked about when it is a real choice", async () => {
   solo.free();
 
   // Splitting between several blockers is a real decision and stays asked.
-  const split = new WebGame("GR Aggro", "Robots", "Handcrafted", true, 40990);
+  const split = new WebGame("GR Aggro", "Robots", "Handcrafted", true, 1);
   const ask = advance(split, (state) => {
     const asks = state.actions.filter((action) => action.combatDamageAttacker != null);
     return asks.length ? { asks, state } : null;

@@ -2,8 +2,10 @@
 
 use super::{CardRecord, PrintingRecord};
 use crate::card::{
-    CardArt, CardBehavior, CardKind, CardRules, CardSet, LandEntry, ManaCost, cards,
+    AbilityDef, AbilityImplementationDef, CardArt, CardEffectStatus, CardKind, CardRules, CardSet,
+    EffectDef, LandEntry, ManaCost, cards,
 };
+use crate::ids::AbilityId;
 
 // Implementation status: Metadata only; this spell is withheld from legal actions.
 pub(in crate::card::sets) static ASSEMBLE_THE_LEGION: CardRecord = CardRecord::new(
@@ -12,7 +14,6 @@ pub(in crate::card::sets) static ASSEMBLE_THE_LEGION: CardRecord = CardRecord::n
     CardArt::new("43675ed7-ece1-4414-965e-9ebadcbf3dfb", "Eric Deschamps"),
     CardSet::Gatecrash,
     false,
-    CardBehavior::AssembleTheLegion,
     CardRules::new(
         CardKind::Enchantment,
         ManaCost::colored(3, 1, 0, 0, 1, 0),
@@ -29,7 +30,6 @@ pub(in crate::card::sets) static AURELIAS_FURY: CardRecord = CardRecord::new(
     CardArt::new("1a3465b6-ee7f-4553-bbf1-85fae9734b67", "Tyler Jacobson"),
     CardSet::Gatecrash,
     false,
-    CardBehavior::AureliasFury,
     CardRules::new(
         CardKind::Instant,
         ManaCost::variable(0, 1, 0, 0, 1, 0, 1),
@@ -46,7 +46,6 @@ pub(in crate::card::sets) static AURELIA_THE_WARLEADER: CardRecord = CardRecord:
     CardArt::new("4ec18e35-05e4-4bfc-b32b-c3e71c95a71d", "Slawomir Maniak"),
     CardSet::Gatecrash,
     false,
-    CardBehavior::AureliaTheWarleader,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(2, 2, 0, 0, 2, 0),
@@ -68,7 +67,6 @@ pub(in crate::card::sets) static BLIND_OBEDIENCE: CardRecord = CardRecord::new(
     CardArt::new("07c3e78d-d917-4552-842f-feff99c059e0", "Seb McKinnon"),
     CardSet::Gatecrash,
     false,
-    CardBehavior::BlindObedience,
     CardRules::new(
         CardKind::Enchantment,
         ManaCost::colored(1, 1, 0, 0, 0, 0),
@@ -85,7 +83,6 @@ pub(in crate::card::sets) static BOROS_CHARM: CardRecord = CardRecord::new(
     CardArt::new("d4ddf9cc-40a7-4b4f-bb51-b08171453c9a", "Zoltan Boros"),
     CardSet::Gatecrash,
     false,
-    CardBehavior::BorosCharm,
     CardRules::new(
         CardKind::Instant,
         ManaCost::colored(0, 1, 0, 0, 1, 0),
@@ -102,7 +99,6 @@ pub(in crate::card::sets) static BOROS_RECKONER: CardRecord = CardRecord::new(
     CardArt::new("82a18b07-38b8-4854-9735-3cfe83b11bf1", "Howard Lyon"),
     CardSet::Gatecrash,
     false,
-    CardBehavior::BorosReckoner,
     CardRules::new(
         CardKind::Creature,
         ManaCost::white_red_hybrid(3),
@@ -120,7 +116,6 @@ pub(in crate::card::sets) static DOMRI_RADE: CardRecord = CardRecord::new(
     CardArt::new("21b48170-99dd-440f-9954-fc229d6094d3", "Tyler Jacobson"),
     CardSet::Gatecrash,
     false,
-    CardBehavior::DomriRade,
     CardRules::new(
         CardKind::Planeswalker,
         ManaCost::colored(1, 0, 0, 0, 1, 1),
@@ -139,7 +134,6 @@ pub(in crate::card::sets) static GHOR_CLAN_RAMPAGER: CardRecord = CardRecord::ne
     CardArt::new("382048ec-0bf5-49a5-90d5-f80fbda08962", "Charles Urbach"),
     CardSet::Gatecrash,
     false,
-    CardBehavior::GhorClanRampager,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(2, 0, 0, 0, 1, 1),
@@ -158,17 +152,21 @@ pub(in crate::card::sets) static GODLESS_SHRINE: CardRecord = CardRecord::new(
     CardArt::new("6fd672bb-18cf-44e3-8dda-5310b1e0fffe", "Cliff Childs"),
     CardSet::Gatecrash,
     false,
-    CardBehavior::GodlessShrine,
-    CardRules::new(
-        CardKind::Land,
-        ManaCost::colored(0, 0, 0, 0, 0, 0),
-        "({T}: Add {W} or {B}.)\nAs this land enters, you may pay 2 life. If you don't, it enters tapped.",
-    )
+    CardRules::new(CardKind::Land, ManaCost::colored(0, 0, 0, 0, 0, 0), "")
     .type_line("Land — Plains Swamp")
-    .produces([true, false, true, false, false, false])
     .land_types([true, false, true, false, false])
     .land_entry(LandEntry::PayLifeOrTapped(2))
-    .metadata_only(),
+    .with_abilities(&[
+        AbilityDef::replacement(
+            AbilityId::PRIMARY,
+            "As this land enters, you may pay 2 life. If you don't, it enters tapped.",
+            EffectDef::Special("Choose whether to pay 2 life or have this land enter tapped"),
+        )
+        .with_implementation(AbilityImplementationDef::CustomPartial {
+            explanation: "The land currently takes the tapped branch; choosing to pay 2 life is not executed.",
+        }),
+    ])
+    .with_effect_status(CardEffectStatus::MetadataOnly),
 );
 
 // Implementation status: Baseline creature casting/combat and declaratively modeled traits are active; remaining printed abilities are pending.
@@ -178,7 +176,6 @@ pub(in crate::card::sets) static OBZEDAT_GHOST_COUNCIL: CardRecord = CardRecord:
     CardArt::new("4cc198d8-1f27-482d-8f5d-21e02c59797a", "Svetlin Velinov"),
     CardSet::Gatecrash,
     false,
-    CardBehavior::ObzedatGhostCouncil,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(1, 2, 0, 2, 0, 0),
@@ -197,17 +194,21 @@ pub(in crate::card::sets) static SACRED_FOUNDRY: CardRecord = CardRecord::new(
     CardArt::new("0a26d900-c652-4f9c-8681-a35c5f8b1937", "Sam Burley"),
     CardSet::Gatecrash,
     false,
-    CardBehavior::SacredFoundry,
-    CardRules::new(
-        CardKind::Land,
-        ManaCost::colored(0, 0, 0, 0, 0, 0),
-        "({T}: Add {R} or {W}.)\nAs this land enters, you may pay 2 life. If you don't, it enters tapped.",
-    )
+    CardRules::new(CardKind::Land, ManaCost::colored(0, 0, 0, 0, 0, 0), "")
     .type_line("Land — Mountain Plains")
-    .produces([true, false, false, true, false, false])
     .land_types([true, false, false, true, false])
     .land_entry(LandEntry::PayLifeOrTapped(2))
-    .metadata_only(),
+    .with_abilities(&[
+        AbilityDef::replacement(
+            AbilityId::PRIMARY,
+            "As this land enters, you may pay 2 life. If you don't, it enters tapped.",
+            EffectDef::Special("Choose whether to pay 2 life or have this land enter tapped"),
+        )
+        .with_implementation(AbilityImplementationDef::CustomPartial {
+            explanation: "The land currently takes the tapped branch; choosing to pay 2 life is not executed.",
+        }),
+    ])
+    .with_effect_status(CardEffectStatus::MetadataOnly),
 );
 
 // Implementation status: Baseline creature casting/combat and declaratively modeled traits are active; remaining printed abilities are pending.
@@ -217,7 +218,6 @@ pub(in crate::card::sets) static SEPULCHRAL_PRIMORDIAL: CardRecord = CardRecord:
     CardArt::new("eb0865cd-d9b4-43ea-87d2-ad5c65fc0459", "Stephan Martiniere"),
     CardSet::Gatecrash,
     false,
-    CardBehavior::SepulchralPrimordial,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(5, 0, 0, 2, 0, 0),
@@ -236,17 +236,21 @@ pub(in crate::card::sets) static STOMPING_GROUND: CardRecord = CardRecord::new(
     CardArt::new("f29f3415-971c-4a5d-aae9-3893f4bdab1e", "David Palumbo"),
     CardSet::Gatecrash,
     false,
-    CardBehavior::StompingGround,
-    CardRules::new(
-        CardKind::Land,
-        ManaCost::colored(0, 0, 0, 0, 0, 0),
-        "({T}: Add {R} or {G}.)\nAs this land enters, you may pay 2 life. If you don't, it enters tapped.",
-    )
+    CardRules::new(CardKind::Land, ManaCost::colored(0, 0, 0, 0, 0, 0), "")
     .type_line("Land — Mountain Forest")
-    .produces([false, false, false, true, true, false])
     .land_types([false, false, false, true, true])
     .land_entry(LandEntry::PayLifeOrTapped(2))
-    .metadata_only(),
+    .with_abilities(&[
+        AbilityDef::replacement(
+            AbilityId::PRIMARY,
+            "As this land enters, you may pay 2 life. If you don't, it enters tapped.",
+            EffectDef::Special("Choose whether to pay 2 life or have this land enter tapped"),
+        )
+        .with_implementation(AbilityImplementationDef::CustomPartial {
+            explanation: "The land currently takes the tapped branch; choosing to pay 2 life is not executed.",
+        }),
+    ])
+    .with_effect_status(CardEffectStatus::MetadataOnly),
 );
 
 pub(in crate::card::sets) static CARDS: &[&CardRecord] = &[

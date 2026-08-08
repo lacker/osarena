@@ -23,6 +23,41 @@ test("The Deck exposes colored costs and control rules to the browser", async ()
 
   game.free();
 });
+
+test("card coverage comes from ability definitions rather than play gates", async () => {
+  await initializeWasm();
+
+  const game = new WebGame(
+    "Briksza Naya Midrange",
+    "Greer G/R Aggro",
+    "Handcrafted",
+    true,
+    2,
+    "isd-rtr-standard",
+  );
+  const opening = JSON.parse(game.state_json());
+  const pilgrim = opening.human.hand.find(
+    (card) => card.name === "Avacyn's Pilgrim",
+  );
+  const bonfire = opening.human.hand.find(
+    (card) => card.name === "Bonfire of the Damned",
+  );
+
+  assert.ok(pilgrim);
+  assert.equal(
+    pilgrim.implementationStatus,
+    "complete",
+    "its creature body and printed mana ability are fully modeled despite the legacy play gate",
+  );
+  assert.ok(bonfire);
+  assert.equal(bonfire.implementationStatus, "metadataOnly");
+  assert.ok(
+    opening.human.hand.every((card) => card.metadataOnly === undefined),
+    "the browser bridge no longer projects the internal gate as coverage",
+  );
+
+  game.free();
+});
 test("staged engine decisions are serialized as generic private choices", async () => {
   await initializeWasm();
 
@@ -169,6 +204,11 @@ test("the Robots deck and its new card rules are packaged for the browser", asyn
   assert.equal(juggernaut.power, 5);
   assert.equal(juggernaut.toughness, 3);
   assert.match(juggernaut.rulesText, /attacks each combat if able/i);
+  assert.equal(
+    juggernaut.implementationStatus,
+    "partial",
+    "its body and attack requirement work while the Wall restriction is deferred",
+  );
 
   game.free();
 });

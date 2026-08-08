@@ -2,11 +2,12 @@
 
 use super::{CardRecord, PrintingRecord};
 use crate::card::{
-    CardArt, CardBehavior, CardComposition, CardEffectStatus, CardKind, CardPart, CardRules,
-    CardSet, CardStructure, LandEntry, ManaCost, ModeDef, ModeSetDef, PlayOptionDef, SpellForm,
+    AbilityCostDef, AbilityDef, AbilityImplementationDef, AddManaEffectDef, CardArt,
+    CardComposition, CardEffectStatus, CardKind, CardPart, CardRules, CardSet, CardStructure,
+    EffectDef, LandEntry, ManaCost, ManaKindDef, ModeDef, ModeSetDef, PlayOptionDef, SpellForm,
     TargetPredicate, TargetSlotDef, cards,
 };
-use crate::ids::{CardPartId, ModeId, PlayOptionId, TargetSlotId};
+use crate::ids::{AbilityId, CardPartId, ModeId, PlayOptionId, TargetSlotId};
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
 pub(in crate::card::sets) static ABRUPT_DECAY: CardRecord = CardRecord::new(
@@ -15,7 +16,6 @@ pub(in crate::card::sets) static ABRUPT_DECAY: CardRecord = CardRecord::new(
     CardArt::new("3b1e92b4-6e53-4dba-a572-c67e01965ac5", "Svetlin Velinov"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::AbruptDecay,
     CardRules::new(
         CardKind::Instant,
         ManaCost::colored(0, 0, 0, 1, 0, 1),
@@ -32,7 +32,6 @@ pub(in crate::card::sets) static ANGEL_OF_SERENITY: CardRecord = CardRecord::new
     CardArt::new("f10d82f7-7759-457e-a9bb-f9a5bd968f82", "Aleksi Briclot"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::AngelOfSerenity,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(4, 3, 0, 0, 0, 0),
@@ -51,7 +50,6 @@ pub(in crate::card::sets) static AZORIUS_CHARM: CardRecord = CardRecord::new(
     CardArt::new("26adc211-d089-4102-91e5-225bbeb5f382", "Zoltan Boros"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::AzoriusCharm,
     CardRules::new(
         CardKind::Instant,
         ManaCost::colored(0, 1, 1, 0, 0, 0),
@@ -68,7 +66,6 @@ pub(in crate::card::sets) static COUNTERFLUX: CardRecord = CardRecord::new(
     CardArt::new("94e4b773-40a4-4272-85dd-f728ada22748", "Scott M. Fischer"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::Counterflux,
     CardRules::new(
         CardKind::Instant,
         ManaCost::colored(0, 0, 2, 0, 1, 0),
@@ -85,7 +82,6 @@ pub(in crate::card::sets) static DESECRATION_DEMON: CardRecord = CardRecord::new
     CardArt::new("8242fade-754c-4404-b3fb-f3cccf84b3b6", "Jason Chan"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::DesecrationDemon,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(2, 0, 0, 2, 0, 0),
@@ -104,7 +100,6 @@ pub(in crate::card::sets) static DETENTION_SPHERE: CardRecord = CardRecord::new(
     CardArt::new("afee5464-83b7-4d7a-b407-9ee7de21535b", "Kev Walker"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::DetentionSphere,
     CardRules::new(
         CardKind::Enchantment,
         ManaCost::colored(1, 1, 1, 0, 0, 0),
@@ -121,7 +116,6 @@ pub(in crate::card::sets) static DISPEL: CardRecord = CardRecord::new(
     CardArt::new("08d4a8d7-c136-472f-8146-a1100701ca4f", "Chase Stone"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::Dispel,
     CardRules::new(
         CardKind::Instant,
         ManaCost::colored(0, 0, 1, 0, 0, 0),
@@ -138,16 +132,29 @@ pub(in crate::card::sets) static GOLGARI_GUILDGATE: CardRecord = CardRecord::new
     CardArt::new("8fe2fd1a-f7d3-48b4-bad8-be5ee45d6121", "Eytan Zana"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::GolgariGuildgate,
-    CardRules::new(
-        CardKind::Land,
-        ManaCost::colored(0, 0, 0, 0, 0, 0),
-        "This land enters tapped.\n{T}: Add {B} or {G}.",
-    )
+    CardRules::new(CardKind::Land, ManaCost::colored(0, 0, 0, 0, 0, 0), "")
     .type_line("Land — Gate")
-    .produces([false, false, true, false, true, false])
     .land_entry(LandEntry::Tapped)
-    .metadata_only(),
+    .with_abilities(&[
+        AbilityDef::replacement(
+            AbilityId::PRIMARY,
+            "This land enters tapped.",
+            EffectDef::Special("Have this land enter tapped"),
+        )
+        .with_implementation(AbilityImplementationDef::CustomFull {
+            explanation: "The tapped land-entry procedure is implemented by shared land-entry rules.",
+        }),
+        AbilityDef::activated_mana(
+            AbilityId(1),
+            "{T}: Add {B} or {G}.",
+            &[AbilityCostDef::TapSource],
+            EffectDef::AddMana(AddManaEffectDef::choice(&[
+                ManaKindDef::Black,
+                ManaKindDef::Green,
+            ])),
+        ),
+    ])
+    .with_effect_status(CardEffectStatus::MetadataOnly),
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
@@ -157,7 +164,6 @@ pub(in crate::card::sets) static GRISLY_SALVAGE: CardRecord = CardRecord::new(
     CardArt::new("dcb5eb2a-ae7a-4416-970c-6e9306689c88", "Dave Kendall"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::GrislySalvage,
     CardRules::new(
         CardKind::Instant,
         ManaCost::colored(0, 0, 0, 1, 0, 1),
@@ -174,17 +180,21 @@ pub(in crate::card::sets) static HALLOWED_FOUNTAIN: CardRecord = CardRecord::new
     CardArt::new("af7091c9-5f98-4078-a42b-c9e057346d9b", "Jung Park"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::HallowedFountain,
-    CardRules::new(
-        CardKind::Land,
-        ManaCost::colored(0, 0, 0, 0, 0, 0),
-        "({T}: Add {W} or {U}.)\nAs this land enters, you may pay 2 life. If you don't, it enters tapped.",
-    )
+    CardRules::new(CardKind::Land, ManaCost::colored(0, 0, 0, 0, 0, 0), "")
     .type_line("Land — Plains Island")
-    .produces([true, true, false, false, false, false])
     .land_types([true, true, false, false, false])
     .land_entry(LandEntry::PayLifeOrTapped(2))
-    .metadata_only(),
+    .with_abilities(&[
+        AbilityDef::replacement(
+            AbilityId::PRIMARY,
+            "As this land enters, you may pay 2 life. If you don't, it enters tapped.",
+            EffectDef::Special("Choose whether to pay 2 life or have this land enter tapped"),
+        )
+        .with_implementation(AbilityImplementationDef::CustomPartial {
+            explanation: "The land currently takes the tapped branch; choosing to pay 2 life is not executed.",
+        }),
+    ])
+    .with_effect_status(CardEffectStatus::MetadataOnly),
 );
 
 const fn izzet_charm_rules() -> CardRules {
@@ -252,7 +262,6 @@ pub(in crate::card::sets) static IZZET_CHARM: CardRecord = CardRecord::new(
     CardArt::new("1e3a5af6-5423-442b-a207-364e97a871d8", "Zoltan Boros"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::IzzetCharm,
     izzet_charm_rules(),
 )
 .with_composition(izzet_charm_composition);
@@ -264,7 +273,6 @@ pub(in crate::card::sets) static IZZET_STATICASTER: CardRecord = CardRecord::new
     CardArt::new("190ac2fe-532d-4d7e-9d74-07ae6850aac8", "Scott M. Fischer"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::IzzetStaticaster,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(1, 0, 1, 0, 1, 0),
@@ -284,7 +292,6 @@ pub(in crate::card::sets) static JACE_ARCHITECT_OF_THOUGHT: CardRecord = CardRec
     CardArt::new("d4df3a38-678e-42dc-a3fd-d1d399368f07", "Jaime Jones"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::JaceArchitectOfThought,
     CardRules::new(
         CardKind::Planeswalker,
         ManaCost::colored(2, 0, 2, 0, 0, 0),
@@ -303,7 +310,6 @@ pub(in crate::card::sets) static LOXODON_SMITER: CardRecord = CardRecord::new(
     CardArt::new("69247168-2bfb-4cce-a2a6-61459a0fbce4", "Ryan Barger"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::LoxodonSmiter,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(1, 1, 0, 0, 0, 1),
@@ -321,7 +327,6 @@ pub(in crate::card::sets) static MIZZIUM_MORTARS: CardRecord = CardRecord::new(
     CardArt::new("d4ded88d-2688-4f5e-a8b2-16216cf9c792", "Noah Bradley"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::MizziumMortars,
     CardRules::new(
         CardKind::Sorcery,
         ManaCost::colored(1, 0, 0, 0, 1, 0),
@@ -338,17 +343,21 @@ pub(in crate::card::sets) static OVERGROWN_TOMB: CardRecord = CardRecord::new(
     CardArt::new("1c7d50d6-b63a-4d8c-88fa-1d78ae693a45", "Steven Belledin"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::OvergrownTomb,
-    CardRules::new(
-        CardKind::Land,
-        ManaCost::colored(0, 0, 0, 0, 0, 0),
-        "({T}: Add {B} or {G}.)\nAs this land enters, you may pay 2 life. If you don't, it enters tapped.",
-    )
+    CardRules::new(CardKind::Land, ManaCost::colored(0, 0, 0, 0, 0, 0), "")
     .type_line("Land — Swamp Forest")
-    .produces([false, false, true, false, true, false])
     .land_types([false, false, true, false, true])
     .land_entry(LandEntry::PayLifeOrTapped(2))
-    .metadata_only(),
+    .with_abilities(&[
+        AbilityDef::replacement(
+            AbilityId::PRIMARY,
+            "As this land enters, you may pay 2 life. If you don't, it enters tapped.",
+            EffectDef::Special("Choose whether to pay 2 life or have this land enter tapped"),
+        )
+        .with_implementation(AbilityImplementationDef::CustomPartial {
+            explanation: "The land currently takes the tapped branch; choosing to pay 2 life is not executed.",
+        }),
+    ])
+    .with_effect_status(CardEffectStatus::MetadataOnly),
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
@@ -358,7 +367,6 @@ pub(in crate::card::sets) static PITHING_NEEDLE: CardRecord = CardRecord::new(
     CardArt::new("786c1e91-9d75-46a3-9e0d-56d29fcb01a7", "Anthony Palumbo"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::PithingNeedle,
     CardRules::new(
         CardKind::Artifact,
         ManaCost::colored(1, 0, 0, 0, 0, 0),
@@ -375,7 +383,6 @@ pub(in crate::card::sets) static REST_IN_PEACE: CardRecord = CardRecord::new(
     CardArt::new("37c2b1d1-faa0-40fd-82f4-216604ce7635", "Terese Nielsen"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::RestInPeace,
     CardRules::new(
         CardKind::Enchantment,
         ManaCost::colored(1, 1, 0, 0, 0, 0),
@@ -392,7 +399,6 @@ pub(in crate::card::sets) static SELESNYA_CHARM: CardRecord = CardRecord::new(
     CardArt::new("a9848eab-1d3a-4ab0-adf6-c20858aa3afb", "Zoltan Boros"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::SelesnyaCharm,
     CardRules::new(
         CardKind::Instant,
         ManaCost::colored(0, 1, 0, 0, 0, 1),
@@ -409,7 +415,6 @@ pub(in crate::card::sets) static SPHINXS_REVELATION: CardRecord = CardRecord::ne
     CardArt::new("404d9413-ef57-4b6e-8584-48a1dc7fe6f1", "Slawomir Maniak"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::SphinxsRevelation,
     CardRules::new(
         CardKind::Instant,
         ManaCost::variable(0, 1, 2, 0, 0, 0, 1),
@@ -426,17 +431,21 @@ pub(in crate::card::sets) static STEAM_VENTS: CardRecord = CardRecord::new(
     CardArt::new("de911c88-f5c8-4955-9fa5-1f28a9b17236", "Yeong-Hao Han"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::SteamVents,
-    CardRules::new(
-        CardKind::Land,
-        ManaCost::colored(0, 0, 0, 0, 0, 0),
-        "({T}: Add {U} or {R}.)\nAs this land enters, you may pay 2 life. If you don't, it enters tapped.",
-    )
+    CardRules::new(CardKind::Land, ManaCost::colored(0, 0, 0, 0, 0, 0), "")
     .type_line("Land — Island Mountain")
-    .produces([false, true, false, true, false, false])
     .land_types([false, true, false, true, false])
     .land_entry(LandEntry::PayLifeOrTapped(2))
-    .metadata_only(),
+    .with_abilities(&[
+        AbilityDef::replacement(
+            AbilityId::PRIMARY,
+            "As this land enters, you may pay 2 life. If you don't, it enters tapped.",
+            EffectDef::Special("Choose whether to pay 2 life or have this land enter tapped"),
+        )
+        .with_implementation(AbilityImplementationDef::CustomPartial {
+            explanation: "The land currently takes the tapped branch; choosing to pay 2 life is not executed.",
+        }),
+    ])
+    .with_effect_status(CardEffectStatus::MetadataOnly),
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
@@ -446,7 +455,6 @@ pub(in crate::card::sets) static SUPREME_VERDICT: CardRecord = CardRecord::new(
     CardArt::new("4e9648f9-7a67-4717-bca1-861d1f7fed43", "Sam Burley"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::SupremeVerdict,
     CardRules::new(
         CardKind::Sorcery,
         ManaCost::colored(1, 2, 1, 0, 0, 0),
@@ -463,7 +471,6 @@ pub(in crate::card::sets) static SYNCOPATE: CardRecord = CardRecord::new(
     CardArt::new("ba6f218f-83b0-4b68-a00f-0327cd79f32a", "Clint Cearley"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::Syncopate,
     CardRules::new(
         CardKind::Instant,
         ManaCost::variable(0, 0, 1, 0, 0, 0, 1),
@@ -480,17 +487,21 @@ pub(in crate::card::sets) static TEMPLE_GARDEN: CardRecord = CardRecord::new(
     CardArt::new("b821e604-f9fd-47a4-b5ff-bfb5022834c2", "Volkan Baǵa"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::TempleGarden,
-    CardRules::new(
-        CardKind::Land,
-        ManaCost::colored(0, 0, 0, 0, 0, 0),
-        "({T}: Add {G} or {W}.)\nAs this land enters, you may pay 2 life. If you don't, it enters tapped.",
-    )
+    CardRules::new(CardKind::Land, ManaCost::colored(0, 0, 0, 0, 0, 0), "")
     .type_line("Land — Forest Plains")
-    .produces([true, false, false, false, true, false])
     .land_types([true, false, false, false, true])
     .land_entry(LandEntry::PayLifeOrTapped(2))
-    .metadata_only(),
+    .with_abilities(&[
+        AbilityDef::replacement(
+            AbilityId::PRIMARY,
+            "As this land enters, you may pay 2 life. If you don't, it enters tapped.",
+            EffectDef::Special("Choose whether to pay 2 life or have this land enter tapped"),
+        )
+        .with_implementation(AbilityImplementationDef::CustomPartial {
+            explanation: "The land currently takes the tapped branch; choosing to pay 2 life is not executed.",
+        }),
+    ])
+    .with_effect_status(CardEffectStatus::MetadataOnly),
 );
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
@@ -500,7 +511,6 @@ pub(in crate::card::sets) static ULTIMATE_PRICE: CardRecord = CardRecord::new(
     CardArt::new("d2b4912a-83a2-4870-8fac-81fa79da2830", "Karl Kopinski"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::UltimatePrice,
     CardRules::new(
         CardKind::Instant,
         ManaCost::colored(1, 0, 0, 1, 0, 0),
@@ -517,7 +527,6 @@ pub(in crate::card::sets) static UNDERWORLD_CONNECTIONS: CardRecord = CardRecord
     CardArt::new("19c52e3b-b3b8-4243-96fe-fa4c8eea7c59", "Yeong-Hao Han"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::UnderworldConnections,
     CardRules::new(
         CardKind::Enchantment,
         ManaCost::colored(1, 0, 0, 2, 0, 0),
@@ -534,7 +543,6 @@ pub(in crate::card::sets) static VRASKA_THE_UNSEEN: CardRecord = CardRecord::new
     CardArt::new("8971938c-cd26-4b83-96d7-1408cd0b0de6", "Aleksi Briclot"),
     CardSet::ReturnToRavnica,
     false,
-    CardBehavior::VraskaTheUnseen,
     CardRules::new(
         CardKind::Planeswalker,
         ManaCost::colored(3, 0, 0, 1, 0, 1),

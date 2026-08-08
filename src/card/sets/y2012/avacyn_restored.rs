@@ -2,8 +2,8 @@
 
 use super::{CardRecord, PrintingRecord};
 use crate::card::{
-    AbilityCostDef, AbilityDef, AddManaEffectDef, AppliedEffectDef, CardArt, CardBehavior,
-    CardKind, CardRules, CardSet, EffectDef, ImplementationStatus, LandEntry, ManaCost,
+    AbilityCostDef, AbilityDef, AbilityImplementationDef, AddManaEffectDef, AppliedEffectDef,
+    CardArt, CardEffectStatus, CardKind, CardRules, CardSet, EffectDef, LandEntry, ManaCost,
     ManaKindDef, ManaRestrictionDef, ManaSpendEffectDef, cards,
 };
 use crate::ids::AbilityId;
@@ -15,7 +15,6 @@ pub(in crate::card::sets) static BONFIRE_OF_THE_DAMNED: CardRecord = CardRecord:
     CardArt::new("e60610fe-891d-46de-b556-d03b637dccec", "James Paick"),
     CardSet::AvacynRestored,
     false,
-    CardBehavior::BonfireOfTheDamned,
     CardRules::new(
         CardKind::Sorcery,
         ManaCost::variable(0, 0, 0, 0, 1, 0, 2),
@@ -33,52 +32,52 @@ static CAVERN_COLORED_MANA_SPEND_EFFECTS: [ManaSpendEffectDef; 1] =
         AppliedEffectDef::CannotBeCountered,
     )];
 
-static CAVERN_OF_SOULS_ABILITIES: [AbilityDef; 2] = [
-    AbilityDef::activated_mana(
-        AbilityId::PRIMARY,
-        "{T}: Add {C}.",
-        &[AbilityCostDef::TapSource],
-        EffectDef::AddMana(AddManaEffectDef::one(ManaKindDef::Colorless)),
-    ),
-    AbilityDef::activated_mana(
-        AbilityId(1),
-        "{T}: Add one mana of any color. Spend it only to cast a creature spell of the chosen type; that spell can't be countered.",
-        &[AbilityCostDef::TapSource],
-        EffectDef::AddMana(
-            AddManaEffectDef::choice(&[
-                ManaKindDef::White,
-                ManaKindDef::Blue,
-                ManaKindDef::Black,
-                ManaKindDef::Red,
-                ManaKindDef::Green,
-            ])
-            .with_restrictions(&CAVERN_COLORED_MANA_RESTRICTIONS)
-            .with_spend_effects(&CAVERN_COLORED_MANA_SPEND_EFFECTS),
-        ),
-    ),
-];
-
 pub(in crate::card::sets) static CAVERN_OF_SOULS: CardRecord = CardRecord::new(
     cards::CAVERN_OF_SOULS,
     "Cavern of Souls",
     CardArt::new("1381c8f1-a292-4bdf-b20c-a5c2a169ee84", "Cliff Childs"),
     CardSet::AvacynRestored,
     false,
-    CardBehavior::CavernOfSouls,
-    CardRules::new(
-        CardKind::Land,
-        ManaCost::colored(0, 0, 0, 0, 0, 0),
-        "As this land enters, choose a creature type.\n{T}: Add {C}.\n{T}: Add one mana of any color. Spend this mana only to cast a creature spell of the chosen type, and that spell can't be countered.",
-    )
+    CardRules::new(CardKind::Land, ManaCost::colored(0, 0, 0, 0, 0, 0), "")
     .type_line("Land")
-    .produces([false, false, false, false, false, true])
     .land_entry(LandEntry::Untapped)
-    .with_abilities(&CAVERN_OF_SOULS_ABILITIES)
-    .metadata_only(),
-)
-.with_implementation_status(ImplementationStatus::MetadataOnly {
-    explanation: "Untapped entry and colorless mana work; the creature-type choice, restricted colored mana, and cannot-be-countered rider are represented but not executed.",
-});
+    .with_abilities(&[
+        AbilityDef::replacement(
+            AbilityId(2),
+            "As this land enters, choose a creature type.",
+            EffectDef::Special("Choose and store a creature type for this permanent"),
+        )
+        .with_implementation(AbilityImplementationDef::NotImplemented {
+            explanation: "The creature-type choice is represented but is not executed.",
+        }),
+        AbilityDef::activated_mana(
+            AbilityId::PRIMARY,
+            "{T}: Add {C}.",
+            &[AbilityCostDef::TapSource],
+            EffectDef::AddMana(AddManaEffectDef::one(ManaKindDef::Colorless)),
+        ),
+        AbilityDef::activated_mana(
+            AbilityId(1),
+            "{T}: Add one mana of any color. Spend this mana only to cast a creature spell of the chosen type, and that spell can't be countered.",
+            &[AbilityCostDef::TapSource],
+            EffectDef::AddMana(
+                AddManaEffectDef::choice(&[
+                    ManaKindDef::White,
+                    ManaKindDef::Blue,
+                    ManaKindDef::Black,
+                    ManaKindDef::Red,
+                    ManaKindDef::Green,
+                ])
+                .with_restrictions(&CAVERN_COLORED_MANA_RESTRICTIONS)
+                .with_spend_effects(&CAVERN_COLORED_MANA_SPEND_EFFECTS),
+            ),
+        )
+        .with_implementation(AbilityImplementationDef::NotImplemented {
+            explanation: "The restricted colored mana and cannot-be-countered rider are represented but not executed.",
+        }),
+    ])
+    .with_effect_status(CardEffectStatus::MetadataOnly),
+);
 
 // Implementation status: Spell is withheld from play; printed effects are pending.
 pub(in crate::card::sets) static DEMONIC_RISING: CardRecord = CardRecord::new(
@@ -87,7 +86,6 @@ pub(in crate::card::sets) static DEMONIC_RISING: CardRecord = CardRecord::new(
     CardArt::new("a2136a82-b535-47f6-9eee-5b7585ac5cf1", "Trevor Claxton"),
     CardSet::AvacynRestored,
     false,
-    CardBehavior::DemonicRising,
     CardRules::new(
         CardKind::Enchantment,
         ManaCost::colored(3, 0, 0, 2, 0, 0),
@@ -104,7 +102,6 @@ pub(in crate::card::sets) static PILLAR_OF_FLAME: CardRecord = CardRecord::new(
     CardArt::new("c983e879-d9d2-47cc-9958-506711ca80cd", "Karl Kopinski"),
     CardSet::AvacynRestored,
     false,
-    CardBehavior::PillarOfFlame,
     CardRules::new(
         CardKind::Sorcery,
         ManaCost::colored(0, 0, 0, 0, 1, 0),
@@ -121,7 +118,6 @@ pub(in crate::card::sets) static RESTORATION_ANGEL: CardRecord = CardRecord::new
     CardArt::new("c2ad8639-e586-47f4-baca-2a1af5aa281b", "Johannes Voss"),
     CardSet::AvacynRestored,
     false,
-    CardBehavior::RestorationAngel,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(3, 1, 0, 0, 0, 0),
@@ -141,7 +137,6 @@ pub(in crate::card::sets) static SIGARDA_HOST_OF_HERONS: CardRecord = CardRecord
     CardArt::new("feccd0e2-fae6-4ced-acdf-4252ed5c56e7", "Chris Rahn"),
     CardSet::AvacynRestored,
     false,
-    CardBehavior::SigardaHostOfHerons,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(2, 2, 0, 0, 0, 1),
@@ -162,7 +157,6 @@ pub(in crate::card::sets) static TERMINUS: CardRecord = CardRecord::new(
     CardArt::new("0982ea7e-05a4-4e40-98ab-ea9aa6c7342e", "James Paick"),
     CardSet::AvacynRestored,
     false,
-    CardBehavior::Terminus,
     CardRules::new(
         CardKind::Sorcery,
         ManaCost::colored(4, 2, 0, 0, 0, 0),
@@ -179,7 +173,6 @@ pub(in crate::card::sets) static ZEALOUS_CONSCRIPTS: CardRecord = CardRecord::ne
     CardArt::new("fc027b11-1ecc-430d-a862-586a14bb23c3", "Steve Prescott"),
     CardSet::AvacynRestored,
     false,
-    CardBehavior::ZealousConscripts,
     CardRules::new(
         CardKind::Creature,
         ManaCost::colored(4, 0, 0, 0, 1, 0),

@@ -1,8 +1,9 @@
 use std::error::Error;
 use std::fmt;
 
+use crate::card::BasicLandType;
 use crate::casting::CastChoices;
-use crate::{GameObjectId, PlayOptionId, PlayerId};
+use crate::{AbilityId, CardDefinitionId, CardPartId, GameObjectId, PlayOptionId, PlayerId};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum ManaColor {
@@ -19,6 +20,29 @@ pub enum Target {
     Player(PlayerId),
     Permanent(GameObjectId),
     Spell(GameObjectId),
+}
+
+/// The stable origin of an effective ability on a game object.
+///
+/// Printed IDs are local to one card part, so copied abilities freeze their
+/// effective card definition as well as the part and clause ID. Intrinsic land
+/// abilities are identified by the subtype that grants them. A granted origin
+/// records only the granting object and clause ID; it is provenance, not an
+/// executable definition. Stack objects separately freeze the effective text,
+/// target declarations, and resolver they received at creation. Pair this with
+/// the affected object's [`GameObjectId`] to identify one ability in a game.
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub enum AbilityOrigin {
+    Printed {
+        definition: CardDefinitionId,
+        part: CardPartId,
+        ability: AbilityId,
+    },
+    IntrinsicBasicLand(BasicLandType),
+    Granted {
+        source: GameObjectId,
+        ability: AbilityId,
+    },
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -54,6 +78,7 @@ pub enum Action {
     },
     ActivateManaAbility {
         source: GameObjectId,
+        ability: AbilityOrigin,
         color: ManaColor,
     },
     PayLifeForMana,
@@ -64,6 +89,7 @@ pub enum Action {
     },
     ActivateAbility {
         source: GameObjectId,
+        ability: AbilityOrigin,
         target: Option<Target>,
         sacrifice: Option<GameObjectId>,
     },

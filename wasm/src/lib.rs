@@ -1,9 +1,9 @@
 use penta::card;
 use penta::game::{DecisionKind, DecisionOrderSemantics};
 use penta::{
-    Action, ActivatedAbilityText, BattlefieldExit, CardCatalog, CardDefinitionId, CardInstanceId,
-    Format, Game, GameEvent, GameResult, HandcraftedPolicy, ModeId, PlayOptionId, PlayerId,
-    PlayerObservation, Policy, RandomPolicy, Step, Target,
+    AbilityOrigin, Action, ActivatedAbilityText, BattlefieldExit, CardCatalog, CardDefinitionId,
+    CardInstanceId, Format, Game, GameEvent, GameResult, HandcraftedPolicy, ModeId, PlayOptionId,
+    PlayerId, PlayerObservation, Policy, RandomPolicy, Step, Target,
 };
 use serde_json::{Value, json};
 use std::fmt::Write as _;
@@ -896,10 +896,12 @@ impl WebGame {
                     // What the ability does, with no target picked yet, so the
                     // card's menu can offer the effect by name.
                     "abilitySummary": match action {
-                        Action::ActivateAbility { source, target: Some(_), .. } =>
-                            self.ability_text(&observation, *source).map(|text| text.summary),
+                        Action::ActivateAbility { source, ability, target: Some(_), .. } =>
+                            self.ability_text(&observation, *source, *ability)
+                                .map(|text| text.summary),
                         _ => None,
                     },
+                    "ability": action_ability_origin(action),
                     "manaAbility": matches!(action, Action::ActivateManaAbility { .. }),
                     "spellAction": matches!(action, Action::CastSpell { .. }),
                     "sacrificeCardIds": action_sacrifices(action),
@@ -951,8 +953,9 @@ impl WebGame {
                     |part| part.mana_cost,
                 );
                 let current_kind = rules.map_or("unknown".into(), |rules| {
-                    if card.is_some_and(|card| card.behavior == penta::CardBehavior::MishrasFactory)
-                        && permanent.power.is_some()
+                    if card.is_some_and(|card| {
+                        card.rules.special_behavior == Some(penta::CardBehavior::MishrasFactory)
+                    }) && permanent.power.is_some()
                     {
                         "artifactcreature".into()
                     } else {
@@ -969,8 +972,8 @@ impl WebGame {
                     "art": card_art_value(art),
                     "kind": current_kind,
                     "typeLine": rules.map_or("", |rules| rules.type_line),
-                    "metadataOnly": rules.is_some_and(|rules| {
-                        rules.effect_status == penta::CardEffectStatus::MetadataOnly
+                    "implementationStatus": rules.map_or("complete", |rules| {
+                        implementation_status_name(rules.implementation_status())
                     }),
                     "isLand": rules.is_some_and(|rules| rules.kind == penta::CardKind::Land),
                     "manaCost": mana_cost.map(|cost| json!({
@@ -983,7 +986,9 @@ impl WebGame {
                         "whiteRedHybrid": cost.white_red_hybrid,
                         "x": cost.variable_x,
                     })),
-                    "rulesText": rules.map_or("", |rules| rules.text),
+                    "rulesText": rules.map_or_else(String::new, |rules| {
+                        rules.rules_text().into_owned()
+                    }),
                     "owner": if permanent.controller == self.human { "human" } else { "opponent" },
                     "tapped": permanent.tapped,
                     "power": permanent.power,
@@ -1003,7 +1008,6 @@ impl WebGame {
             .map(|(id, definition)| {
                 let card = self.catalog.get(*definition);
                 let art = card.and_then(|card| card.art.as_ref());
-                let mana_cost = card.map(|card| card.rules.mana_cost);
                 let creature_stats = card.and_then(|card| card.rules.creature_stats);
                 json!({
                     "id": id.0,
@@ -1013,21 +1017,14 @@ impl WebGame {
                         format!("{:?}", card.rules.kind).to_ascii_lowercase()
                     }),
                     "typeLine": card.map_or("", |card| card.rules.type_line),
-                    "metadataOnly": card.is_some_and(|card| {
-                        card.rules.effect_status == penta::CardEffectStatus::MetadataOnly
+                    "implementationStatus": card.map_or("complete", |card| {
+                        implementation_status_name(card.implementation_status())
                     }),
                     "isLand": card.is_some_and(|card| card.rules.kind == penta::CardKind::Land),
-                    "manaCost": mana_cost.map(|cost| json!({
-                        "generic": cost.generic,
-                        "white": cost.white,
-                        "blue": cost.blue,
-                        "black": cost.black,
-                        "red": cost.red,
-                        "green": cost.green,
-                        "whiteRedHybrid": cost.white_red_hybrid,
-                        "x": cost.variable_x,
-                    })),
-                    "rulesText": card.map_or("", |card| card.rules.text),
+                    "manaCost": hand_mana_cost_value(card),
+                    "rulesText": card.map_or_else(String::new, |card| {
+                        card.rules.rules_text().into_owned()
+                    }),
                     "power": creature_stats.map(|stats| stats.power),
                     "toughness": creature_stats.map(|stats| stats.toughness),
                 })
@@ -1038,6 +1035,11 @@ impl WebGame {
             .iter()
             .rev()
             .map(|object| {
+                let ability_id = object.ability.and_then(|origin| match origin {
+                    AbilityOrigin::Printed { ability, .. }
+                    | AbilityOrigin::Granted { ability, .. } => Some(ability.0),
+                    AbilityOrigin::IntrinsicBasicLand(_) => None,
+                });
                 // Enough card detail for the browser to draw a real card on
                 // the stack rather than a name tag.
                 let card = self.catalog.get(object.definition);
@@ -1054,7 +1056,9 @@ impl WebGame {
                     // this is the spell/ability object, not physical lineage.
                     "cardId": object.id.0,
                     "sourceId": object.source.map(|source| source.0),
-                    "abilityId": object.ability.map(|ability| ability.0),
+                    "ability": object.ability.map(ability_origin_value),
+                    // Compatibility projection for clients that only know clause IDs.
+                    "abilityId": ability_id,
                     "abilityText": object.ability_text,
                     "name": presentation.name,
                     "art": card_art_value(art),
@@ -1092,7 +1096,9 @@ impl WebGame {
                         .collect::<Vec<_>>(),
                     "cardKind": presentation.kind,
                     "typeLine": presentation.type_line,
-                    "metadataOnly": presentation.metadata_only,
+                    "implementationStatus": implementation_status_name(
+                        presentation.implementation_status,
+                    ),
                     "isLand": presentation.is_land,
                     "manaCost": presentation.mana_cost.map(|cost| json!({
                         "generic": cost.generic,
@@ -1242,13 +1248,30 @@ impl WebGame {
         &self,
         observation: &PlayerObservation,
         source: CardInstanceId,
+        origin: AbilityOrigin,
     ) -> Option<ActivatedAbilityText> {
         observation
             .battlefield
             .iter()
-            .find(|permanent| permanent.id == source)
-            .and_then(|permanent| self.catalog.get(permanent.definition))
-            .and_then(|card| card.rules.activated_ability_text)
+            .find(|permanent| permanent.id == source)?;
+        let AbilityOrigin::Printed {
+            definition,
+            part,
+            ability,
+        } = origin
+        else {
+            // Intrinsic and granted abilities do not have card-local action
+            // presentation metadata. Their generic source/target label remains
+            // accurate until granted ability snapshots expose that metadata.
+            return None;
+        };
+        let card = self.catalog.get(definition)?;
+        card.part(part)?
+            .rules
+            .ability_clauses()
+            .iter()
+            .find(|candidate| candidate.id == ability)
+            .and_then(|candidate| candidate.activation_text)
     }
 
     fn card_name(&self, definition: CardDefinitionId) -> String {
@@ -1592,7 +1615,7 @@ impl WebGame {
                     .unwrap_or_else(|| self.instance_name(observation, *card));
                 format!("Play {option}")
             }
-            Action::ActivateManaAbility { source, color } => {
+            Action::ActivateManaAbility { source, color, .. } => {
                 format!(
                     "Tap {} for {} mana",
                     self.instance_name(observation, *source),
@@ -1636,6 +1659,7 @@ impl WebGame {
             }
             Action::ActivateAbility {
                 source,
+                ability,
                 target,
                 sacrifice,
             } => {
@@ -1645,13 +1669,12 @@ impl WebGame {
                 }
                 // "Activate Strip Mine" says nothing about what the click does,
                 // so a described ability names its own effect instead.
-                let described =
-                    target
-                        .zip(self.ability_text(observation, *source))
-                        .map(|(target, text)| {
-                            text.targeted
-                                .replace("{}", &self.target_name(observation, target))
-                        });
+                let described = target
+                    .zip(self.ability_text(observation, *source, *ability))
+                    .map(|(target, text)| {
+                        text.targeted
+                            .replace("{}", &self.target_name(observation, target))
+                    });
                 let mut label = described
                     .clone()
                     .unwrap_or_else(|| format!("Activate {source_name}"));
@@ -1753,6 +1776,23 @@ fn card_art_value(art: Option<&penta::CardArt>) -> Value {
     })
 }
 
+fn hand_mana_cost_value(card: Option<&penta::CardDefinition>) -> Value {
+    card.and_then(penta::CardDefinition::primary_part)
+        .and_then(|part| part.mana_cost)
+        .map_or(Value::Null, |cost| {
+            json!({
+                "generic": cost.generic,
+                "white": cost.white,
+                "blue": cost.blue,
+                "black": cost.black,
+                "red": cost.red,
+                "green": cost.green,
+                "whiteRedHybrid": cost.white_red_hybrid,
+                "x": cost.variable_x,
+            })
+        })
+}
+
 fn cast_signature_value(signature: &penta::CastSignature, human: PlayerId) -> Value {
     let form = match signature.form() {
         penta::SpellForm::Part(part) => json!({
@@ -1809,7 +1849,7 @@ struct StackCardPresentation {
     name: String,
     kind: String,
     type_line: String,
-    metadata_only: bool,
+    implementation_status: penta::ImplementationStatus,
     is_land: bool,
     mana_cost: Option<penta::ManaCost>,
     rules_text: String,
@@ -1823,7 +1863,7 @@ impl StackCardPresentation {
             name: "Unknown card".into(),
             kind: "unknown".into(),
             type_line: String::new(),
-            metadata_only: false,
+            implementation_status: penta::ImplementationStatus::Complete,
             is_land: false,
             mana_cost: None,
             rules_text: String::new(),
@@ -1841,10 +1881,10 @@ impl StackCardPresentation {
             name,
             kind: format!("{:?}", rules.kind).to_ascii_lowercase(),
             type_line: rules.type_line.into(),
-            metadata_only: rules.effect_status == penta::CardEffectStatus::MetadataOnly,
+            implementation_status: rules.implementation_status(),
             is_land: rules.kind == penta::CardKind::Land,
             mana_cost,
-            rules_text: rules.text.into(),
+            rules_text: rules.rules_text().into_owned(),
             power: rules.creature_stats.map(|stats| stats.power),
             toughness: rules.creature_stats.map(|stats| stats.toughness),
         }
@@ -1899,7 +1939,7 @@ fn stack_card_presentation(
                 join_distinct(parts.iter().map(|part| part.rules.type_line.to_string()));
             let rules_text = parts
                 .iter()
-                .map(|part| format!("{} — {}", part.name, part.rules.text))
+                .map(|part| format!("{} — {}", part.name, part.rules.rules_text()))
                 .collect::<Vec<_>>()
                 .join("\n\n");
             let stats = parts
@@ -1919,9 +1959,11 @@ fn stack_card_presentation(
                 name,
                 kind,
                 type_line,
-                metadata_only: parts
+                implementation_status: parts
                     .iter()
-                    .any(|part| part.rules.effect_status == penta::CardEffectStatus::MetadataOnly),
+                    .map(|part| part.rules.implementation_status())
+                    .reduce(penta::ImplementationStatus::combine)
+                    .unwrap_or_default(),
                 is_land: parts
                     .iter()
                     .any(|part| part.rules.kind == penta::CardKind::Land),
@@ -1931,6 +1973,14 @@ fn stack_card_presentation(
                 toughness: shared_stats.map(|stats| stats.toughness),
             }
         }
+    }
+}
+
+const fn implementation_status_name(status: penta::ImplementationStatus) -> &'static str {
+    match status {
+        penta::ImplementationStatus::Complete => "complete",
+        penta::ImplementationStatus::Partial => "partial",
+        penta::ImplementationStatus::MetadataOnly => "metadataOnly",
     }
 }
 
@@ -2260,6 +2310,40 @@ fn action_card(action: &Action) -> Option<CardInstanceId> {
     }
 }
 
+fn action_ability_origin(action: &Action) -> Option<Value> {
+    let origin = match action {
+        Action::ActivateManaAbility { ability, .. } | Action::ActivateAbility { ability, .. } => {
+            *ability
+        }
+        _ => return None,
+    };
+    Some(ability_origin_value(origin))
+}
+
+fn ability_origin_value(origin: AbilityOrigin) -> Value {
+    match origin {
+        AbilityOrigin::Printed {
+            definition,
+            part,
+            ability,
+        } => json!({
+            "kind": "printed",
+            "definition": definition.0,
+            "partId": part.0,
+            "abilityId": ability.0,
+        }),
+        AbilityOrigin::IntrinsicBasicLand(land_type) => json!({
+            "kind": "intrinsicBasicLand",
+            "landType": format!("{land_type:?}").to_ascii_lowercase(),
+        }),
+        AbilityOrigin::Granted { source, ability } => json!({
+            "kind": "granted",
+            "source": source.0,
+            "abilityId": ability.0,
+        }),
+    }
+}
+
 /// Permanents this action would destroy as part of its cost. The browser makes
 /// the player pick these explicitly rather than spending whatever is to hand.
 fn action_sacrifices(action: &Action) -> Vec<u32> {
@@ -2507,7 +2591,10 @@ mod tests {
         assert_eq!(burn.name, "Burn");
         assert_eq!(burn.kind, "instant");
         assert_eq!(burn.type_line, "Instant");
-        assert!(burn.metadata_only);
+        assert_eq!(
+            burn.implementation_status,
+            penta::ImplementationStatus::MetadataOnly
+        );
         assert_eq!(
             burn.mana_cost,
             Some(penta::ManaCost::colored(1, 0, 0, 0, 1, 0))
@@ -2529,11 +2616,66 @@ mod tests {
         );
         assert!(fused.rules_text.contains("Turn — Until end of turn"));
         assert!(fused.rules_text.contains("Burn — Burn deals 2 damage"));
+        assert_eq!(
+            fused.implementation_status,
+            penta::ImplementationStatus::MetadataOnly
+        );
+    }
+
+    #[test]
+    fn visible_card_coverage_comes_from_ability_implementations() {
+        let game = WebGame::new(
+            "Briksza Naya Midrange",
+            "Greer G/R Aggro",
+            "Handcrafted",
+            true,
+            2,
+            Some("isd-rtr-standard".into()),
+        )
+        .unwrap();
+        let snapshot = game.snapshot_value(false);
+        let hand = snapshot["human"]["hand"].as_array().expect("hand array");
+        let find = |name: &str| {
+            hand.iter()
+                .find(|card| card["name"] == name)
+                .unwrap_or_else(|| panic!("{name} is in the deterministic hand"))
+        };
+
+        assert_eq!(
+            find("Avacyn's Pilgrim")["implementationStatus"],
+            "complete",
+            "the fully modeled creature and mana ability must not inherit its legacy play gate",
+        );
+        assert_eq!(
+            find("Bonfire of the Damned")["implementationStatus"],
+            "metadataOnly"
+        );
+        assert!(
+            hand.iter().all(|card| card.get("metadataOnly").is_none()),
+            "the WASM surface exposes the derived status, not its former boolean projection",
+        );
     }
 
     #[test]
     fn missing_card_art_serializes_as_null() {
         assert_eq!(card_art_value(None), Value::Null);
+    }
+
+    #[test]
+    fn hand_mana_cost_distinguishes_no_cost_from_printed_zero() {
+        let catalog = card::catalog().expect("catalog builds");
+        let mountain = catalog
+            .get(penta::card::cards::MOUNTAIN)
+            .expect("Mountain is cataloged");
+        let mox = catalog
+            .get(penta::card::cards::MOX_RUBY)
+            .expect("Mox Ruby is cataloged");
+
+        assert_eq!(hand_mana_cost_value(Some(mountain)), Value::Null);
+        let zero = hand_mana_cost_value(Some(mox));
+        assert!(zero.is_object());
+        assert_eq!(zero["generic"], 0);
+        assert_eq!(zero["red"], 0);
     }
 
     #[test]
@@ -2612,11 +2754,48 @@ mod tests {
     }
 
     #[test]
+    fn ability_actions_expose_their_stable_origins() {
+        let action = Action::ActivateAbility {
+            source: CardInstanceId(8),
+            ability: penta::AbilityOrigin::Printed {
+                definition: penta::poc::cards::MISHRA_S_FACTORY,
+                part: penta::CardPartId::PRIMARY,
+                ability: penta::AbilityId::PRIMARY,
+            },
+            target: None,
+            sacrifice: None,
+        };
+        assert_eq!(
+            action_ability_origin(&action),
+            Some(json!({
+                "kind": "printed",
+                "definition": penta::poc::cards::MISHRA_S_FACTORY.0,
+                "partId": 0,
+                "abilityId": 0,
+            }))
+        );
+
+        let mana_action = Action::ActivateManaAbility {
+            source: CardInstanceId(9),
+            ability: penta::AbilityOrigin::IntrinsicBasicLand(penta::BasicLandType::Mountain),
+            color: penta::ManaColor::Red,
+        };
+        assert_eq!(
+            action_ability_origin(&mana_action),
+            Some(json!({
+                "kind": "intrinsicBasicLand",
+                "landType": "mountain",
+            }))
+        );
+    }
+
+    #[test]
     fn human_main_one_stops_even_when_only_mana_actions_are_available() {
         let actions = [
             Action::Concede,
             Action::ActivateManaAbility {
                 source: CardInstanceId(7),
+                ability: penta::AbilityOrigin::IntrinsicBasicLand(penta::BasicLandType::Mountain),
                 color: penta::ManaColor::Red,
             },
             Action::PassPriority,
@@ -2874,6 +3053,11 @@ mod tests {
             Action::Concede,
             Action::ActivateAbility {
                 source: CardInstanceId(8),
+                ability: penta::AbilityOrigin::Printed {
+                    definition: penta::CardDefinitionId(0),
+                    part: penta::CardPartId::PRIMARY,
+                    ability: penta::AbilityId::PRIMARY,
+                },
                 target: Some(Target::Permanent(CardInstanceId(9))),
                 sacrifice: None,
             },

@@ -9,6 +9,16 @@ export type CardArtMetadata = {
 
 export type StackObjectKind = "Spell" | "ActivatedAbility" | "TriggeredAbility";
 
+export type ImplementationStatus = "complete" | "partial" | "metadataOnly";
+
+export type AbilityOriginMetadata =
+  | { kind: "printed"; definition: number; partId: number; abilityId: number }
+  | {
+      kind: "intrinsicBasicLand";
+      landType: "plains" | "island" | "swamp" | "mountain" | "forest";
+    }
+  | { kind: "granted"; source: number; abilityId: number };
+
 export type DecisionKind = "Choice" | "TriggerOrder" | "TriggerPlacement";
 
 export type SpellFormMetadata =
@@ -41,7 +51,7 @@ export type Card = {
   art: CardArtMetadata | null;
   kind: string;
   typeLine?: string;
-  metadataOnly?: boolean;
+  implementationStatus: ImplementationStatus;
   isLand?: boolean;
   rulesText: string;
   manaCost?: {
@@ -80,6 +90,7 @@ export type Action = {
   targetPlayers?: Owner[];
   targetStackIds?: number[];
   targetCount?: number;
+  ability?: AbilityOriginMetadata | null;
   abilitySummary?: string | null;
   manaAbility?: boolean;
   spellAction?: boolean;
@@ -166,6 +177,8 @@ export type GameState = {
     sourceId?: number | null;
     /** Stable identifier of the printed or granted ability that created this object. */
     abilityId?: number | null;
+    /** Full frozen origin, including copied card definition and intrinsic subtype. */
+    ability?: AbilityOriginMetadata | null;
     signature?: CastSignatureMetadata | null;
     name: string;
     art: CardArtMetadata | null;
@@ -173,7 +186,7 @@ export type GameState = {
     kind: StackObjectKind;
     cardKind: string;
     typeLine?: string;
-    metadataOnly?: boolean;
+    implementationStatus: ImplementationStatus;
     isLand?: boolean;
     manaCost?: Card["manaCost"];
     rulesText: string;
