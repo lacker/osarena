@@ -4,10 +4,20 @@ use crate::{
     AbilityTargetDef, AbilityTargetPredicate, AdditionalCostDef, AdditionalCostId,
     AlternativeCostDef, AlternativeCostId, CardComposition, CardDefinition, CardEffectStatus,
     CardInstanceId, CardPart, CardPartId, CardPrinting, CardRules, CardStructure, CastChoices,
-    DoubleFacedKind, LandEntry, ManaRestrictionDef, ManaSpendEffectDef, ModeDef, ModeSetDef,
-    PlayOptionDef, PlayOptionId, PlayerRelation, SpellForm, StackObjectId, TargetPredicate,
-    TargetSelection, TargetSlotDef, TargetSlotId,
+    DoubleFacedKind, LandEntry, ManaSpendEffectDef, ModeDef, ModeSetDef, PlayOptionDef,
+    PlayOptionId, PlayerRelation, SpellForm, StackObjectId, TargetPredicate, TargetSelection,
+    TargetSlotDef, TargetSlotId,
 };
+
+static TEST_FLYING_ABILITY: [AbilityDef; 1] = [AbilityDef::evergreen(
+    AbilityId::PRIMARY,
+    "Flying",
+    EvergreenAbility::Flying,
+)];
+static TEST_FLYING_TRAMPLE_ABILITIES: [AbilityDef; 2] = [
+    AbilityDef::evergreen(AbilityId::PRIMARY, "Flying", EvergreenAbility::Flying),
+    AbilityDef::evergreen(AbilityId(1), "Trample", EvergreenAbility::Trample),
+];
 
 fn ready_game() -> Game {
     let deck = poc::mono_red_atog();
@@ -49,23 +59,26 @@ fn creature(id: u32, definition: CardDefinitionId, controller: PlayerId) -> Perm
         tapped: false,
         entered_controller_turn: 0,
         damage: 0,
+        loyalty: None,
         power_bonus: 0,
         toughness_bonus: 0,
         attacking: false,
         blocking: None,
         chosen_player: None,
         destroy_at_end: false,
-        flying_until_end: false,
+        temporary_evergreen: Vec::new(),
         factory_animated: false,
         dragon_whelp_activations: 0,
         plus_one_counters: 0,
+        javelin_counters: 0,
         combat_damage_assignment: Vec::new(),
         copied_from: None,
         regeneration_shields: 0,
-        trample_until_end: false,
         berserked: false,
         attacked_this_turn: false,
         forestwalk_until_upkeep_of: None,
+        damage_sources: Vec::new(),
+        deathtouch_damage: false,
     }
 }
 
@@ -89,6 +102,10 @@ fn cast_action(
         choices: cast_choices(targets, x),
         sacrifices,
     }
+}
+
+fn activated_targets(target: Target) -> Vec<TargetSelection> {
+    vec![TargetSelection::single(TargetSlotId(0), target)]
 }
 
 const fn primary_ability(definition: CardDefinitionId) -> AbilityOrigin {
@@ -278,8 +295,8 @@ fn ability_events_distinguish_the_stack_object_from_a_source_that_left_play() {
         Action::ActivateAbility {
             source: source_id,
             ability: activated_ability_for(&game, source_id, 0),
-            target: Some(Target::Permanent(target_id)),
-            sacrifice: Some(source_id),
+            targets: activated_targets(Target::Permanent(target_id)),
+            sacrifice: None,
         },
     )
     .unwrap();
@@ -294,7 +311,7 @@ fn ability_events_distinguish_the_stack_object_from_a_source_that_left_play() {
     );
     assert_eq!(
         game.stack[0].ability_text(),
-        Some("Tap, sacrifice Strip Mine: Destroy target land.")
+        Some("{T}, Sacrifice this land: Destroy target land.")
     );
     assert_ne!(ability_id, source_id);
     assert!(
@@ -465,7 +482,7 @@ fn declarative_land_entry_handles_check_tapped_and_shock_lands() {
         CardBehavior::Unsupported,
     );
     shock.rules = CardRules::new(CardKind::Land, ManaCost::default(), "")
-        .land_types([true, false, true, false, false])
+        .with_subtypes(&["Plains", "Swamp"])
         .land_entry(LandEntry::PayLifeOrTapped(2));
     synchronize_single_part_definition(&mut shock);
 
@@ -568,7 +585,7 @@ fn a_modal_spell_resolves_by_its_locked_part_instead_of_the_canonical_front() {
         "Test creature back",
     )
     .creature(3, 4)
-    .flying();
+    .with_abilities(&TEST_FLYING_ABILITY);
     let mut definition = CardDefinition::new(
         definition_id,
         "Test modal spell",
@@ -633,10 +650,9 @@ fn changing_a_permanents_presented_face_keeps_its_object_identity() {
     let back = CardPartId(1);
     let front_rules =
         CardRules::new(CardKind::Creature, ManaCost::new(2, 0), "Front-face rules.").creature(2, 2);
-    let back_rules = CardRules::new(CardKind::Creature, ManaCost::default(), "Back-face rules.")
+    let back_rules = CardRules::new(CardKind::Creature, ManaCost::default(), "")
         .creature(4, 5)
-        .flying()
-        .trample();
+        .with_abilities(&TEST_FLYING_TRAMPLE_ABILITIES);
     let mut definition = CardDefinition::new(
         definition_id,
         "Test Werewolf",
@@ -775,6 +791,34 @@ fn metadata_only_noncreature_spells_are_hidden_but_baseline_cards_remain_playabl
 }
 
 #[test]
+fn energy_flux_cannot_be_cast_as_an_inert_enchantment() {
+    let mut game = ready_game();
+    let flux = card(10_000, crate::card::cards::ENERGY_FLUX, PlayerId::One);
+    let flux_id = flux.id;
+    game.players[0].hand.push(flux);
+    game.players[0].mana_pool.colorless = 2;
+    game.players[0].mana_pool.blue = 1;
+
+    assert!(
+        game.legal_actions(PlayerId::One)
+            .iter()
+            .all(|action| !matches!(action, Action::CastSpell { card, .. } if *card == flux_id))
+    );
+
+    let result = game.apply(
+        PlayerId::One,
+        Action::CastSpell {
+            card: flux_id,
+            choices: CastChoices::default(),
+            sacrifices: Vec::new(),
+        },
+    );
+    assert!(result.is_err());
+    assert!(game.stack.is_empty());
+    assert!(game.players[0].hand.iter().any(|card| card.id == flux_id));
+}
+
+#[test]
 #[allow(clippy::too_many_lines)]
 fn cast_validation_rejects_unrecognized_structured_choices() {
     let definition_id = CardDefinitionId(10_200);
@@ -791,6 +835,8 @@ fn cast_validation_rejects_unrecognized_structured_choices() {
         false,
         CardBehavior::LightningBolt,
     );
+    definition.rules = CardRules::new(CardKind::Instant, ManaCost::new(0, 1), "");
+    synchronize_single_part_definition(&mut definition);
     let mut option = PlayOptionDef::cast(
         option_id,
         "Cast Structured Bolt",
@@ -1115,6 +1161,30 @@ fn ankh_trigger_can_be_answered_by_bolt_before_it_resolves() {
 }
 
 #[test]
+fn ankh_damages_the_entering_lands_controller_not_its_owner() {
+    let mut game = ready_game();
+    game.active_player = PlayerId::Two;
+    game.priority = PlayerId::Two;
+    game.battlefield
+        .push(creature(10_000, cards::ANKH_OF_MISHRA, PlayerId::One));
+    let borrowed_mountain = card(10_001, cards::MOUNTAIN, PlayerId::One);
+    game.players[1].hand.push(borrowed_mountain.clone());
+
+    let play_land = game
+        .legal_actions(PlayerId::Two)
+        .into_iter()
+        .find(|action| {
+            matches!(action, Action::PlayLand { card, .. } if *card == borrowed_mountain.id)
+        })
+        .expect("the active player may play the land they currently hold");
+    game.apply(PlayerId::Two, play_land).unwrap();
+    pass_priority_pair(&mut game);
+
+    assert_eq!(game.players[0].life, 20, "the physical owner is unharmed");
+    assert_eq!(game.players[1].life, 18, "the land's controller takes 2");
+}
+
+#[test]
 fn city_trigger_can_be_answered_when_mana_was_floated_first() {
     let mut game = ready_game();
     game.players[0].life = 1;
@@ -1192,7 +1262,7 @@ fn a_resolving_tap_effect_uses_the_same_city_trigger_path() {
     let activation = Action::ActivateAbility {
         source: CardInstanceId(10_000),
         ability: activated_ability_for(&game, CardInstanceId(10_000), 0),
-        target: Some(Target::Permanent(CardInstanceId(10_001))),
+        targets: activated_targets(Target::Permanent(CardInstanceId(10_001))),
         sacrifice: None,
     };
     assert!(game.legal_actions(PlayerId::One).contains(&activation));
@@ -1318,9 +1388,14 @@ fn targeted_trigger_chooses_public_targets_while_being_put_on_stack() {
             recipient: EffectRecipientDef::Target(TargetSlotId(7)),
             amount: ValueDef::Constant(2),
         },
+        resolver: StackAbilityResolver::Declarative(EffectDef::DealDamage {
+            recipient: EffectRecipientDef::Target(TargetSlotId(7)),
+            amount: ValueDef::Constant(2),
+        }),
         context: TriggerContext {
             object: None,
-            player: None,
+            object_controller: None,
+            event_player: None,
             amount: None,
         },
     });
@@ -1347,6 +1422,55 @@ fn targeted_trigger_chooses_public_targets_while_being_put_on_stack() {
     );
     pass_priority_pair(&mut game);
     assert_eq!(game.battlefield[1].damage, 2);
+}
+
+#[test]
+fn nonbattlefield_card_targets_are_zone_incarnations() {
+    static INSTANT_OR_SORCERY: [ObjectPredicateDef; 2] = [
+        ObjectPredicateDef::CardKind(CardKind::Instant),
+        ObjectPredicateDef::CardKind(CardKind::Sorcery),
+    ];
+    let predicate = AbilityTargetPredicate::Object {
+        object: ObjectPredicateDef::AnyOf(&INSTANT_OR_SORCERY),
+        zones: &[ZoneKind::Graveyard],
+        controller: None,
+        owner: Some(PlayerRelation::You),
+    };
+    let mut game = ready_game();
+    let bolt = card(10_000, cards::LIGHTNING_BOLT, PlayerId::One);
+    let stone_rain = card(10_001, cards::STONE_RAIN, PlayerId::One);
+    let mountain = card(10_002, cards::MOUNTAIN, PlayerId::One);
+    let opposing_bolt = card(10_003, cards::LIGHTNING_BOLT, PlayerId::Two);
+    game.players[0]
+        .graveyard
+        .extend([bolt.clone(), stone_rain.clone(), mountain]);
+    game.players[1].graveyard.push(opposing_bolt);
+
+    let targets = game.ability_targets_matching(
+        predicate,
+        PlayerId::One,
+        GameObjectId(99_999),
+        TriggerContext::empty(),
+    );
+    assert_eq!(
+        targets,
+        vec![Target::Card(bolt.id), Target::Card(stone_rain.id)]
+    );
+
+    let old_bolt = game.players[0].graveyard.remove(0);
+    let (new_bolt, zone_change) = game.zone_change_card(old_bolt);
+    game.players[0].hand.push(new_bolt);
+    assert_eq!(zone_change.previous, bolt.id);
+    assert_eq!(
+        game.ability_targets_matching(
+            predicate,
+            PlayerId::One,
+            GameObjectId(99_999),
+            TriggerContext::empty(),
+        ),
+        vec![Target::Card(stone_rain.id)],
+        "a target does not follow the physical card to its new zone object",
+    );
 }
 
 #[test]
@@ -1380,9 +1504,14 @@ fn su_chi_mana_and_source_power_use_ordinary_stack_and_lki() {
             recipient: EffectRecipientDef::Opponent,
             amount: ValueDef::SourcePower,
         },
+        resolver: StackAbilityResolver::Declarative(EffectDef::DealDamage {
+            recipient: EffectRecipientDef::Opponent,
+            amount: ValueDef::SourcePower,
+        }),
         context: TriggerContext {
             object: Some(CardInstanceId(10_010)),
-            player: Some(PlayerId::One),
+            object_controller: Some(PlayerId::One),
+            event_player: Some(PlayerId::One),
             amount: None,
         },
     });
@@ -1393,7 +1522,7 @@ fn su_chi_mana_and_source_power_use_ordinary_stack_and_lki() {
 }
 
 #[test]
-fn workshop_mana_is_three_individual_restricted_values() {
+fn workshop_mana_is_three_individual_values_without_an_unimplemented_restriction() {
     let mut game = ready_game();
     game.battlefield
         .push(creature(10_000, cards::MISHRA_S_WORKSHOP, PlayerId::One));
@@ -1417,7 +1546,7 @@ fn workshop_mana_is_three_individual_restricted_values() {
                     object: CardInstanceId(10_000),
                     ability,
                 })
-            && mana.restrictions == [ManaRestrictionDef::CastSpell(ObjectPredicateDef::Artifact)]
+            && mana.restrictions.is_empty()
     }));
 }
 
@@ -1684,7 +1813,14 @@ fn armageddon_destroys_every_land_but_not_creatures() {
     ]);
     let armageddon = spell(10_003, cards::ARMAGEDDON, PlayerId::One, 0);
 
-    game.resolve_spell_effect(&armageddon, CardBehavior::Armageddon);
+    let effect = game
+        .catalog
+        .get(cards::ARMAGEDDON)
+        .expect("Armageddon is in the catalog")
+        .rules
+        .ability_clauses()[0]
+        .effect;
+    game.resolve_effect_def(effect, &armageddon, TriggerContext::empty());
 
     assert_eq!(game.battlefield.len(), 1);
     assert_eq!(game.battlefield[0].card.definition, cards::SAVANNAH_LIONS);
@@ -2086,7 +2222,7 @@ fn triskelion_enters_with_counters_and_spends_one_to_deal_damage() {
         Action::ActivateAbility {
             source: permanent_id,
             ability: activated_ability_for(&game, permanent_id, 0),
-            target: Some(Target::Player(PlayerId::Two)),
+            targets: activated_targets(Target::Player(PlayerId::Two)),
             sacrifice: None,
         },
     )
@@ -2141,6 +2277,72 @@ fn tundras_pay_counterspells_double_blue_cost() {
         game.players[1].graveyard[0].definition,
         cards::LIGHTNING_BOLT
     );
+}
+
+#[test]
+fn counterspell_removes_an_older_spell_without_disturbing_an_intervening_spell() {
+    let mut game = ready_game();
+    let older_bolt = card(10_000, cards::LIGHTNING_BOLT, PlayerId::Two);
+    let intervening_bolt = card(10_001, cards::LIGHTNING_BOLT, PlayerId::Two);
+    let counterspell = card(10_002, cards::COUNTERSPELL, PlayerId::One);
+    game.players[1]
+        .hand
+        .extend([older_bolt.clone(), intervening_bolt.clone()]);
+    game.players[1].mana_pool.red = 2;
+    game.players[0].hand.push(counterspell.clone());
+    game.players[0].mana_pool.blue = 2;
+    game.priority = PlayerId::Two;
+
+    game.apply(
+        PlayerId::Two,
+        cast_action(
+            older_bolt.id,
+            vec![Target::Player(PlayerId::One)],
+            Vec::new(),
+            0,
+        ),
+    )
+    .unwrap();
+    let older_stack_id = game.stack[0].id;
+    game.apply(
+        PlayerId::Two,
+        cast_action(
+            intervening_bolt.id,
+            vec![Target::Player(PlayerId::One)],
+            Vec::new(),
+            0,
+        ),
+    )
+    .unwrap();
+    let intervening_stack_id = game.stack[1].id;
+    game.apply(PlayerId::Two, Action::PassPriority).unwrap();
+    game.apply(
+        PlayerId::One,
+        cast_action(
+            counterspell.id,
+            vec![Target::Spell(older_stack_id)],
+            Vec::new(),
+            0,
+        ),
+    )
+    .unwrap();
+
+    pass_priority_pair(&mut game);
+
+    assert_eq!(game.stack.len(), 1);
+    assert_eq!(game.stack[0].id, intervening_stack_id);
+    assert_eq!(game.players[0].life, 20);
+    assert!(
+        game.players[1]
+            .graveyard
+            .iter()
+            .any(|card| card.definition == cards::LIGHTNING_BOLT),
+        "the targeted older spell was countered",
+    );
+
+    pass_priority_pair(&mut game);
+    assert!(game.stack.is_empty());
+    assert_eq!(game.players[0].life, 17);
 }
 
 #[test]
@@ -2199,6 +2401,72 @@ fn protection_from_white_prevents_white_blockers() {
                 attacker: CardInstanceId(10_000),
             })
     );
+}
+
+#[test]
+fn protection_does_not_prevent_a_protected_creature_from_blocking() {
+    let mut game = ready_game();
+    let mut lion = creature(10_000, cards::SAVANNAH_LIONS, PlayerId::One);
+    lion.attacking = true;
+    let knight = creature(10_001, cards::BLACK_KNIGHT, PlayerId::Two);
+    game.battlefield = vec![lion, knight];
+    game.step = Step::DeclareBlockers;
+    game.active_player = PlayerId::One;
+    game.attackers_declared = true;
+    game.blockers_declared = false;
+
+    assert!(
+        game.legal_actions(PlayerId::Two)
+            .contains(&Action::DeclareBlocker {
+                blocker: CardInstanceId(10_001),
+                attacker: CardInstanceId(10_000),
+            })
+    );
+}
+
+#[test]
+fn protection_prevents_damage_from_a_source_of_the_protected_color() {
+    let mut game = ready_game();
+    let lion = creature(10_000, cards::SAVANNAH_LIONS, PlayerId::One);
+    let knight = creature(10_001, cards::BLACK_KNIGHT, PlayerId::Two);
+    let lion_id = lion.card.id;
+    let knight_id = knight.card.id;
+    game.battlefield = vec![lion, knight];
+
+    game.damage_target_from(Some(lion_id), Some(Target::Permanent(knight_id)), 2);
+
+    let knight = game
+        .battlefield
+        .iter()
+        .find(|permanent| permanent.card.id == knight_id)
+        .expect("protection keeps Black Knight on the battlefield");
+    assert_eq!(knight.damage, 0);
+}
+
+#[test]
+fn vampire_nighthawk_deathtouch_and_lifelink_are_executable_evergreen_abilities() {
+    let mut game = ready_game();
+    game.players[0].life = 10;
+    let nighthawk = creature(10_000, cards::VAMPIRE_NIGHTHAWK, PlayerId::One);
+    let nighthawk_id = nighthawk.card.id;
+    let angel = creature(10_001, cards::SERRA_ANGEL, PlayerId::Two);
+    let angel_id = angel.card.id;
+    game.battlefield = vec![nighthawk, angel];
+
+    game.damage_target_from(Some(nighthawk_id), Some(Target::Permanent(angel_id)), 1);
+    game.check_state_based_actions();
+
+    assert!(
+        game.battlefield
+            .iter()
+            .all(|permanent| permanent.card.id != angel_id),
+        "one point from a source with deathtouch is lethal",
+    );
+    assert_eq!(game.players[0].life, 11);
+
+    game.damage_target_from(Some(nighthawk_id), Some(Target::Player(PlayerId::Two)), 2);
+    assert_eq!(game.players[0].life, 13);
+    assert_eq!(game.players[1].life, 18);
 }
 
 #[test]
@@ -2277,6 +2545,10 @@ fn ivory_tower_and_jayemdae_tome_provide_control_card_advantage() {
     game.players[0].mana_pool.colorless = 4;
 
     game.handle_upkeep_triggers();
+    game.finish_rules_procedure();
+    assert_eq!(game.players[0].life, 10);
+    assert_eq!(game.stack.len(), 1);
+    pass_priority_pair(&mut game);
     assert_eq!(game.players[0].life, 12);
     let hand_before = game.players[0].hand.len();
     game.apply(
@@ -2284,13 +2556,46 @@ fn ivory_tower_and_jayemdae_tome_provide_control_card_advantage() {
         Action::ActivateAbility {
             source: tome_id,
             ability: activated_ability_for(&game, tome_id, 0),
-            target: None,
+            targets: Vec::new(),
             sacrifice: None,
         },
     )
     .unwrap();
     pass_priority_pair(&mut game);
     assert_eq!(game.players[0].hand.len(), hand_before + 1);
+}
+
+#[test]
+fn library_of_alexandria_draw_activation_keeps_its_printed_ability_id() {
+    let mut game = ready_game();
+    for id in 10_000..10_007 {
+        game.players[0]
+            .hand
+            .push(card(id, cards::MOUNTAIN, PlayerId::One));
+    }
+    let library = creature(10_010, cards::LIBRARY_OF_ALEXANDRIA, PlayerId::One);
+    let library_id = library.card.id;
+    game.battlefield.push(library);
+
+    let expected_origin = AbilityOrigin::Printed {
+        definition: cards::LIBRARY_OF_ALEXANDRIA,
+        part: CardPartId::PRIMARY,
+        ability: AbilityId(1),
+    };
+    let activation = Action::ActivateAbility {
+        source: library_id,
+        ability: expected_origin,
+        targets: Vec::new(),
+        sacrifice: None,
+    };
+
+    assert_eq!(activated_ability_for(&game, library_id, 0), expected_origin);
+    assert!(game.legal_actions(PlayerId::One).contains(&activation));
+    game.apply(PlayerId::One, activation).unwrap();
+    assert_eq!(game.stack[0].ability_origin(), Some(expected_origin));
+
+    pass_priority_pair(&mut game);
+    assert_eq!(game.players[0].hand.len(), 8);
 }
 
 #[test]
@@ -2374,25 +2679,24 @@ fn fireball_x_three_can_hit_three_targets_for_six_mana() {
 #[test]
 fn fork_controller_can_retarget_the_copied_spell() {
     let mut game = ready_game();
-    let fork = card(10_000, cards::FORK, PlayerId::One);
+    let bolt = card(10_000, cards::LIGHTNING_BOLT, PlayerId::Two);
+    let fork = card(10_001, cards::FORK, PlayerId::One);
+    game.players[1].hand.push(bolt.clone());
+    game.players[1].mana_pool.red = 1;
     game.players[0].hand.push(fork.clone());
     game.players[0].mana_pool.red = 2;
-    game.stack.push(spell_with_targets(
-        77,
-        cards::LIGHTNING_BOLT,
+    game.priority = PlayerId::Two;
+    game.apply(
         PlayerId::Two,
-        vec![Target::Player(PlayerId::One)],
-        0,
-    ));
+        cast_action(bolt.id, vec![Target::Player(PlayerId::One)], Vec::new(), 0),
+    )
+    .unwrap();
+    game.apply(PlayerId::Two, Action::PassPriority).unwrap();
+    let original = game.stack[0].id;
 
     game.apply(
         PlayerId::One,
-        cast_action(
-            fork.id,
-            vec![Target::Spell(StackObjectId(77))],
-            Vec::new(),
-            0,
-        ),
+        cast_action(fork.id, vec![Target::Spell(original)], Vec::new(), 0),
     )
     .unwrap();
     pass_priority_pair(&mut game);
@@ -2418,6 +2722,63 @@ fn fork_controller_can_retarget_the_copied_spell() {
     assert_eq!(game.players[1].life, 17);
     assert_eq!(game.stack.len(), 1);
     assert_eq!(game.stack[0].targets(), vec![Target::Player(PlayerId::One)]);
+}
+
+#[test]
+fn copied_spell_freezes_retargeted_ability_payload() {
+    let mut game = ready_game();
+    let shatter = card(10_000, cards::SHATTER, PlayerId::Two);
+    let original_target = creature(10_001, cards::SOL_RING, PlayerId::One);
+    let replacement_target = creature(10_002, cards::ANKH_OF_MISHRA, PlayerId::One);
+    let original_target_id = original_target.card.id;
+    let replacement_target_id = replacement_target.card.id;
+    game.players[1].hand.push(shatter.clone());
+    game.players[1].mana_pool.colorless = 1;
+    game.players[1].mana_pool.red = 1;
+    game.battlefield
+        .extend([original_target, replacement_target]);
+    game.priority = PlayerId::Two;
+
+    game.apply(
+        PlayerId::Two,
+        cast_action(
+            shatter.id,
+            vec![Target::Permanent(original_target_id)],
+            Vec::new(),
+            0,
+        ),
+    )
+    .unwrap();
+    let original = game.stack[0].clone();
+    let replacement_targets = vec![TargetSelection::single(
+        TargetSlotId(0),
+        Target::Permanent(replacement_target_id),
+    )];
+
+    game.push_copy(original, PlayerId::One, replacement_targets.clone());
+
+    let copy = game.stack.last().expect("the copied spell is on the stack");
+    assert_eq!(
+        copy.signature.as_ref().map(CastSignature::targets),
+        Some(replacement_targets.as_slice()),
+    );
+    assert_eq!(
+        copy.ability
+            .as_ref()
+            .map(|ability| ability.targets.as_slice()),
+        Some(replacement_targets.as_slice()),
+        "the executable payload must use the copy's replacement targets",
+    );
+
+    game.destroy_permanent(original_target_id);
+    pass_priority_pair(&mut game);
+
+    assert!(
+        game.battlefield
+            .iter()
+            .all(|permanent| permanent.card.id != replacement_target_id),
+        "the copy must not fizzle because its original target became illegal",
+    );
 }
 
 #[test]
@@ -2654,6 +3015,93 @@ fn mana_preview_uses_existing_pool_before_tapping_sources() {
 }
 
 #[test]
+fn mana_preview_uses_the_selected_declarative_activated_ability_cost() {
+    static ABILITIES: [AbilityDef; 2] = [
+        AbilityDef::activated_mana(
+            crate::AbilityId::PRIMARY,
+            "{T}: Add {C}.",
+            &[AbilityCostDef::TapSource],
+            EffectDef::AddMana(AddManaEffectDef::one(ManaKindDef::Colorless)),
+        ),
+        AbilityDef::activated(
+            crate::AbilityId(1),
+            "{1}, {T}: Draw a card.",
+            &[
+                AbilityCostDef::Mana(ManaCost::new(1, 0)),
+                AbilityCostDef::TapSource,
+            ],
+            EffectDef::DrawCards {
+                recipient: EffectRecipientDef::Controller,
+                amount: ValueDef::Constant(1),
+            },
+        ),
+    ];
+
+    let mut game = ready_game();
+    let tome = creature(10_000, cards::JAYEMDAE_TOME, PlayerId::One);
+    let first_ring = creature(10_001, cards::SOL_RING, PlayerId::One);
+    let second_ring = creature(10_002, cards::SOL_RING, PlayerId::One);
+    let tome_id = tome.card.id;
+    let first_ring_id = first_ring.card.id;
+    let second_ring_id = second_ring.card.id;
+    game.battlefield.extend([tome, first_ring, second_ring]);
+    let action = Action::ActivateAbility {
+        source: tome_id,
+        ability: activated_ability_for(&game, tome_id, 0),
+        targets: Vec::new(),
+        sacrifice: None,
+    };
+
+    assert!(game.legal_actions(PlayerId::One).contains(&action));
+    assert_eq!(
+        game.mana_sources_for_action(PlayerId::One, &action),
+        vec![first_ring_id, second_ring_id],
+        "the behavior-free Tome activation previews its printed four-mana cost",
+    );
+    assert!(game.battlefield.iter().all(|permanent| !permanent.tapped));
+
+    let definition_id = CardDefinitionId(10_065);
+    let mut definition = CardDefinition::new(
+        definition_id,
+        "Mana preview tap-source test card",
+        CardSet::Magic2014,
+        false,
+        CardBehavior::Unsupported,
+    );
+    definition.rules =
+        CardRules::new(CardKind::Artifact, ManaCost::new(0, 0), "").with_abilities(&ABILITIES);
+    synchronize_single_part_definition(&mut definition);
+
+    let mut game = ready_game();
+    let mut definitions = game
+        .catalog
+        .definitions()
+        .into_iter()
+        .cloned()
+        .collect::<Vec<_>>();
+    definitions.push(definition);
+    game.catalog = CardCatalog::new(definitions).unwrap();
+    let source = CardInstanceId(10_010);
+    let mountain = CardInstanceId(10_011);
+    game.battlefield.extend([
+        creature(source.0, definition_id, PlayerId::One),
+        creature(mountain.0, cards::MOUNTAIN, PlayerId::One),
+    ]);
+    let action = Action::ActivateAbility {
+        source,
+        ability: activated_ability_for(&game, source, 0),
+        targets: Vec::new(),
+        sacrifice: None,
+    };
+
+    assert_eq!(
+        game.mana_sources_for_action(PlayerId::One, &action),
+        vec![mountain],
+        "a source needed for the activation's tap cost is avoided when another source can pay",
+    );
+}
+
+#[test]
 fn orcish_mechanics_can_sacrifice_an_artifact_to_damage_a_creature() {
     let mut game = ready_game();
     let mechanics = creature(10_000, cards::ORCISH_MECHANICS, PlayerId::One);
@@ -2667,7 +3115,7 @@ fn orcish_mechanics_can_sacrifice_an_artifact_to_damage_a_creature() {
     let action = Action::ActivateAbility {
         source: mechanics_id,
         ability: activated_ability_for(&game, mechanics_id, 0),
-        target: Some(Target::Permanent(target_id)),
+        targets: activated_targets(Target::Permanent(target_id)),
         sacrifice: Some(artifact_id),
     };
     assert!(game.legal_actions(PlayerId::One).contains(&action));
@@ -2709,10 +3157,24 @@ fn orcish_mechanics_can_sacrifice_an_artifact_to_damage_a_creature() {
 #[test]
 fn iron_star_payment_can_use_untapped_mana_sources() {
     let mut game = ready_game();
-    let mountain = creature(10_000, cards::MOUNTAIN, PlayerId::One);
-    let mountain_id = mountain.card.id;
-    game.battlefield.push(mountain);
-    game.queue_iron_star_decision(PlayerId::One);
+    let first_mountain = creature(10_000, cards::MOUNTAIN, PlayerId::One);
+    let second_mountain = creature(10_001, cards::MOUNTAIN, PlayerId::One);
+    let second_mountain_id = second_mountain.card.id;
+    game.battlefield.extend([
+        first_mountain,
+        second_mountain,
+        creature(10_002, cards::IRON_STAR, PlayerId::One),
+    ]);
+    let bolt = card(10_003, cards::LIGHTNING_BOLT, PlayerId::One);
+    let bolt_id = bolt.id;
+    game.players[0].hand.push(bolt);
+    game.apply(
+        PlayerId::One,
+        cast_action(bolt_id, vec![Target::Player(PlayerId::Two)], Vec::new(), 0),
+    )
+    .unwrap();
+    assert_eq!(game.stack.len(), 2, "Iron Star's trigger is above the Bolt");
+    pass_priority_pair(&mut game);
     let decision = game.observe(PlayerId::One).decision.unwrap();
     game.apply(
         PlayerId::One,
@@ -2728,7 +3190,7 @@ fn iron_star_payment_can_use_untapped_mana_sources() {
     assert!(
         game.battlefield
             .iter()
-            .find(|permanent| permanent.card.id == mountain_id)
+            .find(|permanent| permanent.card.id == second_mountain_id)
             .is_some_and(|permanent| permanent.tapped)
     );
 }
@@ -2774,6 +3236,68 @@ fn chain_lightning_copy_payment_can_use_untapped_mountains() {
             .filter(|permanent| [first_id, second_id].contains(&permanent.card.id))
             .all(|permanent| permanent.tapped)
     );
+    assert_eq!(game.stack.len(), 1);
+    assert_eq!(game.stack[0].targets(), vec![Target::Player(PlayerId::One)]);
+    assert!(game.stack[0].is_copy);
+}
+
+#[test]
+fn chain_lightning_copy_payment_can_use_a_creature_dealt_lethal_damage() {
+    let mut game = ready_game();
+    game.turns_started[PlayerId::Two.index()] = 1;
+    let birds = creature(10_000, cards::BIRDS_OF_PARADISE, PlayerId::Two);
+    let mountain = creature(10_001, cards::MOUNTAIN, PlayerId::Two);
+    let birds_id = birds.card.id;
+    let mountain_id = mountain.card.id;
+    game.battlefield = vec![birds, mountain];
+    let chain = card(10_002, cards::CHAIN_LIGHTNING, PlayerId::One);
+    let chain_id = chain.id;
+    game.players[0].hand.push(chain);
+    game.players[0].mana_pool.red = 1;
+
+    game.apply(
+        PlayerId::One,
+        cast_action(chain_id, vec![Target::Permanent(birds_id)], Vec::new(), 0),
+    )
+    .unwrap();
+    pass_priority_pair(&mut game);
+
+    assert!(
+        game.battlefield
+            .iter()
+            .find(|permanent| permanent.card.id == birds_id)
+            .is_some_and(|permanent| permanent.damage == 3),
+        "state-based actions wait while Chain Lightning asks whether to pay",
+    );
+    let decision = game.observe(PlayerId::Two).decision.unwrap();
+    let copy = decision
+        .options
+        .iter()
+        .find(|option| option.label.contains("your opponent"))
+        .map(|option| option.id)
+        .unwrap();
+    game.apply(
+        PlayerId::Two,
+        Action::ChooseDecision {
+            decision: decision.id,
+            options: vec![copy],
+        },
+    )
+    .unwrap();
+
+    assert!(
+        game.battlefield
+            .iter()
+            .all(|permanent| permanent.card.id != birds_id),
+        "Birds dies only after its mana ability pays for the copy",
+    );
+    assert!(
+        game.battlefield
+            .iter()
+            .find(|permanent| permanent.card.id == mountain_id)
+            .is_some_and(|permanent| permanent.tapped),
+    );
+    assert_eq!(game.players[1].mana_pool, ManaPool::default());
     assert_eq!(game.stack.len(), 1);
     assert_eq!(game.stack[0].targets(), vec![Target::Player(PlayerId::One)]);
     assert!(game.stack[0].is_copy);
@@ -2933,7 +3457,7 @@ fn factory_animates_and_strip_mine_destroys_lands() {
         Action::ActivateAbility {
             source: factory_id,
             ability: activated_ability_for(&game, factory_id, 0),
-            target: None,
+            targets: Vec::new(),
             sacrifice: None,
         },
     )
@@ -2954,7 +3478,7 @@ fn factory_animates_and_strip_mine_destroys_lands() {
                     part: CardPartId::PRIMARY,
                     ability: crate::AbilityId(2),
                 },
-                target: Some(Target::Permanent(factory_id)),
+                targets: activated_targets(Target::Permanent(factory_id)),
                 sacrifice: None,
             })
     );
@@ -2964,8 +3488,8 @@ fn factory_animates_and_strip_mine_destroys_lands() {
         Action::ActivateAbility {
             source: strip_id,
             ability: activated_ability_for(&game, strip_id, 0),
-            target: Some(Target::Permanent(opposing_id)),
-            sacrifice: Some(strip_id),
+            targets: activated_targets(Target::Permanent(opposing_id)),
+            sacrifice: None,
         },
     )
     .unwrap();
@@ -3011,7 +3535,7 @@ fn mishras_factory_can_use_its_own_mana_to_animate() {
     let animate = Action::ActivateAbility {
         source: factory_id,
         ability: activated_ability_for(&game, factory_id, 0),
-        target: None,
+        targets: Vec::new(),
         sacrifice: None,
     };
 
@@ -3079,8 +3603,8 @@ fn strip_mine_can_be_activated_in_response_to_strip_mine() {
         Action::ActivateAbility {
             source: second_strip_id,
             ability: activated_ability_for(&game, second_strip_id, 0),
-            target: Some(Target::Permanent(first_strip_id)),
-            sacrifice: Some(second_strip_id),
+            targets: activated_targets(Target::Permanent(first_strip_id)),
+            sacrifice: None,
         },
     )
     .unwrap();
@@ -3089,8 +3613,8 @@ fn strip_mine_can_be_activated_in_response_to_strip_mine() {
     let response = Action::ActivateAbility {
         source: first_strip_id,
         ability: activated_ability_for(&game, first_strip_id, 0),
-        target: Some(Target::Permanent(other_land_id)),
-        sacrifice: Some(first_strip_id),
+        targets: activated_targets(Target::Permanent(other_land_id)),
+        sacrifice: None,
     };
     assert!(game.legal_actions(PlayerId::One).contains(&response));
     game.apply(PlayerId::One, response).unwrap();
@@ -3125,7 +3649,7 @@ fn chaos_orb_uses_the_documented_deterministic_success_rule() {
     let action = Action::ActivateAbility {
         source: orb_id,
         ability: activated_ability_for(&game, orb_id, 0),
-        target: Some(Target::Permanent(target_id)),
+        targets: activated_targets(Target::Permanent(target_id)),
         sacrifice: None,
     };
     assert!(game.legal_actions(PlayerId::One).contains(&action));
@@ -3166,7 +3690,7 @@ fn chaos_orb_can_be_activated_the_turn_it_enters_using_untapped_mana() {
     let action = Action::ActivateAbility {
         source: orb_id,
         ability: activated_ability_for(&game, orb_id, 0),
-        target: Some(Target::Permanent(target_id)),
+        targets: activated_targets(Target::Permanent(target_id)),
         sacrifice: None,
     };
 
@@ -3193,14 +3717,14 @@ fn chaos_orb_can_be_activated_the_turn_it_enters_using_untapped_mana() {
 fn icatian_javelineers_cannot_activate_until_their_controller_turn() {
     let mut game = ready_game();
     let mut javeliners = creature(10_000, cards::ICATIAN_JAVELINEERS, PlayerId::One);
-    javeliners.plus_one_counters = 1;
+    javeliners.javelin_counters = 1;
     javeliners.entered_controller_turn = game.turns_started[PlayerId::One.index()];
     let source = javeliners.card.id;
     game.battlefield = vec![javeliners];
     let action = Action::ActivateAbility {
         source,
         ability: activated_ability_for(&game, source, 0),
-        target: Some(Target::Player(PlayerId::Two)),
+        targets: activated_targets(Target::Player(PlayerId::Two)),
         sacrifice: None,
     };
     assert_eq!(game.power(&game.battlefield[0]), Some(1));
@@ -3237,7 +3761,7 @@ fn removing_chaos_orb_in_response_nullifies_its_flip() {
         Action::ActivateAbility {
             source: orb_id,
             ability: activated_ability_for(&game, orb_id, 0),
-            target: Some(Target::Permanent(target_id)),
+            targets: activated_targets(Target::Permanent(target_id)),
             sacrifice: None,
         },
     )
@@ -3598,7 +4122,7 @@ fn green_creatures_get_their_land_bonuses_and_llanowar_elves_make_green() {
 }
 
 #[test]
-fn land_subtypes_grant_distinct_intrinsic_mana_abilities() {
+fn lands_expose_their_distinct_printed_mana_abilities() {
     let mut game = ready_game();
     game.battlefield.extend([
         creature(10_000, cards::FOREST, PlayerId::One),
@@ -3610,7 +4134,11 @@ fn land_subtypes_grant_distinct_intrinsic_mana_abilities() {
     assert_eq!(forest[0].color, ManaColor::Green);
     assert_eq!(
         forest[0].ability,
-        AbilityOrigin::IntrinsicBasicLand(BasicLandType::Forest)
+        AbilityOrigin::Printed {
+            definition: cards::FOREST,
+            part: CardPartId::PRIMARY,
+            ability: crate::AbilityId::PRIMARY,
+        }
     );
 
     let taiga = game.mana_ability_activations(&game.battlefield[1]);
@@ -3621,12 +4149,20 @@ fn land_subtypes_grant_distinct_intrinsic_mana_abilities() {
             .collect::<Vec<_>>(),
         vec![
             (
-                AbilityOrigin::IntrinsicBasicLand(BasicLandType::Mountain),
-                ManaColor::Red,
+                AbilityOrigin::Printed {
+                    definition: cards::TAIGA,
+                    part: CardPartId::PRIMARY,
+                    ability: crate::AbilityId::PRIMARY,
+                },
+                ManaColor::Green,
             ),
             (
-                AbilityOrigin::IntrinsicBasicLand(BasicLandType::Forest),
-                ManaColor::Green,
+                AbilityOrigin::Printed {
+                    definition: cards::TAIGA,
+                    part: CardPartId::PRIMARY,
+                    ability: crate::AbilityId(1),
+                },
+                ManaColor::Red,
             ),
         ]
     );
@@ -3738,7 +4274,7 @@ fn copy_artifact_resolves_a_copied_icy_manipulator_ability_from_its_frozen_origi
         Action::ActivateAbility {
             source: copied_id,
             ability,
-            target: Some(Target::Permanent(target_id)),
+            targets: activated_targets(Target::Permanent(target_id)),
             sacrifice: None,
         },
     )
@@ -3768,10 +4304,371 @@ fn copy_artifact_resolves_a_copied_icy_manipulator_ability_from_its_frozen_origi
 }
 
 #[test]
-fn granted_ability_keeps_its_frozen_resolver_when_the_source_changes() {
+fn granted_activation_freezes_payload_before_sacrificing_grant_source() {
+    static TARGETS: [AbilityTargetDef; 1] = [AbilityTargetDef::exactly_one(
+        TargetSlotId(0),
+        "any target",
+        AbilityTargetPredicate::AnyTarget,
+    )];
+    static GRANTED_ABILITY: AbilityDef = AbilityDef::activated(
+        crate::AbilityId(1),
+        "Sacrifice an artifact: This creature deals 2 damage to any target.",
+        &[AbilityCostDef::SacrificePermanent {
+            object: ObjectPredicateDef::Artifact,
+            controller: PlayerRelation::You,
+        }],
+        EffectDef::DealDamage {
+            recipient: EffectRecipientDef::Target(TargetSlotId(0)),
+            amount: ValueDef::Constant(2),
+        },
+    )
+    .with_targets(&TARGETS);
+    static GRANTOR_ABILITIES: [AbilityDef; 1] = [AbilityDef::static_ability(
+        crate::AbilityId::PRIMARY,
+        "Creatures you control have the test ability.",
+        EffectDef::Apply {
+            recipient: EffectRecipientDef::MatchingObjects {
+                object: ObjectPredicateDef::Creature,
+                zones: &[ZoneKind::Battlefield],
+                controller: PlayerRelation::You,
+            },
+            effect: AppliedEffectDef::GrantAbility(&GRANTED_ABILITY),
+            duration: EffectDurationDef::WhileSourceRemainsInZone,
+        },
+    )];
+    let grantor_definition_id = CardDefinitionId(10_062);
+    let mut grantor_definition = CardDefinition::new(
+        grantor_definition_id,
+        "Activated snapshot test grantor",
+        CardSet::Magic2014,
+        false,
+        CardBehavior::Unsupported,
+    );
+    grantor_definition.rules = CardRules::new(CardKind::Artifact, ManaCost::new(0, 0), "")
+        .with_abilities(&GRANTOR_ABILITIES);
+    synchronize_single_part_definition(&mut grantor_definition);
+
     let mut game = ready_game();
+    let mut definitions = game
+        .catalog
+        .definitions()
+        .into_iter()
+        .cloned()
+        .collect::<Vec<_>>();
+    definitions.push(grantor_definition);
+    game.catalog = CardCatalog::new(definitions).unwrap();
+    let grantor = CardInstanceId(10_000);
+    let receiver = CardInstanceId(10_001);
     game.battlefield.extend([
-        creature(10_000, cards::ICY_MANIPULATOR, PlayerId::One),
+        creature(grantor.0, grantor_definition_id, PlayerId::One),
+        creature(receiver.0, cards::ATOG, PlayerId::One),
+    ]);
+    let origin = AbilityOrigin::Granted {
+        source: grantor,
+        ability: crate::AbilityId(1),
+    };
+    let activation = Action::ActivateAbility {
+        source: receiver,
+        ability: origin,
+        targets: activated_targets(Target::Player(PlayerId::Two)),
+        sacrifice: Some(grantor),
+    };
+    assert!(game.legal_actions(PlayerId::One).contains(&activation));
+
+    game.apply(PlayerId::One, activation).unwrap();
+
+    assert!(
+        game.battlefield
+            .iter()
+            .all(|permanent| permanent.card.id != grantor),
+        "the continuous-effect source was sacrificed as the activation cost",
+    );
+    let payload = game.stack[0]
+        .ability
+        .as_ref()
+        .expect("the activated ability has a frozen stack payload");
+    assert_eq!(payload.origin, origin);
+    assert_eq!(payload.target_defs, &TARGETS);
+    assert_eq!(
+        payload.targets,
+        vec![TargetSelection::single(
+            TargetSlotId(0),
+            Target::Player(PlayerId::Two),
+        )],
+    );
+    assert!(matches!(
+        payload.resolver,
+        StackAbilityResolver::Declarative(EffectDef::DealDamage { .. })
+    ));
+
+    pass_priority_pair(&mut game);
+    assert_eq!(
+        game.players[1].life, 18,
+        "resolution must use the definition frozen before the grant disappeared",
+    );
+}
+
+static MULTI_SLOT_ACTIVATION_TARGETS: [AbilityTargetDef; 2] = [
+    AbilityTargetDef::exactly_one(
+        TargetSlotId(3),
+        "opponent",
+        AbilityTargetPredicate::Player(PlayerRelation::Opponent),
+    ),
+    AbilityTargetDef::exactly_one(
+        TargetSlotId(7),
+        "creature an opponent controls",
+        AbilityTargetPredicate::Object {
+            object: ObjectPredicateDef::Creature,
+            zones: &[ZoneKind::Battlefield],
+            controller: Some(PlayerRelation::Opponent),
+            owner: None,
+        },
+    ),
+];
+static MULTI_SLOT_ACTIVATION_EFFECTS: [EffectDef; 2] = [
+    EffectDef::DealDamage {
+        recipient: EffectRecipientDef::Target(TargetSlotId(3)),
+        amount: ValueDef::Constant(1),
+    },
+    EffectDef::DealDamage {
+        recipient: EffectRecipientDef::Target(TargetSlotId(7)),
+        amount: ValueDef::Constant(1),
+    },
+];
+static MULTI_SLOT_ACTIVATION_ABILITIES: [AbilityDef; 1] = [AbilityDef::activated(
+    crate::AbilityId::PRIMARY,
+    "Sacrifice this artifact: It deals 1 damage to target opponent and 1 damage to target creature that player controls.",
+    &[AbilityCostDef::SacrificeSource],
+    EffectDef::Sequence(&MULTI_SLOT_ACTIVATION_EFFECTS),
+)
+.with_targets(&MULTI_SLOT_ACTIVATION_TARGETS)];
+
+#[test]
+fn declarative_activation_preserves_multiple_slots_before_sacrificing_its_source() {
+    let definition_id = CardDefinitionId(10_063);
+    let mut definition = CardDefinition::new(
+        definition_id,
+        "Multi-slot activation test card",
+        CardSet::Magic2014,
+        false,
+        CardBehavior::Unsupported,
+    );
+    definition.rules = CardRules::new(CardKind::Artifact, ManaCost::new(0, 0), "")
+        .with_abilities(&MULTI_SLOT_ACTIVATION_ABILITIES);
+    synchronize_single_part_definition(&mut definition);
+
+    let mut game = ready_game();
+    let mut definitions = game
+        .catalog
+        .definitions()
+        .into_iter()
+        .cloned()
+        .collect::<Vec<_>>();
+    definitions.push(definition);
+    game.catalog = CardCatalog::new(definitions).unwrap();
+    let source = CardInstanceId(10_000);
+    let creature_target = CardInstanceId(10_001);
+    game.battlefield.extend([
+        creature(source.0, definition_id, PlayerId::One),
+        creature(creature_target.0, cards::SERRA_ANGEL, PlayerId::Two),
+    ]);
+    let targets = vec![
+        TargetSelection::single(TargetSlotId(3), Target::Player(PlayerId::Two)),
+        TargetSelection::single(TargetSlotId(7), Target::Permanent(creature_target)),
+    ];
+    let activation = Action::ActivateAbility {
+        source,
+        ability: primary_ability(definition_id),
+        targets: targets.clone(),
+        sacrifice: None,
+    };
+
+    let invalid_slots = Action::ActivateAbility {
+        source,
+        ability: primary_ability(definition_id),
+        targets: vec![
+            TargetSelection::single(TargetSlotId(7), Target::Player(PlayerId::Two)),
+            TargetSelection::single(TargetSlotId(3), Target::Permanent(creature_target)),
+        ],
+        sacrifice: None,
+    };
+    assert!(game.apply(PlayerId::One, invalid_slots).is_err());
+    assert!(
+        game.battlefield
+            .iter()
+            .any(|permanent| permanent.card.id == source),
+        "slot validation must happen before sacrificing the source",
+    );
+    assert!(game.stack.is_empty());
+
+    assert!(
+        game.legal_actions(PlayerId::One).contains(&activation),
+        "declarative action generation must retain abilities with multiple target slots",
+    );
+    game.apply(PlayerId::One, activation).unwrap();
+
+    assert!(
+        game.battlefield
+            .iter()
+            .all(|permanent| permanent.card.id != source),
+        "the source was sacrificed as an activation cost",
+    );
+    let payload = game.stack[0]
+        .ability
+        .as_ref()
+        .expect("the activated ability has a frozen payload");
+    assert_eq!(payload.target_defs, &MULTI_SLOT_ACTIVATION_TARGETS);
+    assert_eq!(payload.targets, targets);
+
+    pass_priority_pair(&mut game);
+    assert_eq!(game.players[1].life, 19);
+    assert!(
+        game.battlefield
+            .iter()
+            .find(|permanent| permanent.card.id == creature_target)
+            .is_some_and(|permanent| permanent.damage == 1),
+    );
+}
+
+#[test]
+fn one_ability_target_slot_resolves_for_every_selected_legal_target() {
+    static TARGETS: [AbilityTargetDef; 1] = [AbilityTargetDef {
+        id: TargetSlotId(5),
+        label: "up to two creatures an opponent controls",
+        predicate: AbilityTargetPredicate::Object {
+            object: ObjectPredicateDef::Creature,
+            zones: &[ZoneKind::Battlefield],
+            controller: Some(PlayerRelation::Opponent),
+            owner: None,
+        },
+        minimum: 1,
+        maximum: 2,
+    }];
+    static ABILITIES: [AbilityDef; 1] = [AbilityDef::activated(
+        crate::AbilityId::PRIMARY,
+        "Deal 1 damage to up to two target creatures an opponent controls.",
+        &[],
+        EffectDef::DealDamage {
+            recipient: EffectRecipientDef::Target(TargetSlotId(5)),
+            amount: ValueDef::Constant(1),
+        },
+    )
+    .with_targets(&TARGETS)];
+
+    let definition_id = CardDefinitionId(10_064);
+    let mut definition = CardDefinition::new(
+        definition_id,
+        "Multi-target slot test card",
+        CardSet::Magic2014,
+        false,
+        CardBehavior::Unsupported,
+    );
+    definition.rules =
+        CardRules::new(CardKind::Artifact, ManaCost::new(0, 0), "").with_abilities(&ABILITIES);
+    synchronize_single_part_definition(&mut definition);
+
+    let mut game = ready_game();
+    let mut definitions = game
+        .catalog
+        .definitions()
+        .into_iter()
+        .cloned()
+        .collect::<Vec<_>>();
+    definitions.push(definition);
+    game.catalog = CardCatalog::new(definitions).unwrap();
+    let source = CardInstanceId(10_000);
+    let first_target = CardInstanceId(10_001);
+    let second_target = CardInstanceId(10_002);
+    game.battlefield.extend([
+        creature(source.0, definition_id, PlayerId::One),
+        creature(first_target.0, cards::SERRA_ANGEL, PlayerId::Two),
+        creature(second_target.0, cards::SERRA_ANGEL, PlayerId::Two),
+    ]);
+    let action = Action::ActivateAbility {
+        source,
+        ability: primary_ability(definition_id),
+        targets: vec![TargetSelection::new(
+            TargetSlotId(5),
+            vec![
+                Target::Permanent(first_target),
+                Target::Permanent(second_target),
+            ],
+        )],
+        sacrifice: None,
+    };
+
+    assert!(game.legal_actions(PlayerId::One).contains(&action));
+    game.apply(PlayerId::One, action).unwrap();
+    pass_priority_pair(&mut game);
+
+    for target in [first_target, second_target] {
+        assert!(
+            game.battlefield
+                .iter()
+                .find(|permanent| permanent.card.id == target)
+                .is_some_and(|permanent| permanent.damage == 1),
+            "every legal target selected in the slot receives the effect",
+        );
+    }
+}
+
+#[test]
+fn granted_ability_keeps_its_frozen_resolver_when_the_source_changes() {
+    static TARGETS: [AbilityTargetDef; 1] = [AbilityTargetDef::exactly_one(
+        TargetSlotId(0),
+        "permanent",
+        AbilityTargetPredicate::Object {
+            object: ObjectPredicateDef::Any,
+            zones: &[ZoneKind::Battlefield],
+            controller: None,
+            owner: None,
+        },
+    )];
+    static GRANTED_ABILITY: AbilityDef = AbilityDef::activated(
+        crate::AbilityId(1),
+        "{T}: Tap target permanent.",
+        &[AbilityCostDef::TapSource],
+        EffectDef::Tap {
+            object: EffectRecipientDef::Target(TargetSlotId(0)),
+        },
+    )
+    .with_targets(&TARGETS)
+    .with_implementation(AbilityImplementationDef::CustomFull {
+        behavior: Some(CardBehavior::IcyManipulator),
+        explanation: "The test intentionally grants a custom resolver.",
+    });
+    static SOURCE_ABILITIES: [AbilityDef; 1] = [AbilityDef::static_ability(
+        crate::AbilityId::PRIMARY,
+        "This permanent has the test ability.",
+        EffectDef::Apply {
+            recipient: EffectRecipientDef::Source,
+            effect: AppliedEffectDef::GrantAbility(&GRANTED_ABILITY),
+            duration: EffectDurationDef::WhileSourceRemainsInZone,
+        },
+    )];
+    let definition_id = CardDefinitionId(10_061);
+    let mut definition = CardDefinition::new(
+        definition_id,
+        "Granted resolver test card",
+        CardSet::Magic2014,
+        false,
+        CardBehavior::Unsupported,
+    );
+    definition.rules = CardRules::new(CardKind::Artifact, ManaCost::new(0, 0), "")
+        .with_abilities(&SOURCE_ABILITIES);
+    synchronize_single_part_definition(&mut definition);
+
+    let mut game = ready_game();
+    let mut definitions = game
+        .catalog
+        .definitions()
+        .into_iter()
+        .cloned()
+        .collect::<Vec<_>>();
+    definitions.push(definition);
+    game.catalog = CardCatalog::new(definitions).unwrap();
+    game.battlefield.extend([
+        creature(10_000, definition_id, PlayerId::One),
         creature(10_001, cards::MOUNTAIN, PlayerId::Two),
     ]);
     let source = CardInstanceId(10_000);
@@ -3779,15 +4676,16 @@ fn granted_ability_keeps_its_frozen_resolver_when_the_source_changes() {
     let source_card = game.battlefield[0].card.clone();
     let origin = AbilityOrigin::Granted {
         source,
-        ability: crate::AbilityId::PRIMARY,
+        ability: crate::AbilityId(1),
     };
+    let frozen = game.freeze_activated_ability(&game.battlefield[0], origin);
 
     game.push_activated_ability(
         source,
-        origin,
         &source_card,
         PlayerId::One,
-        vec![Target::Permanent(target)],
+        frozen,
+        activated_targets(Target::Permanent(target)),
         Vec::new(),
     );
     assert_eq!(game.stack[0].ability_origin(), Some(origin));
@@ -3796,9 +4694,7 @@ fn granted_ability_keeps_its_frozen_resolver_when_the_source_changes() {
             .ability
             .as_ref()
             .map(|ability| ability.resolver),
-        Some(StackAbilityResolver::CustomActivated(
-            CardBehavior::IcyManipulator
-        ))
+        Some(StackAbilityResolver::Custom(CardBehavior::IcyManipulator))
     ));
 
     // This models a continuous/copy effect changing the effective rules of a
@@ -3817,22 +4713,30 @@ fn granted_ability_keeps_its_frozen_resolver_when_the_source_changes() {
 }
 
 #[test]
-fn declarative_clause_uses_its_own_resolver_on_a_custom_behavior_card() {
+fn declarative_clause_uses_its_own_resolver_on_a_card_with_custom_behavior() {
     static TARGETS: [AbilityTargetDef; 1] = [AbilityTargetDef::exactly_one(
         TargetSlotId(0),
         "any target",
         AbilityTargetPredicate::AnyTarget,
     )];
-    static ABILITIES: [AbilityDef; 1] = [AbilityDef::activated(
-        crate::AbilityId::PRIMARY,
-        "Deal 1 damage to any target.",
-        &[],
-        EffectDef::DealDamage {
-            recipient: EffectRecipientDef::Target(TargetSlotId(0)),
-            amount: ValueDef::Constant(1),
-        },
-    )
-    .with_targets(&TARGETS)];
+    static ABILITIES: [AbilityDef; 2] = [
+        AbilityDef::activated(
+            crate::AbilityId::PRIMARY,
+            "Deal 1 damage to any target.",
+            &[],
+            EffectDef::DealDamage {
+                recipient: EffectRecipientDef::Target(TargetSlotId(0)),
+                amount: ValueDef::Constant(1),
+            },
+        )
+        .with_targets(&TARGETS),
+        AbilityDef::custom_full(
+            crate::AbilityId(1),
+            "A separate custom clause.",
+            CardBehavior::IcyManipulator,
+            "The test keeps one explicitly custom clause beside the declarative clause.",
+        ),
+    ];
     let definition_id = CardDefinitionId(10_060);
     let mut definition = CardDefinition::new(
         definition_id,
@@ -3841,9 +4745,8 @@ fn declarative_clause_uses_its_own_resolver_on_a_custom_behavior_card() {
         false,
         CardBehavior::Unsupported,
     );
-    definition.rules = CardRules::new(CardKind::Artifact, ManaCost::new(0, 0), "")
-        .with_abilities(&ABILITIES)
-        .with_special_behavior(CardBehavior::IcyManipulator);
+    definition.rules =
+        CardRules::new(CardKind::Artifact, ManaCost::new(0, 0), "").with_abilities(&ABILITIES);
     synchronize_single_part_definition(&mut definition);
 
     let mut game = ready_game();
@@ -3853,13 +4756,14 @@ fn declarative_clause_uses_its_own_resolver_on_a_custom_behavior_card() {
     let source = CardInstanceId(10_060);
     let source_card = game.battlefield[0].card.clone();
     let origin = primary_ability(definition_id);
+    let frozen = game.freeze_activated_ability(&game.battlefield[0], origin);
 
     game.push_activated_ability(
         source,
-        origin,
         &source_card,
         PlayerId::One,
-        vec![Target::Player(PlayerId::Two)],
+        frozen,
+        activated_targets(Target::Player(PlayerId::Two)),
         Vec::new(),
     );
     assert!(matches!(
@@ -3939,7 +4843,8 @@ fn resolving_ability_masks_an_illegal_target_in_each_frozen_slot() {
             ],
             context: TriggerContext {
                 object: None,
-                player: None,
+                object_controller: None,
+                event_player: None,
                 amount: None,
             },
             resolver: StackAbilityResolver::Declarative(EffectDef::Sequence(&EFFECTS)),
@@ -4079,7 +4984,14 @@ fn regeneration_shields_stop_destroy_but_not_wrath() {
     assert_eq!(game.battlefield[0].regeneration_shields, 0);
 
     let wrath = spell(10_001, cards::WRATH_OF_GOD, PlayerId::Two, 0);
-    game.resolve_spell_effect(&wrath, CardBehavior::WrathOfGod);
+    let effect = game
+        .catalog
+        .get(cards::WRATH_OF_GOD)
+        .expect("Wrath of God is in the catalog")
+        .rules
+        .ability_clauses()[0]
+        .effect;
+    game.resolve_effect_def(effect, &wrath, TriggerContext::empty());
     assert!(game.battlefield.is_empty());
 }
 
@@ -4139,8 +5051,8 @@ fn firebreathing_is_offered_while_the_mana_is_still_in_the_land() {
             .legal_actions(PlayerId::One)
             .into_iter()
             .find(|action| {
-                matches!(action, Action::ActivateAbility { source, target: None, .. }
-                    if *source == source_id)
+                matches!(action, Action::ActivateAbility { source, targets, .. }
+                    if targets.is_empty() && *source == source_id)
             })
             .expect("the ability is offered with an untapped Mountain and an empty pool");
 
@@ -4148,7 +5060,14 @@ fn firebreathing_is_offered_while_the_mana_is_still_in_the_land() {
             .battlefield
             .iter()
             .find(|permanent| permanent.card.id == source_id)
-            .map(|permanent| game.power(permanent));
+            .map(|permanent| {
+                (
+                    game.power(permanent),
+                    game.toughness(permanent),
+                    game.has_flying(permanent),
+                )
+            })
+            .unwrap();
         game.apply(PlayerId::One, activation).unwrap();
         while !game.stack.is_empty() {
             game.apply(PlayerId::One, Action::PassPriority).unwrap();
@@ -4169,13 +5088,378 @@ fn firebreathing_is_offered_while_the_mana_is_still_in_the_land() {
             .battlefield
             .iter()
             .find(|permanent| permanent.card.id == source_id)
-            .map(|permanent| game.power(permanent));
-        if definition == cards::DRAGON_WHELP {
-            assert_eq!(
-                after,
-                before.map(|power| power.map(|value| value + 1)),
-                "Dragon Whelp grew",
-            );
+            .map(|permanent| {
+                (
+                    game.power(permanent),
+                    game.toughness(permanent),
+                    game.has_flying(permanent),
+                )
+            })
+            .unwrap();
+        match definition {
+            cards::DRAGON_WHELP => {
+                assert_eq!(
+                    after.0,
+                    before.0.map(|value| value + 1),
+                    "Dragon Whelp grew"
+                );
+            }
+            cards::GOBLIN_BALLOON_BRIGADE => {
+                assert!(!before.2);
+                assert!(after.2, "Goblin Balloon Brigade gained flying");
+            }
+            cards::GRANITE_GARGOYLE => {
+                assert_eq!(
+                    after.1,
+                    before.1.map(|value| value + 1),
+                    "Granite Gargoyle gained toughness",
+                );
+            }
+            _ => unreachable!(),
         }
     }
+}
+
+#[test]
+fn declarative_ritual_psionic_blast_and_sign_in_blood_resolve() {
+    let mut game = ready_game();
+    let ritual = card(10_000, cards::DARK_RITUAL, PlayerId::One);
+    game.players[0].hand.push(ritual.clone());
+    game.players[0].mana_pool.black = 1;
+    game.apply(
+        PlayerId::One,
+        cast_action(ritual.id, Vec::new(), Vec::new(), 0),
+    )
+    .unwrap();
+    pass_priority_pair(&mut game);
+    assert_eq!(game.players[0].mana_pool.black, 3);
+
+    let mut game = ready_game();
+    let blast = card(10_000, cards::PSIONIC_BLAST, PlayerId::One);
+    game.players[0].hand.push(blast.clone());
+    game.players[0].mana_pool.blue = 1;
+    game.players[0].mana_pool.colorless = 2;
+    game.apply(
+        PlayerId::One,
+        cast_action(blast.id, vec![Target::Player(PlayerId::Two)], Vec::new(), 0),
+    )
+    .unwrap();
+    pass_priority_pair(&mut game);
+    assert_eq!(game.players[0].life, 18);
+    assert_eq!(game.players[1].life, 16);
+
+    let mut game = ready_game();
+    let sign = card(10_000, cards::SIGN_IN_BLOOD, PlayerId::One);
+    game.players[0].hand.push(sign.clone());
+    game.players[0].mana_pool.black = 2;
+    game.apply(
+        PlayerId::One,
+        cast_action(sign.id, vec![Target::Player(PlayerId::Two)], Vec::new(), 0),
+    )
+    .unwrap();
+    pass_priority_pair(&mut game);
+    assert_eq!(game.players[1].hand.len(), 2);
+    assert_eq!(game.players[1].life, 18);
+}
+
+#[test]
+fn any_target_damage_can_remove_a_planeswalker() {
+    let definition_id = CardDefinitionId(10_075);
+    let mut definition = CardDefinition::new(
+        definition_id,
+        "Test Planeswalker",
+        CardSet::Magic2014,
+        false,
+        CardBehavior::Unsupported,
+    );
+    definition.rules = CardRules::new(CardKind::Planeswalker, ManaCost::default(), "")
+        .with_supertype(CardSupertype::Legendary)
+        .with_subtypes(&["Test"])
+        .planeswalker(3);
+    synchronize_single_part_definition(&mut definition);
+
+    let mut game = ready_game();
+    let mut definitions = game
+        .catalog
+        .definitions()
+        .into_iter()
+        .cloned()
+        .collect::<Vec<_>>();
+    definitions.push(definition);
+    game.catalog = CardCatalog::new(definitions).unwrap();
+    let mut planeswalker = creature(10_000, definition_id, PlayerId::Two);
+    planeswalker.loyalty = Some(3);
+    let planeswalker_id = planeswalker.card.id;
+    game.battlefield.push(planeswalker);
+    let bolt = card(10_001, cards::LIGHTNING_BOLT, PlayerId::One);
+    game.players[0].hand.push(bolt.clone());
+    game.players[0].mana_pool.red = 1;
+
+    let action = cast_action(
+        bolt.id,
+        vec![Target::Permanent(planeswalker_id)],
+        Vec::new(),
+        0,
+    );
+    assert!(game.legal_actions(PlayerId::One).contains(&action));
+    game.apply(PlayerId::One, action).unwrap();
+    pass_priority_pair(&mut game);
+
+    assert!(
+        game.battlefield
+            .iter()
+            .all(|permanent| permanent.card.id != planeswalker_id)
+    );
+    assert!(
+        game.players[1]
+            .graveyard
+            .iter()
+            .any(|card| card.definition == definition_id)
+    );
+}
+
+#[test]
+fn declarative_destroy_spells_enforce_their_target_types_and_resolve() {
+    for (spell_definition, target_definition, colored_mana) in [
+        (cards::SHATTER, cards::BLACK_VISE, ManaColor::Red),
+        (cards::DISENCHANT, cards::ENERGY_FLUX, ManaColor::White),
+        (cards::SINKHOLE, cards::MOUNTAIN, ManaColor::Black),
+        (cards::STONE_RAIN, cards::MOUNTAIN, ManaColor::Red),
+    ] {
+        let mut game = ready_game();
+        let target = creature(10_000, target_definition, PlayerId::Two);
+        let target_id = target.card.id;
+        let spell = card(10_001, spell_definition, PlayerId::One);
+        game.battlefield.push(target);
+        game.players[0].hand.push(spell.clone());
+        game.players[0].mana_pool.colorless = 3;
+        match colored_mana {
+            ManaColor::White => game.players[0].mana_pool.white = 2,
+            ManaColor::Blue => game.players[0].mana_pool.blue = 2,
+            ManaColor::Black => game.players[0].mana_pool.black = 2,
+            ManaColor::Red => game.players[0].mana_pool.red = 2,
+            ManaColor::Green => game.players[0].mana_pool.green = 2,
+            ManaColor::Colorless => game.players[0].mana_pool.colorless = 5,
+        }
+        let action = cast_action(spell.id, vec![Target::Permanent(target_id)], Vec::new(), 0);
+        assert!(
+            game.legal_actions(PlayerId::One).contains(&action),
+            "{spell_definition:?} accepts its declared target type",
+        );
+        game.apply(PlayerId::One, action).unwrap();
+        pass_priority_pair(&mut game);
+        assert!(
+            game.battlefield
+                .iter()
+                .all(|permanent| permanent.card.id != target_id),
+            "{spell_definition:?} destroys its target on resolution",
+        );
+    }
+}
+
+#[test]
+fn sage_and_relic_barrier_use_the_shared_activated_ability_stack() {
+    let mut game = ready_game();
+    let sage = creature(10_000, cards::SAGE_OF_LAT_NAM, PlayerId::One);
+    let sage_id = sage.card.id;
+    let ring = creature(10_001, cards::SOL_RING, PlayerId::One);
+    let ring_id = ring.card.id;
+    game.battlefield = vec![sage, ring];
+    let hand_before = game.players[0].hand.len();
+    game.apply(
+        PlayerId::One,
+        Action::ActivateAbility {
+            source: sage_id,
+            ability: activated_ability_for(&game, sage_id, 0),
+            targets: Vec::new(),
+            sacrifice: Some(ring_id),
+        },
+    )
+    .unwrap();
+    assert!(game.battlefield[0].tapped);
+    assert!(
+        game.battlefield
+            .iter()
+            .all(|permanent| permanent.card.id != ring_id)
+    );
+    assert_eq!(game.stack.len(), 1);
+    pass_priority_pair(&mut game);
+    assert_eq!(game.players[0].hand.len(), hand_before + 1);
+
+    let mut game = ready_game();
+    let barrier = creature(10_000, cards::RELIC_BARRIER, PlayerId::One);
+    let barrier_id = barrier.card.id;
+    let ring = creature(10_001, cards::SOL_RING, PlayerId::Two);
+    let ring_id = ring.card.id;
+    game.battlefield = vec![barrier, ring];
+    game.apply(
+        PlayerId::One,
+        Action::ActivateAbility {
+            source: barrier_id,
+            ability: activated_ability_for(&game, barrier_id, 0),
+            targets: activated_targets(Target::Permanent(ring_id)),
+            sacrifice: None,
+        },
+    )
+    .unwrap();
+    assert!(game.battlefield[0].tapped);
+    assert!(!game.battlefield[1].tapped);
+    pass_priority_pair(&mut game);
+    assert!(game.battlefield[1].tapped);
+}
+
+#[test]
+fn migrated_upkeep_and_death_triggers_resolve_from_the_stack() {
+    for (definition, active_player, damaged_player) in [
+        (cards::COPPER_TABLET, PlayerId::Two, PlayerId::Two),
+        (cards::JUZAM_DJINN, PlayerId::One, PlayerId::One),
+        (cards::SERENDIB_EFREET, PlayerId::One, PlayerId::One),
+    ] {
+        let mut game = ready_game();
+        game.active_player = active_player;
+        game.priority = active_player;
+        game.step = Step::Upkeep;
+        game.battlefield
+            .push(creature(10_000, definition, PlayerId::One));
+        game.handle_upkeep_triggers();
+        game.finish_rules_procedure();
+        assert_eq!(game.stack.len(), 1);
+        pass_priority_pair(&mut game);
+        assert_eq!(game.players[damaged_player.index()].life, 19);
+        assert_eq!(game.players[damaged_player.opponent().index()].life, 20);
+    }
+
+    let mut game = ready_game();
+    let vampire = creature(10_000, cards::SENGIR_VAMPIRE, PlayerId::One);
+    let vampire_id = vampire.card.id;
+    let lion = creature(10_001, cards::SAVANNAH_LIONS, PlayerId::Two);
+    let lion_id = lion.card.id;
+    game.battlefield = vec![vampire, lion];
+    game.damage_target_from(Some(vampire_id), Some(Target::Permanent(lion_id)), 1);
+    game.check_state_based_actions();
+    game.finish_rules_procedure();
+    assert_eq!(game.stack.len(), 1);
+    pass_priority_pair(&mut game);
+    let vampire = game
+        .battlefield
+        .iter()
+        .find(|permanent| permanent.card.id == vampire_id)
+        .unwrap();
+    assert_eq!(vampire.plus_one_counters, 1);
+    assert_eq!(game.power(vampire), Some(5));
+}
+
+#[test]
+fn state_based_actions_repeat_after_static_toughness_bonuses_disappear() {
+    let mut game = ready_game();
+    let mut first_king = creature(10_000, cards::GOBLIN_KING, PlayerId::One);
+    first_king.damage = 3;
+    let mut second_king = creature(10_001, cards::GOBLIN_KING, PlayerId::One);
+    second_king.damage = 2;
+    let mut balloon = creature(10_002, cards::GOBLIN_BALLOON_BRIGADE, PlayerId::One);
+    balloon.damage = 1;
+    game.battlefield = vec![first_king, second_king, balloon];
+
+    game.check_state_based_actions();
+
+    assert!(game.battlefield.is_empty());
+    assert_eq!(game.players[0].graveyard.len(), 3);
+}
+
+#[test]
+fn simultaneous_deaths_use_the_pre_exit_trigger_listener_snapshot() {
+    static ABILITIES: [AbilityDef; 1] = [AbilityDef::triggered(
+        AbilityId::PRIMARY,
+        "Whenever a creature dies, you gain 1 life.",
+        TriggerEventDef::ZoneChanged {
+            object: ObjectPredicateDef::Creature,
+            from: Some(ZoneKind::Battlefield),
+            to: Some(ZoneKind::Graveyard),
+        },
+        EffectDef::GainLife {
+            recipient: EffectRecipientDef::Controller,
+            amount: ValueDef::Constant(1),
+        },
+    )];
+    let definition_id = CardDefinitionId(10_080);
+    let mut definition = CardDefinition::new(
+        definition_id,
+        "Test death listener",
+        CardSet::Magic2014,
+        false,
+        CardBehavior::Unsupported,
+    );
+    definition.rules = CardRules::new(CardKind::Creature, ManaCost::default(), "")
+        .creature(1, 1)
+        .with_abilities(&ABILITIES);
+    synchronize_single_part_definition(&mut definition);
+
+    let mut game = ready_game();
+    let mut definitions = game
+        .catalog
+        .definitions()
+        .into_iter()
+        .cloned()
+        .collect::<Vec<_>>();
+    definitions.push(definition);
+    game.catalog = CardCatalog::new(definitions).unwrap();
+    let mut first = creature(10_000, definition_id, PlayerId::One);
+    first.damage = 1;
+    let mut second = creature(10_001, definition_id, PlayerId::One);
+    second.damage = 1;
+    game.battlefield = vec![first, second];
+
+    game.check_state_based_actions();
+
+    assert!(game.battlefield.is_empty());
+    assert_eq!(game.pending_triggers.len(), 4);
+}
+
+#[test]
+fn simultaneous_exits_keep_pre_exit_characteristics_for_trigger_matching() {
+    static ABILITIES: [AbilityDef; 1] = [AbilityDef::triggered(
+        AbilityId::PRIMARY,
+        "Whenever a Mountain leaves the battlefield, you gain 1 life.",
+        TriggerEventDef::ZoneChanged {
+            object: ObjectPredicateDef::Subtype("Mountain"),
+            from: Some(ZoneKind::Battlefield),
+            to: Some(ZoneKind::Graveyard),
+        },
+        EffectDef::GainLife {
+            recipient: EffectRecipientDef::Controller,
+            amount: ValueDef::Constant(1),
+        },
+    )];
+    let definition_id = CardDefinitionId(10_081);
+    let mut definition = CardDefinition::new(
+        definition_id,
+        "Test Mountain exit listener",
+        CardSet::Magic2014,
+        false,
+        CardBehavior::Unsupported,
+    );
+    definition.rules = CardRules::new(CardKind::Creature, ManaCost::default(), "")
+        .creature(1, 1)
+        .with_abilities(&ABILITIES);
+    synchronize_single_part_definition(&mut definition);
+
+    let mut game = ready_game();
+    let mut definitions = game
+        .catalog
+        .definitions()
+        .into_iter()
+        .cloned()
+        .collect::<Vec<_>>();
+    definitions.push(definition);
+    game.catalog = CardCatalog::new(definitions).unwrap();
+    let moon = creature(10_000, cards::BLOOD_MOON, PlayerId::One);
+    let moon_id = moon.card.id;
+    let taiga = creature(10_001, cards::TAIGA, PlayerId::One);
+    let taiga_id = taiga.card.id;
+    game.battlefield = vec![creature(10_002, definition_id, PlayerId::One), moon, taiga];
+
+    game.move_permanents_to_graveyard(&[moon_id, taiga_id]);
+
+    assert_eq!(game.pending_triggers.len(), 1);
+    assert_eq!(game.pending_triggers[0].context.object, Some(taiga_id));
 }

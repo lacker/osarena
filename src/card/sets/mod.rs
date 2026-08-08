@@ -168,52 +168,35 @@ pub(super) fn additional_printings() -> Vec<CardPrinting> {
 pub(super) const fn rules(behavior: CardBehavior) -> &'static CardRules {
     match behavior {
         CardBehavior::Atog => &y1994::antiquities::ATOG.rules,
-        CardBehavior::BallLightning => &y1994::the_dark::BALL_LIGHTNING.rules,
         CardBehavior::BlackVise => &y1993::alpha::BLACK_VISE.rules,
         CardBehavior::BloodMoon => &y1994::the_dark::BLOOD_MOON.rules,
         CardBehavior::ChainLightning => &y1994::legends::CHAIN_LIGHTNING.rules,
-        CardBehavior::CopperTablet => &y1993::alpha::COPPER_TABLET.rules,
         CardBehavior::Detonate => &y1994::antiquities::DETONATE.rules,
         CardBehavior::Fireball => &y1993::alpha::FIREBALL.rules,
         CardBehavior::Fork => &y1993::alpha::FORK.rules,
         CardBehavior::GlassesOfUrza => &y1993::alpha::GLASSES_OF_URZA.rules,
-        CardBehavior::IronStar => &y1993::alpha::IRON_STAR.rules,
         CardBehavior::LightningBolt => &y1993::alpha::LIGHTNING_BOLT.rules,
         CardBehavior::RedElementalBlast => &y1993::alpha::RED_ELEMENTAL_BLAST.rules,
-        CardBehavior::Shatter => &y1993::alpha::SHATTER.rules,
         CardBehavior::Smoke => &y1993::alpha::SMOKE.rules,
         CardBehavior::StoneGiant => &y1993::alpha::STONE_GIANT.rules,
         CardBehavior::WinterOrb => &y1993::alpha::WINTER_ORB.rules,
         CardBehavior::ChaosOrb => &y1993::alpha::CHAOS_ORB.rules,
         CardBehavior::DragonWhelp => &y1993::alpha::DRAGON_WHELP.rules,
-        CardBehavior::GoblinBalloonBrigade => &y1993::alpha::GOBLIN_BALLOON_BRIGADE.rules,
         CardBehavior::GoblinGrenade => &y1994::fallen_empires::GOBLIN_GRENADE.rules,
-        CardBehavior::GoblinKing => &y1993::alpha::GOBLIN_KING.rules,
-        CardBehavior::GraniteGargoyle => &y1993::alpha::GRANITE_GARGOYLE.rules,
         CardBehavior::IronclawOrcs => &y1993::alpha::IRONCLAW_ORCS.rules,
         CardBehavior::MishrasFactory => &y1994::antiquities::MISHRA_S_FACTORY.rules,
         CardBehavior::OrcishMechanics => &y1994::antiquities::ORCISH_MECHANICS.rules,
-        CardBehavior::StripMine => &y1994::antiquities::STRIP_MINE.rules,
         CardBehavior::WheelOfFortune => &y1993::alpha::WHEEL_OF_FORTUNE.rules,
         CardBehavior::Juggernaut => &y1993::alpha::JUGGERNAUT.rules,
         CardBehavior::ManaVault => &y1993::alpha::MANA_VAULT.rules,
         CardBehavior::Triskelion => &y1994::antiquities::TRISKELION.rules,
-        CardBehavior::AncestralRecall => &y1993::alpha::ANCESTRAL_RECALL.rules,
-        CardBehavior::Braingeyser => &y1993::alpha::BRAINGEYSER.rules,
-        CardBehavior::Counterspell => &y1993::alpha::COUNTERSPELL.rules,
-        CardBehavior::Disenchant => &y1993::alpha::DISENCHANT.rules,
         CardBehavior::FellwarStone => &y1994::the_dark::FELLWAR_STONE.rules,
-        CardBehavior::IvoryTower => &y1994::antiquities::IVORY_TOWER.rules,
-        CardBehavior::JayemdaeTome => &y1993::alpha::JAYEMDAE_TOME.rules,
         CardBehavior::SwordsToPlowshares => &y1993::alpha::SWORDS_TO_PLOWSHARES.rules,
         CardBehavior::TimeWalk => &y1993::alpha::TIME_WALK.rules,
-        CardBehavior::Armageddon => &y1993::alpha::ARMAGEDDON.rules,
         CardBehavior::Balance => &y1993::alpha::BALANCE.rules,
-        CardBehavior::BlackKnight => &y1993::alpha::BLACK_KNIGHT.rules,
         CardBehavior::BlueElementalBlast => &y1993::alpha::BLUE_ELEMENTAL_BLAST.rules,
         CardBehavior::Channel => &y1993::alpha::CHANNEL.rules,
         CardBehavior::Crusade => &y1993::alpha::CRUSADE.rules,
-        CardBehavior::DarkRitual => &y1993::alpha::DARK_RITUAL.rules,
         CardBehavior::DemonicTutor => &y1993::alpha::DEMONIC_TUTOR.rules,
         CardBehavior::DivineOffering => &y1994::legends::DIVINE_OFFERING.rules,
         CardBehavior::DrainLife => &y1993::alpha::DRAIN_LIFE.rules,
@@ -222,44 +205,32 @@ pub(super) const fn rules(behavior: CardBehavior) -> &'static CardRules {
         CardBehavior::HymnToTourach => &y1994::fallen_empires::HYMN_TO_TOURACH.rules,
         CardBehavior::HypnoticSpecter => &y1993::alpha::HYPNOTIC_SPECTER.rules,
         CardBehavior::IcatianJavelineers => &y1994::fallen_empires::ICATIAN_JAVELINEERS.rules,
-        CardBehavior::JuzamDjinn => &y1993::arabian_nights::JUZAM_DJINN.rules,
         CardBehavior::LibraryOfAlexandria => &y1993::arabian_nights::LIBRARY_OF_ALEXANDRIA.rules,
         CardBehavior::ManaDrain => &y1994::legends::MANA_DRAIN.rules,
         CardBehavior::MazeOfIth => &y1994::the_dark::MAZE_OF_ITH.rules,
         CardBehavior::MindTwist => &y1993::alpha::MIND_TWIST.rules,
         CardBehavior::NevinyrralsDisk => &y1993::alpha::NEVINYRRALS_DISK.rules,
-        CardBehavior::OrderOfLeitbur => &y1994::fallen_empires::ORDER_OF_LEITBUR.rules,
-        CardBehavior::OrderOfTheEbonHand => &y1994::fallen_empires::ORDER_OF_THE_EBON_HAND.rules,
-        CardBehavior::PsionicBlast => &y1993::alpha::PSIONIC_BLAST.rules,
         CardBehavior::Recall => &y1994::legends::RECALL.rules,
         CardBehavior::Regrowth => &y1993::alpha::REGROWTH.rules,
-        CardBehavior::SerendibEfreet => &y1993::arabian_nights::SERENDIB_EFREET.rules,
-        CardBehavior::Sinkhole => &y1993::alpha::SINKHOLE.rules,
         CardBehavior::SylvanLibrary => &y1994::legends::SYLVAN_LIBRARY.rules,
         CardBehavior::Terror => &y1993::alpha::TERROR.rules,
         CardBehavior::TimeVault => &y1993::alpha::TIME_VAULT.rules,
         CardBehavior::Timetwister => &y1993::alpha::TIMETWISTER.rules,
         CardBehavior::WhirlingDervish => &y1994::legends::WHIRLING_DERVISH.rules,
-        CardBehavior::WhiteKnight => &y1993::alpha::WHITE_KNIGHT.rules,
         CardBehavior::ArgothianPixies => &y1994::antiquities::ARGOTHIAN_PIXIES.rules,
         CardBehavior::Berserk => &y1993::alpha::BERSERK.rules,
         CardBehavior::CityInABottle => &y1993::arabian_nights::CITY_IN_A_BOTTLE.rules,
         CardBehavior::CopyArtifact => &y1993::alpha::COPY_ARTIFACT.rules,
         CardBehavior::DustToDust => &y1994::the_dark::DUST_TO_DUST.rules,
-        CardBehavior::EnergyFlux => &y1994::antiquities::ENERGY_FLUX.rules,
         CardBehavior::GiantGrowth => &y1993::alpha::GIANT_GROWTH.rules,
         CardBehavior::HurkylsRecall => &y1994::antiquities::HURKYLS_RECALL.rules,
         CardBehavior::IcyManipulator => &y1993::alpha::ICY_MANIPULATOR.rules,
         CardBehavior::KirdApe => &y1993::arabian_nights::KIRD_APE.rules,
         CardBehavior::Moat => &y1994::legends::MOAT.rules,
         CardBehavior::Pendelhaven => &y1994::legends::PENDELHAVEN.rules,
-        CardBehavior::RelicBarrier => &y1994::legends::RELIC_BARRIER.rules,
-        CardBehavior::SageOfLatNam => &y1994::antiquities::SAGE_OF_LAT_NAM.rules,
         CardBehavior::SedgeTroll => &y1993::alpha::SEDGE_TROLL.rules,
-        CardBehavior::StoneRain => &y1993::alpha::STONE_RAIN.rules,
         CardBehavior::Tetravus => &y1994::antiquities::TETRAVUS.rules,
         CardBehavior::TheAbyss => &y1994::legends::THE_ABYSS.rules,
-        CardBehavior::WrathOfGod => &y1993::alpha::WRATH_OF_GOD.rules,
         CardBehavior::Mountain => &y1993::alpha::MOUNTAIN.rules,
         CardBehavior::Plains => &y1993::alpha::PLAINS.rules,
         CardBehavior::Unsupported => &UNSUPPORTED_RULES,
@@ -272,10 +243,12 @@ mod tests {
 
     use super::{CardRecord, SET_MODULES, y1993, y1994, y2011, y2012, y2013};
     use crate::card::{
-        AbilityImplementationDef, AppliedEffectDef, CardEffectStatus, CardPrinting, CardPrintingId,
-        CardStructure, DeclarativeAbilityDef, DoubleFacedKind, EffectDef, ImplementationStatus,
-        ManaKindDef, ManaRestrictionDef, ManaSelectionDef, ManaSpendEffectDef, PlayActionKind,
-        PlayRestriction, SpellForm, TargetPredicate, cards,
+        AbilityCostDef, AbilityDef, AbilityImplementationDef, AppliedEffectDef, BasicLandType,
+        CardPrinting, CardPrintingId, CardStructure, CardSupertype, DeclarativeAbilityDef,
+        DoubleFacedKind, EffectDef, EffectDurationDef, EffectRecipientDef, EvergreenAbility,
+        ImplementationStatus, ManaKindDef, ManaRestrictionDef, ManaSelectionDef,
+        ManaSpendEffectDef, ObjectPredicateDef, PlayActionKind, PlayRestriction, SpellForm,
+        TargetPredicate, TriggerEventDef, ZoneKind, cards,
     };
     use crate::{AbilityId, CardDefinitionId, CardPartId, CardSet, Format, ModeId, PlayOptionId};
 
@@ -310,6 +283,350 @@ mod tests {
                     .map(|record| record.printing(set)),
             )
             .collect()
+    }
+
+    fn shared_object_predicate(predicate: ObjectPredicateDef) -> bool {
+        match predicate {
+            ObjectPredicateDef::All(predicates) | ObjectPredicateDef::AnyOf(predicates) => {
+                predicates.iter().copied().all(shared_object_predicate)
+            }
+            ObjectPredicateDef::Not(predicate) => shared_object_predicate(*predicate),
+            ObjectPredicateDef::Special(_) => false,
+            ObjectPredicateDef::Any
+            | ObjectPredicateDef::Source
+            | ObjectPredicateDef::Land
+            | ObjectPredicateDef::Creature
+            | ObjectPredicateDef::Artifact
+            | ObjectPredicateDef::Spell
+            | ObjectPredicateDef::NoncreatureSpell
+            | ObjectPredicateDef::CardKind(_)
+            | ObjectPredicateDef::Color(_)
+            | ObjectPredicateDef::Subtype(_) => true,
+        }
+    }
+
+    fn shared_effect_recipient(recipient: EffectRecipientDef) -> bool {
+        match recipient {
+            EffectRecipientDef::MatchingObjects { object, zones, .. } => {
+                !zones.is_empty()
+                    && zones
+                        .iter()
+                        .all(|zone| matches!(zone, ZoneKind::Battlefield | ZoneKind::Stack))
+                    && shared_object_predicate(object)
+            }
+            EffectRecipientDef::Source
+            | EffectRecipientDef::Controller
+            | EffectRecipientDef::Opponent
+            | EffectRecipientDef::Target(_)
+            | EffectRecipientDef::TriggeringObject
+            | EffectRecipientDef::ControllerOfTriggeringObject
+            | EffectRecipientDef::EventPlayer => true,
+        }
+    }
+
+    fn shared_evergreen(keyword: EvergreenAbility) -> bool {
+        matches!(
+            keyword,
+            EvergreenAbility::Flying
+                | EvergreenAbility::Trample
+                | EvergreenAbility::Haste
+                | EvergreenAbility::Vigilance
+                | EvergreenAbility::Deathtouch
+                | EvergreenAbility::Lifelink
+                | EvergreenAbility::Reach
+                | EvergreenAbility::Flash
+                | EvergreenAbility::Hexproof
+                | EvergreenAbility::Intimidate
+                | EvergreenAbility::Mountainwalk
+                | EvergreenAbility::ProtectionFrom(_)
+        )
+    }
+
+    fn shared_mana_effect(effect: EffectDef, choices_are_supported: bool) -> bool {
+        let EffectDef::AddMana(mana) = effect else {
+            return false;
+        };
+        let selection_is_supported = match mana.mana {
+            ManaSelectionDef::One(_) => true,
+            ManaSelectionDef::Choice(colors) => choices_are_supported && !colors.is_empty(),
+        };
+        selection_is_supported
+            && mana.amount > 0
+            // Mana stores these annotations, but payment does not enforce
+            // restrictions yet and only paid-spell riders have a partial path.
+            && mana.restrictions.is_empty()
+            && mana.spend_effects.is_empty()
+    }
+
+    fn shared_resolving_apply(
+        recipient: EffectRecipientDef,
+        effect: AppliedEffectDef,
+        duration: EffectDurationDef,
+    ) -> bool {
+        if duration != EffectDurationDef::UntilEndOfTurn || !shared_effect_recipient(recipient) {
+            return false;
+        }
+        match effect {
+            AppliedEffectDef::ModifyPowerToughness { .. } => true,
+            AppliedEffectDef::GrantAbility(ability) => {
+                ability.implementation == AbilityImplementationDef::Definition
+                    && matches!(ability.definition, DeclarativeAbilityDef::Evergreen(keyword) if shared_evergreen(keyword))
+            }
+            AppliedEffectDef::CannotBeCountered | AppliedEffectDef::Special(_) => false,
+        }
+    }
+
+    fn shared_stack_effect(effect: EffectDef) -> bool {
+        match effect {
+            EffectDef::Sequence(effects) => {
+                !effects.is_empty() && effects.iter().copied().all(shared_stack_effect)
+            }
+            EffectDef::AddMana(_) => shared_mana_effect(effect, false),
+            EffectDef::DealDamage { recipient, .. }
+            | EffectDef::GainLife { recipient, .. }
+            | EffectDef::DrawCards { recipient, .. }
+            | EffectDef::LoseLife { recipient, .. } => shared_effect_recipient(recipient),
+            EffectDef::Tap { object }
+            | EffectDef::Destroy { object, .. }
+            | EffectDef::Sacrifice { object }
+            | EffectDef::Counter { object }
+            | EffectDef::AddPlusOneCounters { object, .. } => shared_effect_recipient(object),
+            EffectDef::OptionalManaPayment { effect, .. } => shared_stack_effect(*effect),
+            EffectDef::Apply {
+                recipient,
+                effect,
+                duration,
+            } => shared_resolving_apply(recipient, effect, duration),
+            EffectDef::None
+            | EffectDef::EntersTapped
+            | EffectDef::MoveToZone { .. }
+            | EffectDef::Special(_) => false,
+        }
+    }
+
+    fn shared_trigger_event(event: TriggerEventDef) -> bool {
+        match event {
+            TriggerEventDef::ZoneChanged { object, from, to } => {
+                const COMMITTED_TRANSITIONS: [(ZoneKind, ZoneKind); 5] = [
+                    (ZoneKind::Hand, ZoneKind::Battlefield),
+                    (ZoneKind::Stack, ZoneKind::Battlefield),
+                    (ZoneKind::Battlefield, ZoneKind::Graveyard),
+                    (ZoneKind::Battlefield, ZoneKind::Exile),
+                    (ZoneKind::Battlefield, ZoneKind::Hand),
+                ];
+                shared_object_predicate(object)
+                    && COMMITTED_TRANSITIONS
+                        .iter()
+                        .any(|(actual_from, actual_to)| {
+                            from.is_none_or(|expected| expected == *actual_from)
+                                && to.is_none_or(|expected| expected == *actual_to)
+                        })
+            }
+            TriggerEventDef::BecomesTapped(object) | TriggerEventDef::SpellCast(object) => {
+                shared_object_predicate(object)
+            }
+            TriggerEventDef::StepBegins { .. } | TriggerEventDef::DamagedCreatureDied => true,
+            TriggerEventDef::AbilityActivated(_)
+            | TriggerEventDef::DamageDealt { .. }
+            | TriggerEventDef::ManaAdded(_)
+            | TriggerEventDef::Special(_) => false,
+        }
+    }
+
+    fn shared_activated_costs(costs: &[AbilityCostDef]) -> bool {
+        let sacrifice_choices = costs
+            .iter()
+            .filter(|cost| matches!(cost, AbilityCostDef::SacrificePermanent { .. }))
+            .count();
+        sacrifice_choices <= 1
+            && costs.iter().all(|cost| match cost {
+                AbilityCostDef::Mana(cost) => !cost.variable_x && cost.x_multiplier == 0,
+                AbilityCostDef::SacrificePermanent { object, .. } => {
+                    shared_object_predicate(*object)
+                }
+                AbilityCostDef::TapSource
+                | AbilityCostDef::SacrificeSource
+                | AbilityCostDef::PayLife(_) => true,
+                AbilityCostDef::UntapSource
+                | AbilityCostDef::DiscardCards(_)
+                | AbilityCostDef::ExileSource
+                | AbilityCostDef::Special(_) => false,
+            })
+    }
+
+    fn shared_static_effect(effect: EffectDef) -> bool {
+        match effect {
+            EffectDef::Sequence(effects) => {
+                !effects.is_empty() && effects.iter().copied().all(shared_static_effect)
+            }
+            EffectDef::Apply {
+                recipient,
+                effect,
+                duration,
+            } => {
+                let recipient_is_supported = match recipient {
+                    EffectRecipientDef::Source => true,
+                    EffectRecipientDef::MatchingObjects { object, zones, .. } => {
+                        zones == [ZoneKind::Battlefield] && shared_object_predicate(object)
+                    }
+                    EffectRecipientDef::Controller
+                    | EffectRecipientDef::Opponent
+                    | EffectRecipientDef::Target(_)
+                    | EffectRecipientDef::TriggeringObject
+                    | EffectRecipientDef::ControllerOfTriggeringObject
+                    | EffectRecipientDef::EventPlayer => false,
+                };
+                let applied_effect_is_supported = match effect {
+                    AppliedEffectDef::ModifyPowerToughness { power, toughness } => {
+                        matches!(power, crate::card::ValueDef::Constant(_))
+                            && matches!(toughness, crate::card::ValueDef::Constant(_))
+                    }
+                    AppliedEffectDef::GrantAbility(ability) => shared_definition_ability(ability),
+                    AppliedEffectDef::CannotBeCountered | AppliedEffectDef::Special(_) => false,
+                };
+                recipient_is_supported
+                    && applied_effect_is_supported
+                    && matches!(
+                        duration,
+                        EffectDurationDef::WhileSourceRemainsInZone
+                            | EffectDurationDef::UntilSourceLeavesZone
+                    )
+            }
+            EffectDef::None
+            | EffectDef::AddMana(_)
+            | EffectDef::DealDamage { .. }
+            | EffectDef::GainLife { .. }
+            | EffectDef::DrawCards { .. }
+            | EffectDef::LoseLife { .. }
+            | EffectDef::Tap { .. }
+            | EffectDef::Destroy { .. }
+            | EffectDef::Sacrifice { .. }
+            | EffectDef::Counter { .. }
+            | EffectDef::AddPlusOneCounters { .. }
+            | EffectDef::OptionalManaPayment { .. }
+            | EffectDef::EntersTapped
+            | EffectDef::MoveToZone { .. }
+            | EffectDef::Special(_) => false,
+        }
+    }
+
+    fn battlefield_only(zones: &[ZoneKind]) -> bool {
+        zones == [ZoneKind::Battlefield]
+    }
+
+    fn shared_definition_ability(ability: &AbilityDef) -> bool {
+        if ability.implementation != AbilityImplementationDef::Definition {
+            return false;
+        }
+        match ability.definition {
+            DeclarativeAbilityDef::Spell(_) => shared_stack_effect(ability.effect),
+            DeclarativeAbilityDef::ActivatedMana(definition) => {
+                battlefield_only(definition.source_zones)
+                    && definition.costs.iter().any(|cost| {
+                        matches!(
+                            cost,
+                            AbilityCostDef::TapSource | AbilityCostDef::SacrificeSource
+                        )
+                    })
+                    && definition.costs.iter().all(|cost| {
+                        matches!(
+                            cost,
+                            AbilityCostDef::TapSource
+                                | AbilityCostDef::SacrificeSource
+                                | AbilityCostDef::PayLife(_)
+                        )
+                    })
+                    && shared_mana_effect(ability.effect, true)
+            }
+            DeclarativeAbilityDef::TriggeredMana(definition) => {
+                fn immediate_mana_effect(effect: EffectDef) -> bool {
+                    match effect {
+                        EffectDef::Sequence(effects) => {
+                            !effects.is_empty()
+                                && effects.iter().copied().all(immediate_mana_effect)
+                        }
+                        EffectDef::AddMana(_) => shared_mana_effect(effect, false),
+                        EffectDef::None
+                        | EffectDef::DealDamage { .. }
+                        | EffectDef::GainLife { .. }
+                        | EffectDef::DrawCards { .. }
+                        | EffectDef::LoseLife { .. }
+                        | EffectDef::Tap { .. }
+                        | EffectDef::Destroy { .. }
+                        | EffectDef::Sacrifice { .. }
+                        | EffectDef::Counter { .. }
+                        | EffectDef::AddPlusOneCounters { .. }
+                        | EffectDef::OptionalManaPayment { .. }
+                        | EffectDef::EntersTapped
+                        | EffectDef::MoveToZone { .. }
+                        | EffectDef::Apply { .. }
+                        | EffectDef::Special(_) => false,
+                    }
+                }
+                battlefield_only(definition.source_zones)
+                    && shared_trigger_event(definition.event)
+                    && immediate_mana_effect(ability.effect)
+            }
+            DeclarativeAbilityDef::Activated(definition) => {
+                battlefield_only(definition.source_zones)
+                    && shared_activated_costs(definition.costs)
+                    && shared_stack_effect(ability.effect)
+            }
+            DeclarativeAbilityDef::Triggered(definition) => {
+                battlefield_only(definition.source_zones)
+                    && shared_trigger_event(definition.event)
+                    && shared_stack_effect(ability.effect)
+            }
+            DeclarativeAbilityDef::Static(definition) => {
+                battlefield_only(definition.source_zones) && shared_static_effect(ability.effect)
+            }
+            DeclarativeAbilityDef::Replacement(definition) => {
+                battlefield_only(definition.source_zones)
+                    && ability.effect == EffectDef::EntersTapped
+            }
+            DeclarativeAbilityDef::Evergreen(keyword) => shared_evergreen(keyword),
+            DeclarativeAbilityDef::SpecialAction(_) | DeclarativeAbilityDef::Legacy => false,
+        }
+    }
+
+    fn assert_nested_definition_abilities(card_name: &str, effect: EffectDef) {
+        match effect {
+            EffectDef::Sequence(effects) => {
+                for effect in effects {
+                    assert_nested_definition_abilities(card_name, *effect);
+                }
+            }
+            EffectDef::OptionalManaPayment { effect, .. } => {
+                assert_nested_definition_abilities(card_name, *effect);
+            }
+            EffectDef::Apply {
+                effect: AppliedEffectDef::GrantAbility(ability),
+                ..
+            } => {
+                if ability.implementation == AbilityImplementationDef::Definition {
+                    assert!(
+                        shared_definition_ability(ability),
+                        "{card_name} contains a nested Definition ability outside the shared runtime boundary: {ability:?}",
+                    );
+                }
+                assert_nested_definition_abilities(card_name, ability.effect);
+            }
+            EffectDef::None
+            | EffectDef::AddMana(_)
+            | EffectDef::DealDamage { .. }
+            | EffectDef::GainLife { .. }
+            | EffectDef::DrawCards { .. }
+            | EffectDef::LoseLife { .. }
+            | EffectDef::Tap { .. }
+            | EffectDef::Destroy { .. }
+            | EffectDef::Sacrifice { .. }
+            | EffectDef::Counter { .. }
+            | EffectDef::AddPlusOneCounters { .. }
+            | EffectDef::EntersTapped
+            | EffectDef::MoveToZone { .. }
+            | EffectDef::Apply { .. }
+            | EffectDef::Special(_) => {}
+        }
     }
 
     #[test]
@@ -431,12 +748,11 @@ mod tests {
         for (offset, record) in records.iter().enumerate() {
             assert_eq!(usize::from(record.id.0), 129 + offset);
             assert!(names.insert(record.name));
-            assert!(!record.is_basic_land);
+            assert!(!record.rules.has_supertype(CardSupertype::Basic));
             assert!(Format::IsdRtrStandard.allows_set(record.set));
-            if let Some(behavior) = record.rules.special_behavior {
+            if let Some(behavior) = record.rules.special_behavior() {
                 assert_eq!(behavior.rules(), &record.rules);
             }
-            assert_eq!(record.rules.effect_status, CardEffectStatus::MetadataOnly);
         }
 
         assert!(!names.contains("Celestial Purge"));
@@ -497,7 +813,11 @@ mod tests {
         assert_eq!(huntmaster.parts[1].name, "Ravager of the Fells");
         assert_eq!(huntmaster.parts[1].mana_cost, None);
         assert_eq!(huntmaster.parts[1].rules.creature_stats.unwrap().power, 4);
-        assert!(huntmaster.parts[1].rules.creature_stats.unwrap().trample);
+        assert!(
+            huntmaster.parts[1]
+                .rules
+                .has_evergreen(EvergreenAbility::Trample)
+        );
 
         let turn_burn = y2013::dragons_maze::TURN_BURN.definition();
         assert_eq!(turn_burn.name, "Turn // Burn");
@@ -618,7 +938,7 @@ mod tests {
     }
 
     #[test]
-    fn every_builtin_land_declares_its_mana_through_subtypes_or_ability_clauses() {
+    fn every_builtin_land_prints_its_mana_ability_clauses() {
         let lands = SET_MODULES
             .iter()
             .flat_map(|module| module.cards.iter().copied())
@@ -626,30 +946,36 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(lands.len(), 45);
 
-        let subtype_land_count = lands
-            .iter()
-            .filter(|record| record.rules.land_types.into_iter().any(|present| present))
-            .count();
-        assert_eq!(subtype_land_count, 22);
-
-        let explicit_mana_clause_count = lands
-            .iter()
-            .flat_map(|record| record.rules.ability_clauses())
-            .filter(|ability| matches!(ability.definition, DeclarativeAbilityDef::ActivatedMana(_)))
-            .count();
-        assert_eq!(explicit_mana_clause_count, 23);
-
         let lands_without_mana = lands
             .iter()
             .filter(|record| {
-                !record.rules.land_types.into_iter().any(|present| present)
-                    && !record.rules.ability_clauses().iter().any(|ability| {
-                        matches!(ability.definition, DeclarativeAbilityDef::ActivatedMana(_))
-                    })
+                !record.rules.ability_clauses().iter().any(|ability| {
+                    matches!(ability.definition, DeclarativeAbilityDef::ActivatedMana(_))
+                })
             })
             .map(|record| record.name)
             .collect::<Vec<_>>();
         assert_eq!(lands_without_mana, ["Maze of Ith"]);
+
+        for land in lands {
+            let basic_subtypes = BasicLandType::ALL
+                .into_iter()
+                .filter(|land_type| land.rules.has_subtype(land_type.subtype()))
+                .count();
+            let printed_mana_abilities = land
+                .rules
+                .ability_clauses()
+                .iter()
+                .filter(|ability| {
+                    matches!(ability.definition, DeclarativeAbilityDef::ActivatedMana(_))
+                })
+                .count();
+            assert!(
+                printed_mana_abilities >= basic_subtypes,
+                "{} has {basic_subtypes} basic land subtypes but only {printed_mana_abilities} printed mana abilities",
+                land.name
+            );
+        }
     }
 
     #[test]
@@ -789,16 +1115,16 @@ mod tests {
             &y1993::alpha::GLASSES_OF_URZA,
             &y1993::alpha::STONE_GIANT,
             &y1993::alpha::CHAOS_ORB,
-            &y1993::alpha::ICY_MANIPULATOR,
             &y1994::antiquities::MISHRA_S_FACTORY,
+            &y1994::antiquities::TRISKELION,
             &y1994::fallen_empires::ICATIAN_JAVELINEERS,
             &y1994::legends::PENDELHAVEN,
             &y1994::the_dark::MAZE_OF_ITH,
         ];
         let complete = [
+            &y1993::alpha::ICY_MANIPULATOR,
             &y1994::antiquities::ORCISH_MECHANICS,
             &y1994::antiquities::STRIP_MINE,
-            &y1994::antiquities::TRISKELION,
             &y1994::legends::RELIC_BARRIER,
         ];
 
@@ -873,5 +1199,42 @@ mod tests {
 
         assert_eq!(y1993::beta::VOLCANIC_ISLAND.id, cards::VOLCANIC_ISLAND);
         assert_eq!(y1993::beta::VOLCANIC_ISLAND.set, CardSet::Beta);
+    }
+
+    #[test]
+    fn fully_declarative_clauses_stay_within_the_shared_runtime_boundary() {
+        for record in SET_MODULES
+            .iter()
+            .flat_map(|module| module.cards.iter().copied())
+        {
+            let definition = record.definition();
+            for part in &definition.parts {
+                for ability in part.rules.ability_clauses() {
+                    assert!(
+                        !matches!(
+                            (ability.definition, ability.implementation),
+                            (
+                                DeclarativeAbilityDef::Legacy,
+                                AbilityImplementationDef::CustomFull { behavior: None, .. }
+                            )
+                        ),
+                        "{} {:?} ability {:?} is legacy text claiming full implementation without an executable behavior: {ability:?}",
+                        definition.name,
+                        part.id,
+                        ability.id,
+                    );
+                    if ability.implementation == AbilityImplementationDef::Definition {
+                        assert!(
+                            shared_definition_ability(ability),
+                            "{} {:?} ability {:?} claims Definition outside the shared runtime boundary: {ability:?}",
+                            definition.name,
+                            part.id,
+                            ability.id,
+                        );
+                    }
+                    assert_nested_definition_abilities(&definition.name, ability.effect);
+                }
+            }
+        }
     }
 }

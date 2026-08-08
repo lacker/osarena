@@ -9,7 +9,6 @@ pub(super) struct CardRecord {
     pub(super) name: &'static str,
     pub(super) art: CardArt,
     pub(super) set: CardSet,
-    pub(super) is_basic_land: bool,
     pub(super) rules: CardRules,
     composition: Option<CompositionBuilder>,
 }
@@ -21,7 +20,6 @@ impl CardRecord {
         name: &'static str,
         art: CardArt,
         set: CardSet,
-        is_basic_land: bool,
         rules: CardRules,
     ) -> Self {
         Self {
@@ -29,7 +27,6 @@ impl CardRecord {
             name,
             art,
             set,
-            is_basic_land,
             rules,
             composition: None,
         }
@@ -53,7 +50,6 @@ impl CardRecord {
             art: Some(self.art),
             set: self.set,
             printings: vec![CardPrinting::new(self.id, self.set)],
-            is_basic_land: self.is_basic_land,
             rules: self.rules,
             parts: composition.parts,
             structure: composition.structure,

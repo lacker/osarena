@@ -2,7 +2,7 @@ use std::error::Error;
 use std::fmt;
 
 use crate::card::BasicLandType;
-use crate::casting::CastChoices;
+use crate::casting::{CastChoices, TargetSelection};
 use crate::{AbilityId, CardDefinitionId, CardPartId, GameObjectId, PlayOptionId, PlayerId};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -18,6 +18,10 @@ pub enum ManaColor {
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum Target {
     Player(PlayerId),
+    /// A card object in a non-battlefield, non-stack zone. The object ID is
+    /// the current zone incarnation, so moving the card makes this target
+    /// illegal without conflating it with the new object created there.
+    Card(GameObjectId),
     Permanent(GameObjectId),
     Spell(GameObjectId),
 }
@@ -90,7 +94,7 @@ pub enum Action {
     ActivateAbility {
         source: GameObjectId,
         ability: AbilityOrigin,
-        target: Option<Target>,
+        targets: Vec<TargetSelection>,
         sacrifice: Option<GameObjectId>,
     },
     DeclareAttacker {

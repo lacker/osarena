@@ -38,6 +38,8 @@ pub enum DecisionZone {
     Battlefield,
     Stack,
     Library,
+    Exile,
+    Command,
     DrawnThisStep,
     None,
 }

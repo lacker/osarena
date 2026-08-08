@@ -38,25 +38,33 @@ mod tests {
     }
 
     #[test]
-    fn every_poc_card_has_executable_rules() {
+    fn poc_cards_declare_their_expected_execution_gate() {
         let catalog = catalog().unwrap();
         let mut scryfall_ids = HashSet::new();
         for raw_id in 1..=128 {
             let card = catalog.get(CardDefinitionId(raw_id)).unwrap();
+            let expected_status =
+                if card.implementation_status() == crate::ImplementationStatus::MetadataOnly {
+                    CardEffectStatus::MetadataOnly
+                } else {
+                    CardEffectStatus::Implemented
+                };
             assert_eq!(
-                card.rules.effect_status,
-                CardEffectStatus::Implemented,
+                card.play_options[0].effect_status, expected_status,
                 "{}",
                 card.name
             );
-            if let Some(behavior) = card.rules.special_behavior {
+            if let Some(behavior) = card.rules.special_behavior() {
                 assert_eq!(card.rules, *behavior.rules(), "{}", card.name);
             }
-            assert!(
-                !card.rules.rules_text().is_empty(),
-                "{} is missing rules text",
-                card.name
-            );
+            let expected_text = card
+                .rules
+                .ability_clauses()
+                .iter()
+                .map(|ability| ability.text)
+                .collect::<Vec<_>>()
+                .join("\n");
+            assert_eq!(card.rules.rules_text(), expected_text, "{}", card.name);
             let art = card
                 .art
                 .as_ref()
@@ -136,8 +144,6 @@ mod tests {
             Some(CreatureStats {
                 power: 2,
                 toughness: 1,
-                haste: false,
-                trample: false,
             })
         );
     }

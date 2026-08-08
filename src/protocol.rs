@@ -205,6 +205,11 @@ fn seat_by_name(name: &str) -> Option<PlayerId> {
 fn target_json(target: Target) -> Value {
     match target {
         Target::Player(player) => json!({ "type": "player", "seat": seat_name(player) }),
+        Target::Card(id) => json!({
+            "type": "card",
+            "objectId": id.0,
+            "instance": id.0,
+        }),
         Target::Permanent(id) => json!({
             "type": "permanent",
             "objectId": id.0,
@@ -386,13 +391,25 @@ pub fn action_json(action: &Action) -> Value {
         Action::ActivateAbility {
             source,
             ability,
-            target,
+            targets,
             sacrifice,
         } => json!({
             "type": "ActivateAbility",
             "source": source.0,
             "ability": ability_origin_json(*ability),
-            "target": target.map(target_json),
+            "target": targets
+                .iter()
+                .flat_map(crate::TargetSelection::targets)
+                .next()
+                .copied()
+                .map(target_json),
+            "targets": targets
+                .iter()
+                .flat_map(crate::TargetSelection::targets)
+                .copied()
+                .map(target_json)
+                .collect::<Vec<_>>(),
+            "targetSelections": target_selections_json(targets),
             "sacrifice": sacrifice.map(|card| card.0),
         }),
         Action::DeclareAttacker { attacker } => {
@@ -789,7 +806,7 @@ fn rules_json(rules: &CardRules, mana_cost: Option<&ManaCost>) -> Value {
     let stats = rules.creature_stats;
     json!({
         "kind": format!("{:?}", rules.kind),
-        "typeLine": rules.type_line,
+        "typeLine": rules.type_line(),
         "manaCost": mana_cost.map(mana_cost_json),
         "power": stats.map(|stats| stats.power),
         "toughness": stats.map(|stats| stats.toughness),
@@ -903,7 +920,7 @@ fn definition_json(catalog: &CardCatalog, format: Format, card: &CardDefinition)
         "definition": card.id.0,
         "name": card.name,
         "kind": format!("{:?}", rules.kind),
-        "isBasicLand": card.is_basic_land,
+        "isBasicLand": card.is_basic_land(),
         "manaCost": mana_cost.map(mana_cost_json),
         "power": stats.map(|stats| stats.power),
         "toughness": stats.map(|stats| stats.toughness),
@@ -1264,7 +1281,16 @@ mod tests {
                 part: crate::CardPartId::PRIMARY,
                 ability: crate::AbilityId(2),
             },
-            target: None,
+            targets: vec![
+                crate::TargetSelection::single(
+                    crate::TargetSlotId(3),
+                    Target::Player(PlayerId::Two),
+                ),
+                crate::TargetSelection::single(
+                    crate::TargetSlotId(7),
+                    Target::Permanent(GameObjectId(11)),
+                ),
+            ],
             sacrifice: None,
         });
         assert_eq!(activated["ability"]["kind"], "printed");
@@ -1274,6 +1300,14 @@ mod tests {
         );
         assert_eq!(activated["ability"]["partId"], 0);
         assert_eq!(activated["ability"]["abilityId"], 2);
+        assert_eq!(activated["target"]["type"], "player");
+        assert_eq!(activated["targets"].as_array().unwrap().len(), 2);
+        assert_eq!(activated["targetSelections"][0]["slotId"], 3);
+        assert_eq!(activated["targetSelections"][1]["slotId"], 7);
+        assert_eq!(
+            activated["targetSelections"][1]["targets"][0]["objectId"],
+            11
+        );
     }
 
     fn finish(mut game: BotGame, mut pick: impl FnMut(usize, &Value) -> usize) -> GameResult {

@@ -2,8 +2,8 @@ use super::{CardRecord, PrintingRecord};
 use crate::card::{
     AbilityCostDef, AbilityDef, AbilityImplementationDef, AbilityTargetDef, AbilityTargetPredicate,
     AppliedEffectDef, CardArt, CardBehavior, CardKind, CardRules, CardSet, EffectDef,
-    EffectDurationDef, EffectRecipientDef, ManaCost, ObjectPredicateDef, PlayerRelation, ZoneKind,
-    cards,
+    EffectDurationDef, EffectRecipientDef, EvergreenAbility, ManaCost, ObjectPredicateDef,
+    PlayerRelation, TriggerEventDef, TurnStepDef, ZoneKind, cards,
 };
 use crate::ids::{AbilityId, TargetSlotId};
 
@@ -12,17 +12,32 @@ pub(in crate::card::sets) static BALL_LIGHTNING: CardRecord = CardRecord::new(
     "Ball Lightning",
     CardArt::new("c1ba83ab-83f5-421d-bba1-0f925870b5c8", "Quinton Hoover"),
     CardSet::TheDark,
-    false,
-    CardRules::new(
-        CardKind::Creature,
-        ManaCost::new(0, 3),
-        "Trample, haste. Sacrifice Ball Lightning at the beginning of the end step.",
-    )
+    CardRules::new(CardKind::Creature, ManaCost::new(0, 3), "")
     .creature(6, 1)
-    .haste()
-    .trample()
-    .partial("The end-step sacrifice trigger currently resolves outside the stack.")
-    .with_special_behavior(CardBehavior::BallLightning),
+    .with_subtypes(&["Elemental"])
+    .with_abilities(&[
+        AbilityDef::evergreen(
+            AbilityId::PRIMARY,
+            "Trample (This creature can deal excess combat damage to the player or planeswalker it's attacking.)",
+            EvergreenAbility::Trample,
+        ),
+        AbilityDef::evergreen(
+            AbilityId(1),
+            "Haste (This creature can attack and {T} as soon as it comes under your control.)",
+            EvergreenAbility::Haste,
+        ),
+        AbilityDef::triggered(
+            AbilityId(2),
+            "At the beginning of the end step, sacrifice this creature.",
+            TriggerEventDef::StepBegins {
+                step: TurnStepDef::End,
+                player: PlayerRelation::Any,
+            },
+            EffectDef::Sacrifice {
+                object: EffectRecipientDef::Source,
+            },
+        ),
+    ]),
 );
 
 pub(in crate::card::sets) static BLOOD_MOON: CardRecord = CardRecord::new(
@@ -30,7 +45,6 @@ pub(in crate::card::sets) static BLOOD_MOON: CardRecord = CardRecord::new(
     "Blood Moon",
     CardArt::new("78373616-e2d6-4ccf-998f-09f02bea45b4", "Tom Wänerstrand"),
     CardSet::TheDark,
-    false,
     CardRules::new(CardKind::Enchantment, ManaCost::new(2, 1), "").with_abilities(&[
         AbilityDef::static_ability(
             AbilityId::PRIMARY,
@@ -47,10 +61,11 @@ pub(in crate::card::sets) static BLOOD_MOON: CardRecord = CardRecord::new(
                 duration: EffectDurationDef::WhileSourceRemainsInZone,
             },
         )
-        .with_implementation(crate::card::AbilityImplementationDef::CustomPartial {
+        .with_implementation(AbilityImplementationDef::CustomPartial {
+            behavior: Some(CardBehavior::BloodMoon),
             explanation: "The hard-coded transformation does not yet use the full land-type, ability-loss, and layer system.",
         }),
-    ]).with_special_behavior(CardBehavior::BloodMoon),
+    ]),
 );
 
 pub(in crate::card::sets) static GOBLIN_DIGGING_TEAM: CardRecord = CardRecord::new(
@@ -58,15 +73,14 @@ pub(in crate::card::sets) static GOBLIN_DIGGING_TEAM: CardRecord = CardRecord::n
     "Goblin Digging Team",
     CardArt::new("8a538b9d-351e-40bb-be11-9ba08c16352b", "Ron Spencer"),
     CardSet::TheDark,
-    false,
-    CardRules::new(
-        CardKind::Creature,
-        ManaCost::new(0, 1),
-        "Sacrifice Goblin Digging Team: Destroy target Wall.",
-    )
-    .creature(1, 1)
-    .goblin()
-    .partial("The sacrifice ability that destroys a Wall is not implemented."),
+    CardRules::new(CardKind::Creature, ManaCost::new(0, 1), "")
+        .creature(1, 1)
+        .with_subtypes(&["Goblin"])
+        .with_abilities(&[AbilityDef::not_implemented(
+            AbilityId::PRIMARY,
+            "{T}, Sacrifice this creature: Destroy target Wall.",
+            "The activated sacrifice ability and Wall targeting are not implemented.",
+        )]),
 );
 
 pub(in crate::card::sets) static GOBLINS_OF_THE_FLARG: CardRecord = CardRecord::new(
@@ -74,11 +88,21 @@ pub(in crate::card::sets) static GOBLINS_OF_THE_FLARG: CardRecord = CardRecord::
     "Goblins of the Flarg",
     CardArt::new("fd333b18-b896-4ab8-9c46-eed4efdd94f2", "Tom Wänerstrand"),
     CardSet::TheDark,
-    false,
-    CardRules::new(CardKind::Creature, ManaCost::new(0, 1), "Mountainwalk.")
+    CardRules::new(CardKind::Creature, ManaCost::new(0, 1), "")
         .creature(1, 1)
-        .goblin()
-        .mountainwalk(),
+        .with_subtypes(&["Goblin", "Warrior"])
+        .with_abilities(&[
+            AbilityDef::evergreen(
+                AbilityId::PRIMARY,
+                "Mountainwalk (This creature can't be blocked as long as defending player controls a Mountain.)",
+                EvergreenAbility::Mountainwalk,
+            ),
+            AbilityDef::not_implemented(
+                AbilityId(1),
+                "When you control a Dwarf, sacrifice this creature.",
+                "The state-triggered sacrifice condition is not implemented.",
+            ),
+        ]),
 );
 
 pub(in crate::card::sets) static FELLWAR_STONE: CardRecord = CardRecord::new(
@@ -86,18 +110,18 @@ pub(in crate::card::sets) static FELLWAR_STONE: CardRecord = CardRecord::new(
     "Fellwar Stone",
     CardArt::new("dc47e322-f8b8-4685-b035-fda0cc433e6b", "Quinton Hoover"),
     CardSet::TheDark,
-    false,
-    CardRules::new(CardKind::Artifact, ManaCost::new(2, 0), "")
-        .with_abilities(&[AbilityDef::activated_mana(
+    CardRules::new(CardKind::Artifact, ManaCost::new(2, 0), "").with_abilities(&[
+        AbilityDef::activated_mana(
             AbilityId::PRIMARY,
-            "{T}: Add one mana of any color an opponent's land could produce.",
+            "{T}: Add one mana of any color that a land an opponent controls could produce.",
             &[AbilityCostDef::TapSource],
             EffectDef::Special("Add one mana of a color an opponent's land could produce"),
         )
         .with_implementation(AbilityImplementationDef::CustomFull {
+            behavior: Some(CardBehavior::FellwarStone),
             explanation: "The available colors are computed dynamically from an opponent's lands.",
-        })])
-        .with_special_behavior(CardBehavior::FellwarStone),
+        }),
+    ]),
 );
 
 pub(in crate::card::sets) static MAZE_OF_ITH: CardRecord = CardRecord::new(
@@ -105,12 +129,11 @@ pub(in crate::card::sets) static MAZE_OF_ITH: CardRecord = CardRecord::new(
     "Maze of Ith",
     CardArt::new("42dcceee-2a47-4eaa-a6a3-2931b3d50244", "Anson Maddocks"),
     CardSet::TheDark,
-    false,
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "")
         .with_abilities(&[
             AbilityDef::activated(
                 AbilityId::PRIMARY,
-                "Tap: Untap target attacking creature and prevent all combat damage it would deal and receive this turn.",
+                "{T}: Untap target attacking creature. Prevent all combat damage that would be dealt to and dealt by that creature this turn.",
                 &[AbilityCostDef::TapSource],
                 EffectDef::Special(
                     "Untap the target attacker and prevent its combat damage for the turn",
@@ -131,10 +154,10 @@ pub(in crate::card::sets) static MAZE_OF_ITH: CardRecord = CardRecord::new(
                 "Take an attacker out of combat",
             )
             .with_implementation(AbilityImplementationDef::CustomPartial {
+                behavior: Some(CardBehavior::MazeOfIth),
                 explanation: "The implementation removes the attacker from combat instead of creating combat-damage prevention.",
             }),
-        ])
-        .with_special_behavior(CardBehavior::MazeOfIth),
+        ]),
 );
 
 pub(in crate::card::sets) static DUST_TO_DUST: CardRecord = CardRecord::new(
@@ -142,14 +165,14 @@ pub(in crate::card::sets) static DUST_TO_DUST: CardRecord = CardRecord::new(
     "Dust to Dust",
     CardArt::new("ade075fd-73ee-4d12-a2da-48e5938043af", "Drew Tucker"),
     CardSet::TheDark,
-    false,
-    CardRules::new(
-        CardKind::Sorcery,
-        ManaCost::colored(2, 2, 0, 0, 0, 0),
-        "Exile two target artifacts.",
-    )
-    .partial("Its implemented mana cost is {2}{W}{W} instead of the printed {1}{W}{W}.")
-    .with_special_behavior(CardBehavior::DustToDust),
+    CardRules::new(CardKind::Sorcery, ManaCost::colored(1, 2, 0, 0, 0, 0), "").with_abilities(&[
+        AbilityDef::custom_full(
+            AbilityId::PRIMARY,
+            "Exile two target artifacts.",
+            CardBehavior::DustToDust,
+            "Artifact targeting and exile are implemented by the legacy spell resolver.",
+        ),
+    ]),
 );
 
 pub(in crate::card::sets) static CARDS: &[&CardRecord] = &[

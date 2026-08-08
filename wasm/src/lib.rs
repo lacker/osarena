@@ -896,7 +896,10 @@ impl WebGame {
                     // What the ability does, with no target picked yet, so the
                     // card's menu can offer the effect by name.
                     "abilitySummary": match action {
-                        Action::ActivateAbility { source, ability, target: Some(_), .. } =>
+                        Action::ActivateAbility { source, ability, targets, .. }
+                            if targets
+                                .iter()
+                                .any(|selection| !selection.targets().is_empty()) =>
                             self.ability_text(&observation, *source, *ability)
                                 .map(|text| text.summary),
                         _ => None,
@@ -954,7 +957,7 @@ impl WebGame {
                 );
                 let current_kind = rules.map_or("unknown".into(), |rules| {
                     if card.is_some_and(|card| {
-                        card.rules.special_behavior == Some(penta::CardBehavior::MishrasFactory)
+                        card.rules.special_behavior() == Some(penta::CardBehavior::MishrasFactory)
                     }) && permanent.power.is_some()
                     {
                         "artifactcreature".into()
@@ -971,7 +974,7 @@ impl WebGame {
                     ),
                     "art": card_art_value(art),
                     "kind": current_kind,
-                    "typeLine": rules.map_or("", |rules| rules.type_line),
+                    "typeLine": rules.map_or_else(String::new, penta::CardRules::type_line),
                     "implementationStatus": rules.map_or("complete", |rules| {
                         implementation_status_name(rules.implementation_status())
                     }),
@@ -1016,7 +1019,7 @@ impl WebGame {
                     "kind": card.map_or("unknown".into(), |card| {
                         format!("{:?}", card.rules.kind).to_ascii_lowercase()
                     }),
-                    "typeLine": card.map_or("", |card| card.rules.type_line),
+                    "typeLine": card.map_or_else(String::new, |card| card.rules.type_line()),
                     "implementationStatus": card.map_or("complete", |card| {
                         implementation_status_name(card.implementation_status())
                     }),
@@ -1075,7 +1078,7 @@ impl WebGame {
                     "targetCardIds": targets
                         .iter()
                         .filter_map(|target| match target {
-                            Target::Permanent(id) => Some(id.0),
+                            Target::Card(id) | Target::Permanent(id) => Some(id.0),
                             _ => None,
                         })
                         .collect::<Vec<_>>(),
@@ -1368,7 +1371,7 @@ impl WebGame {
         match target {
             Target::Player(player) if player == self.human => "you".into(),
             Target::Player(_) => "opponent".into(),
-            Target::Permanent(id) => self.instance_name(observation, id),
+            Target::Card(id) | Target::Permanent(id) => self.instance_name(observation, id),
             // A countered or resolved spell leaves no trace the observation can
             // name, and stack object ids are not card ids, so the log says what
             // it honestly knows rather than printing a raw id.
@@ -1660,10 +1663,15 @@ impl WebGame {
             Action::ActivateAbility {
                 source,
                 ability,
-                target,
+                targets,
                 sacrifice,
             } => {
                 let source_name = self.instance_name(observation, *source);
+                let target = targets
+                    .iter()
+                    .flat_map(penta::TargetSelection::targets)
+                    .next()
+                    .copied();
                 if source_name == "Mishra's Factory" && target.is_none() {
                     return "Make Mishra's Factory a 2/2 creature".into();
                 }
@@ -1690,7 +1698,7 @@ impl WebGame {
                 if let Some(target) = target
                     && described.is_none()
                 {
-                    let _ = write!(label, " → {}", self.target_name(observation, *target));
+                    let _ = write!(label, " → {}", self.target_name(observation, target));
                 }
                 label
             }
@@ -1811,7 +1819,7 @@ fn cast_signature_value(signature: &penta::CastSignature, human: PlayerId) -> Va
             json!({
                 "slotId": selection.slot().0,
                 "targetCardIds": selection.targets().iter().filter_map(|target| match target {
-                    Target::Permanent(id) => Some(id.0),
+                    Target::Card(id) | Target::Permanent(id) => Some(id.0),
                     Target::Player(_) | Target::Spell(_) => None,
                 }).collect::<Vec<_>>(),
                 "targetPlayers": selection.targets().iter().filter_map(|target| match target {
@@ -1820,11 +1828,11 @@ fn cast_signature_value(signature: &penta::CastSignature, human: PlayerId) -> Va
                     } else {
                         "opponent"
                     }),
-                    Target::Permanent(_) | Target::Spell(_) => None,
+                    Target::Card(_) | Target::Permanent(_) | Target::Spell(_) => None,
                 }).collect::<Vec<_>>(),
                 "targetStackIds": selection.targets().iter().filter_map(|target| match target {
                     Target::Spell(id) => Some(id.0),
-                    Target::Player(_) | Target::Permanent(_) => None,
+                    Target::Player(_) | Target::Card(_) | Target::Permanent(_) => None,
                 }).collect::<Vec<_>>(),
             })
         })
@@ -1880,7 +1888,7 @@ impl StackCardPresentation {
         Self {
             name,
             kind: format!("{:?}", rules.kind).to_ascii_lowercase(),
-            type_line: rules.type_line.into(),
+            type_line: rules.type_line(),
             implementation_status: rules.implementation_status(),
             is_land: rules.kind == penta::CardKind::Land,
             mana_cost,
@@ -1935,8 +1943,7 @@ fn stack_card_presentation(
                     .iter()
                     .map(|part| format!("{:?}", part.rules.kind).to_ascii_lowercase()),
             );
-            let type_line =
-                join_distinct(parts.iter().map(|part| part.rules.type_line.to_string()));
+            let type_line = join_distinct(parts.iter().map(|part| part.rules.type_line()));
             let rules_text = parts
                 .iter()
                 .map(|part| format!("{} — {}", part.name, part.rules.rules_text()))
@@ -2365,7 +2372,7 @@ fn action_target_card(action: &Action) -> Option<CardInstanceId> {
     action_targets(action)
         .iter()
         .find_map(|target| match target {
-            Target::Permanent(id) => Some(*id),
+            Target::Card(id) | Target::Permanent(id) => Some(*id),
             Target::Player(_) | Target::Spell(_) => None,
         })
 }
@@ -2379,7 +2386,7 @@ fn action_target_player(action: &Action, human: PlayerId) -> Option<&'static str
             } else {
                 "opponent"
             }),
-            Target::Permanent(_) | Target::Spell(_) => None,
+            Target::Card(_) | Target::Permanent(_) | Target::Spell(_) => None,
         })
 }
 
@@ -2388,17 +2395,18 @@ fn action_target_stack(action: &Action) -> Option<u32> {
         .iter()
         .find_map(|target| match target {
             Target::Spell(id) => Some(id.0),
-            Target::Player(_) | Target::Permanent(_) => None,
+            Target::Player(_) | Target::Card(_) | Target::Permanent(_) => None,
         })
 }
 
 fn action_targets(action: &Action) -> Vec<Target> {
     match action {
         Action::CastSpell { choices, .. } => choices.iter_targets().copied().collect(),
-        Action::ActivateAbility {
-            target: Some(target),
-            ..
-        } => vec![*target],
+        Action::ActivateAbility { targets, .. } => targets
+            .iter()
+            .flat_map(penta::TargetSelection::targets)
+            .copied()
+            .collect(),
         _ => Vec::new(),
     }
 }
@@ -2407,7 +2415,7 @@ fn action_target_cards(action: &Action) -> Vec<u32> {
     action_targets(action)
         .iter()
         .filter_map(|target| match target {
-            Target::Permanent(id) => Some(id.0),
+            Target::Card(id) | Target::Permanent(id) => Some(id.0),
             Target::Player(_) | Target::Spell(_) => None,
         })
         .collect()
@@ -2422,7 +2430,7 @@ fn action_target_players(action: &Action, human: PlayerId) -> Vec<&'static str> 
             } else {
                 "opponent"
             }),
-            Target::Permanent(_) | Target::Spell(_) => None,
+            Target::Card(_) | Target::Permanent(_) | Target::Spell(_) => None,
         })
         .collect()
 }
@@ -2432,7 +2440,7 @@ fn action_target_stacks(action: &Action) -> Vec<u32> {
         .iter()
         .filter_map(|target| match target {
             Target::Spell(id) => Some(id.0),
-            Target::Player(_) | Target::Permanent(_) => None,
+            Target::Player(_) | Target::Card(_) | Target::Permanent(_) => None,
         })
         .collect()
 }
@@ -2762,7 +2770,19 @@ mod tests {
                 part: penta::CardPartId::PRIMARY,
                 ability: penta::AbilityId::PRIMARY,
             },
-            target: None,
+            targets: vec![
+                penta::TargetSelection::single(
+                    penta::TargetSlotId(3),
+                    Target::Player(PlayerId::Two),
+                ),
+                penta::TargetSelection::new(
+                    penta::TargetSlotId(7),
+                    vec![
+                        Target::Permanent(CardInstanceId(11)),
+                        Target::Spell(CardInstanceId(12)),
+                    ],
+                ),
+            ],
             sacrifice: None,
         };
         assert_eq!(
@@ -2774,6 +2794,18 @@ mod tests {
                 "abilityId": 0,
             }))
         );
+        assert_eq!(action_target_card(&action), Some(CardInstanceId(11)));
+        assert_eq!(
+            action_target_player(&action, PlayerId::One),
+            Some("opponent")
+        );
+        assert_eq!(action_target_stack(&action), Some(12));
+        assert_eq!(action_target_cards(&action), vec![11]);
+        assert_eq!(
+            action_target_players(&action, PlayerId::One),
+            vec!["opponent"]
+        );
+        assert_eq!(action_target_stacks(&action), vec![12]);
 
         let mana_action = Action::ActivateManaAbility {
             source: CardInstanceId(9),
@@ -3058,7 +3090,10 @@ mod tests {
                     part: penta::CardPartId::PRIMARY,
                     ability: penta::AbilityId::PRIMARY,
                 },
-                target: Some(Target::Permanent(CardInstanceId(9))),
+                targets: vec![penta::TargetSelection::single(
+                    penta::TargetSlotId(0),
+                    Target::Permanent(CardInstanceId(9)),
+                )],
                 sacrifice: None,
             },
             Action::PassPriority,

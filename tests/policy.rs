@@ -13,6 +13,10 @@ const PRIMARY_PRINTED_ABILITY: AbilityOrigin = AbilityOrigin::Printed {
     ability: AbilityId::PRIMARY,
 };
 
+fn activated_targets(target: Target) -> Vec<TargetSelection> {
+    vec![TargetSelection::single(TargetSlotId(0), target)]
+}
+
 fn policy_observation(
     battlefield: Vec<PermanentObservation>,
     legal_actions: Vec<Action>,
@@ -298,7 +302,7 @@ fn handcrafted_only_uses_orcish_mechanics_on_a_player_for_lethal() {
             Action::ActivateAbility {
                 source: mechanics,
                 ability: PRIMARY_PRINTED_ABILITY,
-                target: Some(Target::Player(PlayerId::Two)),
+                targets: activated_targets(Target::Player(PlayerId::Two)),
                 sacrifice: Some(vise),
             },
         ],
@@ -330,13 +334,13 @@ fn handcrafted_sacrifices_artifacts_to_atog_for_an_unblocked_lethal_attack() {
             Action::ActivateAbility {
                 source: atog,
                 ability: PRIMARY_PRINTED_ABILITY,
-                target: None,
+                targets: Vec::new(),
                 sacrifice: Some(vise),
             },
             Action::ActivateAbility {
                 source: atog,
                 ability: PRIMARY_PRINTED_ABILITY,
-                target: None,
+                targets: Vec::new(),
                 sacrifice: Some(mox),
             },
         ],
@@ -350,7 +354,7 @@ fn handcrafted_sacrifices_artifacts_to_atog_for_an_unblocked_lethal_attack() {
         Some(Action::ActivateAbility {
             source: atog,
             ability: PRIMARY_PRINTED_ABILITY,
-            target: None,
+            targets: Vec::new(),
             sacrifice: Some(vise),
         })
     );
@@ -495,7 +499,7 @@ fn handcrafted_animates_a_factory_once_rather_than_every_priority() {
     let animate = Action::ActivateAbility {
         source: CardInstanceId(1),
         ability: PRIMARY_PRINTED_ABILITY,
-        target: None,
+        targets: Vec::new(),
         sacrifice: None,
     };
 

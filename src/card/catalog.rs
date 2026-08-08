@@ -351,7 +351,9 @@ fn validate_abilities(
             DeclarativeAbilityDef::SpecialAction(special_action) => {
                 (Some(special_action.source_zones), &[][..], false)
             }
-            DeclarativeAbilityDef::Legacy => (None, &[][..], false),
+            DeclarativeAbilityDef::Evergreen(_) | DeclarativeAbilityDef::Legacy => {
+                (None, &[][..], false)
+            }
         };
 
         if source_zones.is_some_and(<[super::ZoneKind]>::is_empty) {
@@ -1141,7 +1143,7 @@ mod tests {
             "Right",
             SpellForm::Part(CardPartId(1)),
             card.rules.mana_cost,
-            card.rules.effect_status,
+            CardEffectStatus::Implemented,
         ));
         card
     }

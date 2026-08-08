@@ -3,8 +3,8 @@ use penta::deck::{Deck, DeckError};
 use penta::game::{GameResult, WinReason};
 use penta::poc;
 use penta::{
-    AbilityOrigin, Action, BasicLandType, CardDefinitionId, CastChoices, Format, Game, GameError,
-    GameEvent, PlayOptionId, PlayerId, Step, Target, TargetSelection, TargetSlotId,
+    Action, CardDefinitionId, CastChoices, Format, Game, GameError, GameEvent, PlayOptionId,
+    PlayerId, Step, Target, TargetSelection, TargetSlotId,
 };
 
 fn catalog() -> CardCatalog {
@@ -113,6 +113,25 @@ fn pass_priority_pair(game: &mut Game) {
     let first = game.observe(PlayerId::One).priority;
     game.apply(first, Action::PassPriority).unwrap();
     game.apply(first.opponent(), Action::PassPriority).unwrap();
+}
+
+fn activate_red_mana(game: &mut Game, player: PlayerId, source: penta::GameObjectId) {
+    let action = game
+        .observe(player)
+        .legal_actions
+        .into_iter()
+        .find(|action| {
+            matches!(
+                action,
+                Action::ActivateManaAbility {
+                    source: candidate,
+                    color: penta::ManaColor::Red,
+                    ..
+                } if *candidate == source
+            )
+        })
+        .expect("the Mountain exposes its printed red mana ability");
+    game.apply(player, action).unwrap();
 }
 
 fn advance_to_first_main(game: &mut Game) {
@@ -365,15 +384,7 @@ fn mountain_casts_and_resolves_lightning_bolt() {
         .find(|permanent| permanent.definition == CardDefinitionId(1))
         .unwrap()
         .id;
-    game.apply(
-        PlayerId::One,
-        Action::ActivateManaAbility {
-            source: mountain,
-            ability: AbilityOrigin::IntrinsicBasicLand(BasicLandType::Mountain),
-            color: penta::ManaColor::Red,
-        },
-    )
-    .unwrap();
+    activate_red_mana(&mut game, PlayerId::One, mountain);
     game.apply(
         PlayerId::One,
         Action::CastSpell {
@@ -480,15 +491,7 @@ fn unspent_mana_burns_at_the_end_of_a_phase() {
         .find(|permanent| permanent.definition == CardDefinitionId(1))
         .unwrap()
         .id;
-    game.apply(
-        PlayerId::One,
-        Action::ActivateManaAbility {
-            source: mountain,
-            ability: AbilityOrigin::IntrinsicBasicLand(BasicLandType::Mountain),
-            color: penta::ManaColor::Red,
-        },
-    )
-    .unwrap();
+    activate_red_mana(&mut game, PlayerId::One, mountain);
     pass_priority_pair(&mut game);
 
     let observation = game.observe(PlayerId::One);
@@ -530,15 +533,7 @@ fn mana_emptying_and_burn_follow_the_games_format() {
         pass_priority_pair(&mut game);
         assert_eq!(game.observe(PlayerId::One).step, Step::BeginningOfCombat);
 
-        game.apply(
-            PlayerId::One,
-            Action::ActivateManaAbility {
-                source: mountain,
-                ability: AbilityOrigin::IntrinsicBasicLand(BasicLandType::Mountain),
-                color: penta::ManaColor::Red,
-            },
-        )
-        .unwrap();
+        activate_red_mana(&mut game, PlayerId::One, mountain);
         pass_priority_pair(&mut game);
 
         let observation = game.observe(PlayerId::One);

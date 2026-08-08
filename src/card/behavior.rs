@@ -1,4 +1,6 @@
-use super::{CardBehavior, CardKind, CardRules, CreatureStats, ManaCost};
+use super::{
+    CardBehavior, CardKind, CardRules, CardSupertype, CreatureStats, EvergreenAbility, ManaCost,
+};
 use crate::card::sets;
 
 impl CardBehavior {
@@ -10,7 +12,7 @@ impl CardBehavior {
 
     #[must_use]
     pub const fn is_legendary(self) -> bool {
-        self.rules().is_legendary
+        self.rules().has_supertype(CardSupertype::Legendary)
     }
 
     #[must_use]
@@ -34,18 +36,18 @@ impl CardBehavior {
     }
 
     #[must_use]
-    pub const fn is_goblin(self) -> bool {
-        self.rules().is_goblin
+    pub fn is_goblin(self) -> bool {
+        self.rules().has_subtype("Goblin")
     }
 
     #[must_use]
-    pub const fn has_flying(self) -> bool {
-        self.rules().has_flying
+    pub fn has_flying(self) -> bool {
+        self.rules().has_evergreen(EvergreenAbility::Flying)
     }
 
     #[must_use]
-    pub const fn has_mountainwalk(self) -> bool {
-        self.rules().has_mountainwalk
+    pub fn has_mountainwalk(self) -> bool {
+        self.rules().has_evergreen(EvergreenAbility::Mountainwalk)
     }
 
     /// Returns the printed color flags in `[white, blue, black, red, green]` order.
@@ -80,7 +82,7 @@ impl CardBehavior {
     }
 
     #[must_use]
-    pub const fn has_vigilance(self) -> bool {
-        self.rules().has_vigilance
+    pub fn has_vigilance(self) -> bool {
+        self.rules().has_evergreen(EvergreenAbility::Vigilance)
     }
 }

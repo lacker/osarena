@@ -1,17 +1,33 @@
 //! Limited Edition Beta card definitions and printings.
 
 use super::{CardRecord, PrintingRecord, alpha};
-use crate::card::{CardArt, CardKind, CardRules, CardSet, ManaCost, cards};
+use crate::card::{
+    AbilityCostDef, AbilityDef, AddManaEffectDef, CardArt, CardKind, CardRules, CardSet, EffectDef,
+    ManaCost, ManaKindDef, cards,
+};
+use crate::ids::AbilityId;
 
 pub(in crate::card::sets) static VOLCANIC_ISLAND: CardRecord = CardRecord::new(
     cards::VOLCANIC_ISLAND,
     "Volcanic Island",
     CardArt::new("0324641d-af55-4c53-b4dc-c8262e967da5", "Brian Snõddy"),
     CardSet::Beta,
-    false,
     CardRules::new(CardKind::Land, ManaCost::new(0, 0), "")
-        .type_line("Land — Island Mountain")
-        .land_types([false, true, false, true, false]),
+        .with_subtypes(&["Island", "Mountain"])
+        .with_abilities(&[
+            AbilityDef::activated_mana(
+                AbilityId::PRIMARY,
+                "{T}: Add {U}.",
+                &[AbilityCostDef::TapSource],
+                EffectDef::AddMana(AddManaEffectDef::one(ManaKindDef::Blue)),
+            ),
+            AbilityDef::activated_mana(
+                AbilityId(1),
+                "{T}: Add {R}.",
+                &[AbilityCostDef::TapSource],
+                EffectDef::AddMana(AddManaEffectDef::one(ManaKindDef::Red)),
+            ),
+        ]),
 );
 
 pub(in crate::card::sets) static CARDS: &[&CardRecord] = &[&VOLCANIC_ISLAND];
