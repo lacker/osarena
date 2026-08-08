@@ -1,40 +1,57 @@
 "use client";
 
-export type CardArtMode = "off" | "scryfall";
+import { isScryfallId, type CardArtMode } from "./card-art-mode";
 
-const scryfallIdPattern =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+export type { CardArtMode } from "./card-art-mode";
 
-const scryfallArtUrl = (id: string) =>
+const scryfallCroppedArtUrl = (id: string) =>
   `https://cards.scryfall.io/art/front/${id[0]}/${id[1]}/${id}.webp`;
+
+const scryfallFullArtUrl = (id: string, size: "normal" | "large") =>
+  `https://cards.scryfall.io/${size}/front/${id[0]}/${id[1]}/${id}.jpg`;
 
 export function CardArt({
   mode = "off",
   cardKind,
   scryfallId,
+  fullImageSizes = "132px",
+  onImageError,
 }: {
   mode?: CardArtMode;
   cardKind: string;
   scryfallId: string;
+  fullImageSizes?: string;
+  onImageError?: () => void;
 }) {
-  const artUrl =
-    mode === "scryfall" && scryfallIdPattern.test(scryfallId)
-      ? scryfallArtUrl(scryfallId)
-      : null;
+  const hasValidArt = mode !== "off" && isScryfallId(scryfallId);
+  const image = hasValidArt
+    ? mode === "cropped"
+      ? { src: scryfallCroppedArtUrl(scryfallId) }
+      : {
+          src: scryfallFullArtUrl(scryfallId, "normal"),
+          srcSet: `${scryfallFullArtUrl(scryfallId, "normal")} 488w, ${scryfallFullArtUrl(scryfallId, "large")} 672w`,
+          sizes: fullImageSizes,
+        }
+    : null;
 
   return (
-    <span className="card-art" aria-hidden="true">
+    <span
+      className={mode === "full" && image ? "card-art card-art-full" : "card-art"}
+      aria-hidden="true"
+    >
       <i>{cardKind.includes("land") ? "▲" : cardKind.includes("artifact") ? "◇" : "●"}</i>
-      {artUrl && (
+      {image && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={artUrl}
+          key={image.src}
+          {...image}
           alt=""
           draggable={false}
           loading="lazy"
           decoding="async"
           onError={(event) => {
             event.currentTarget.hidden = true;
+            onImageError?.();
           }}
         />
       )}

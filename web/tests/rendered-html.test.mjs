@@ -24,6 +24,8 @@ test("server renders the Penta application shell", async () => {
   assert.match(html, /Choose your deck/);
   assert.match(html, /Old School 93\/94/);
   assert.match(html, /ISD–RTR Standard/);
+  assert.match(html, /Card images/);
+  assert.match(html, /<option value="full" selected="">Full cards<\/option>/);
   assert.match(html, /Waking the Rust engine/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
 });

@@ -2,6 +2,11 @@ import type { FormatId } from "./game-config";
 
 export type Owner = "human" | "opponent";
 
+export type CardArtMetadata = {
+  scryfallId: string;
+  artist: string;
+};
+
 export type SpellFormMetadata =
   | { kind: "part"; partId: number }
   | { kind: "combined"; partIds: number[] };
@@ -29,8 +34,7 @@ export type Card = {
   /** Logical card part supplying this permanent's visible characteristics. */
   partId?: number;
   name: string;
-  scryfallId: string;
-  artist: string;
+  art: CardArtMetadata | null;
   kind: string;
   typeLine?: string;
   metadataOnly?: boolean;
@@ -151,8 +155,7 @@ export type GameState = {
     sourceId?: number | null;
     signature?: CastSignatureMetadata | null;
     name: string;
-    scryfallId: string;
-    artist: string;
+    art: CardArtMetadata | null;
     owner: Owner;
     kind: string;
     cardKind: string;

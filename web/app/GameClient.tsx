@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { CardArt, type CardArtMode } from "./CardArt";
+import { CardArt } from "./CardArt";
+import { isScryfallId, type CardArtMode } from "./card-art-mode";
 import {
   createEngineGame,
   initializeEngine,
@@ -114,9 +115,9 @@ const isPresentationPredecessor = (
   isPlausibleVisibleZoneTransition(before.zone, after.zone);
 
 export function GameClient({
-  cardArtMode = "off",
+  defaultCardArtMode = "off",
 }: {
-  cardArtMode?: CardArtMode;
+  defaultCardArtMode?: CardArtMode;
 } = {}) {
   const game = useRef<EngineGame | null>(null);
   const tableRef = useRef<HTMLElement | null>(null);
@@ -132,11 +133,16 @@ export function GameClient({
   const [botDeck, setBotDeck] = useState(placeholderDeckForFormat(defaultFormat));
   const [policy, setPolicy] = useState("Handcrafted");
   const [humanFirst, setHumanFirst] = useState(true);
+  // The engine prepares a table behind the initial setup dialog. Keep that
+  // table image-free until Deal commits the player's draft choice, otherwise
+  // choosing "Symbols only" would come after the first Scryfall requests.
+  const [cardArtMode, setCardArtMode] = useState<CardArtMode>("off");
   const [draftFormat, setDraftFormat] = useState<FormatId>(defaultFormat);
   const [draftHumanDeck, setDraftHumanDeck] = useState(defaultHumanDeck);
   const [draftBotDeck, setDraftBotDeck] = useState(defaultBotDeck);
   const [draftPolicy, setDraftPolicy] = useState("Handcrafted");
   const [draftHumanFirst, setDraftHumanFirst] = useState(true);
+  const [draftCardArtMode, setDraftCardArtMode] = useState<CardArtMode>(defaultCardArtMode);
   // `pregame` banners announce the opening hand rather than a turn, since
   // turn one has not started while anyone is still deciding to mulligan.
   type TurnBanner = { active: string; turn: number; pregame?: boolean };
@@ -1215,6 +1221,7 @@ export function GameClient({
     setDraftBotDeck(botDeckChoice);
     setDraftPolicy(policy);
     setDraftHumanFirst(humanFirst);
+    setDraftCardArtMode(cardArtMode);
     setSetupOpen(true);
   };
 
@@ -1233,6 +1240,7 @@ export function GameClient({
     setBotDeckChoice(draftBotDeck);
     setPolicy(draftPolicy);
     setHumanFirst(draftHumanFirst);
+    setCardArtMode(draftCardArtMode);
     setSetupDismissible(true);
     setSetupOpen(false);
   };
@@ -1285,6 +1293,24 @@ export function GameClient({
                 ))}
               </select>
               <small>{formatConfigs[draftFormat].description}</small>
+            </label>
+            <label className="setup-format setup-art-mode">
+              <span>Card images</span>
+              <select
+                value={draftCardArtMode}
+                onChange={(event) => setDraftCardArtMode(event.target.value as CardArtMode)}
+              >
+                <option value="full">Full cards</option>
+                <option value="cropped">Cropped artwork</option>
+                <option value="off">Symbols only</option>
+              </select>
+              <small>
+                {draftCardArtMode === "full"
+                  ? "Show the complete printed card image."
+                  : draftCardArtMode === "cropped"
+                    ? "Place the illustration inside Penta’s card frame."
+                    : "Do not request card images."}
+              </small>
             </label>
             <div className="setup-fields">
               <div className="setup-primary-choice">
@@ -1552,8 +1578,7 @@ export function GameClient({
                     card={{
                       id: item.id,
                       name: item.name,
-                      scryfallId: item.scryfallId,
-                      artist: item.artist,
+                      art: item.art,
                       kind: item.cardKind,
                       typeLine: item.typeLine,
                       metadataOnly: item.metadataOnly,
@@ -2431,19 +2456,24 @@ function CardPile({
   onDropTarget(target: string): void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const displaysFullCards =
+    cardArtMode === "full" &&
+    cards.every((card) => card.art && isScryfallId(card.art.scryfallId));
   const previewedCards = cards.filter((card) => previewManaSourceIds.includes(card.id)).length;
   const paymentExpanded = previewedCards > 0 && previewedCards < cards.length;
   const visuallyExpanded = expanded || paymentExpanded;
-  const spacing = visuallyExpanded ? 72 : 7;
+  const cardWidth = displaysFullCards ? 48 : 96;
+  const spacing = visuallyExpanded ? (displaysFullCards ? 42 : 72) : 7;
   const visibleOffsetCount = visuallyExpanded
     ? cards.length - 1
     : Math.min(cards.length - 1, 3);
-  const width = 96 + visibleOffsetCount * spacing;
+  const width = cardWidth + visibleOffsetCount * spacing;
 
   return (
     <div
       className={[
         "card-pile",
+        displaysFullCards ? "card-pile-full" : "",
         visuallyExpanded ? "is-expanded" : "",
         paymentExpanded ? "is-payment-expanded" : "",
       ].filter(Boolean).join(" ")}
@@ -2634,6 +2664,14 @@ function GameCard({
     left: number;
     top: number;
   } | null>(null);
+  const validArtId =
+    card.art && isScryfallId(card.art.scryfallId) ? card.art.scryfallId : null;
+  const artRequestKey =
+    cardArtMode !== "off" && validArtId ? `${cardArtMode}:${validArtId}` : null;
+  const [failedArtRequest, setFailedArtRequest] = useState<string | null>(null);
+  const renderedCardArtMode =
+    artRequestKey && artRequestKey === failedArtRequest ? "off" : cardArtMode;
+  const hasFullArt = renderedCardArtMode === "full" && validArtId !== null;
   const currentKind = card.kind.replace("artifactcreature", "artifact creature");
   const type =
     card.isLand && card.kind !== "land"
@@ -2705,6 +2743,7 @@ function GameCard({
         className={[
           "game-card",
           compact ? "game-card-compact" : "",
+          hasFullArt ? "has-full-art" : "",
           `card-${card.kind}`,
           isRed ? "card-red" : "",
           card.tapped ? "is-tapped" : "",
@@ -2802,9 +2841,13 @@ function GameCard({
           )}
         </span>
         <CardArt
-          mode={cardArtMode}
+          mode={renderedCardArtMode}
           cardKind={card.kind}
-          scryfallId={card.scryfallId}
+          scryfallId={validArtId ?? ""}
+          fullImageSizes={compact ? "48px" : "(max-width: 620px) 112px, 132px"}
+          onImageError={() => {
+            if (artRequestKey) setFailedArtRequest(artRequestKey);
+          }}
         />
         <span className="card-type">{type}</span>
         <span className="card-text">{card.attacking ? "Attacking" : card.rulesText}</span>
@@ -2843,9 +2886,9 @@ function GameCard({
             {battlefieldState.length > 0 && (
               <span className="card-hover-state">{battlefieldState.join(" · ")}</span>
             )}
-            {cardArtMode === "scryfall" && card.scryfallId && card.artist && (
+            {renderedCardArtMode !== "off" && validArtId && card.art && (
               <span className="card-hover-credit">
-                Illustration: {card.artist} · Card art © Wizards of the Coast LLC · Image via Scryfall
+                Illustration: {card.art.artist} · Card art © Wizards of the Coast LLC · Image via Scryfall
               </span>
             )}
           </span>,

@@ -164,6 +164,10 @@ button {
   font-size: 10px;
 }
 
+.setup-art-mode {
+  margin-top: 10px;
+}
+
 .setup-fields {
   margin-top: 18px;
   display: grid;
@@ -898,6 +902,12 @@ button {
      from the library by the FLIP pass in GameClient, which tracks card ids. */
 }
 
+.card-pile-full .battlefield-card-slot {
+  width: 48px;
+  display: grid;
+  justify-items: center;
+}
+
 .card-pile-count {
   position: absolute;
   z-index: 20;
@@ -1409,6 +1419,33 @@ button {
   display: none;
 }
 
+.game-card.has-full-art {
+  background: #17130f;
+}
+
+.game-card .card-art-full {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+}
+
+.card-art-full img {
+  object-fit: contain;
+  background: #17130f;
+}
+
+.game-card-compact.has-full-art {
+  width: 48px;
+  min-width: 48px;
+}
+
+.has-full-art .card-stats {
+  z-index: 2;
+}
+
 .card-type {
   padding-bottom: 2px;
   border-bottom: 1px solid rgba(48, 38, 28, 0.4);
@@ -1881,6 +1918,7 @@ button {
 .is-attacking::after {
   content: "ATTACKING";
   position: absolute;
+  z-index: 3;
   inset: auto 4px 4px 4px;
   padding: 2px;
   color: white;
@@ -2314,6 +2352,11 @@ button {
     width: 86px;
     min-width: 86px;
     height: 62px;
+  }
+
+  .game-card-compact.has-full-art {
+    width: 48px;
+    min-width: 48px;
   }
 }
 

@@ -961,8 +961,7 @@ impl WebGame {
                         || self.card_name(permanent.definition),
                         |part| part.name.clone(),
                     ),
-                    "scryfallId": art.map_or("", |art| art.scryfall_id.as_str()),
-                    "artist": art.map_or("", |art| art.artist.as_str()),
+                    "art": card_art_value(art),
                     "kind": current_kind,
                     "typeLine": rules.map_or("", |rules| rules.type_line),
                     "metadataOnly": rules.is_some_and(|rules| {
@@ -1004,8 +1003,7 @@ impl WebGame {
                 json!({
                     "id": id.0,
                     "name": self.card_name(*definition),
-                    "scryfallId": art.map_or("", |art| art.scryfall_id.as_str()),
-                    "artist": art.map_or("", |art| art.artist.as_str()),
+                    "art": card_art_value(art),
                     "kind": card.map_or("unknown".into(), |card| {
                         format!("{:?}", card.rules.kind).to_ascii_lowercase()
                     }),
@@ -1052,8 +1050,7 @@ impl WebGame {
                     "cardId": object.id.0,
                     "sourceId": object.source.map(|source| source.0),
                     "name": presentation.name,
-                    "scryfallId": art.map_or("", |art| art.scryfall_id.as_str()),
-                    "artist": art.map_or("", |art| art.artist.as_str()),
+                    "art": card_art_value(art),
                     "owner": if object.controller == self.human { "human" } else { "opponent" },
                     "kind": format!("{:?}", object.kind),
                     "x": signature.map_or(0, penta::CastSignature::x),
@@ -1714,6 +1711,15 @@ impl WebGame {
     }
 }
 
+fn card_art_value(art: Option<&penta::CardArt>) -> Value {
+    art.map_or(Value::Null, |art| {
+        json!({
+            "scryfallId": art.scryfall_id,
+            "artist": art.artist,
+        })
+    })
+}
+
 fn cast_signature_value(signature: &penta::CastSignature, human: PlayerId) -> Value {
     let form = match signature.form() {
         penta::SpellForm::Part(part) => json!({
@@ -2372,6 +2378,31 @@ fn js_error(error: impl std::fmt::Display) -> JsValue {
 mod tests {
     use super::*;
 
+    fn assert_nested_card_art(card: &Value) {
+        assert!(card.get("scryfallId").is_none());
+        assert!(card.get("artist").is_none());
+
+        let art = card["art"].as_object().expect("card art is an object");
+        assert_eq!(art.len(), 2);
+        assert!(art["scryfallId"].as_str().is_some_and(|id| id.len() == 36));
+        assert!(
+            art["artist"]
+                .as_str()
+                .is_some_and(|artist| !artist.is_empty())
+        );
+    }
+
+    fn act_matching(game: &mut WebGame, predicate: impl Fn(&Action) -> bool) {
+        let action_index = game
+            .game
+            .observe(game.human)
+            .legal_actions
+            .iter()
+            .position(predicate)
+            .expect("matching legal action");
+        game.act(action_index).expect("legal action succeeds");
+    }
+
     fn choices_targeting(target: Target) -> penta::CastChoices {
         penta::CastChoices::default().with_targets(vec![penta::TargetSelection::single(
             penta::TargetSlotId(0),
@@ -2468,22 +2499,49 @@ mod tests {
     }
 
     #[test]
-    fn visible_cards_include_scryfall_metadata() {
+    fn missing_card_art_serializes_as_null() {
+        assert_eq!(card_art_value(None), Value::Null);
+    }
+
+    #[test]
+    fn visible_cards_include_nested_scryfall_metadata() {
         let game = WebGame::new("Goblins", "Sligh", "Handcrafted", true, 9_394, None).unwrap();
         let snapshot = game.snapshot_value(false);
         let hand = snapshot["human"]["hand"].as_array().unwrap();
 
         assert_eq!(hand.len(), 7);
-        assert!(hand.iter().all(|card| {
-            card["scryfallId"].as_str().is_some_and(|id| id.len() == 36)
-                && card["artist"]
-                    .as_str()
-                    .is_some_and(|artist| !artist.is_empty())
-        }));
+        hand.iter().for_each(assert_nested_card_art);
     }
 
     #[test]
-    fn standard_visible_cards_include_scryfall_metadata() {
+    fn battlefield_and_stack_include_nested_scryfall_metadata() {
+        let mut game =
+            WebGame::new("Goblins", "Sligh", "Handcrafted", true, 3_756_436_840, None).unwrap();
+        act_matching(&mut game, |action| matches!(action, Action::KeepHand));
+        game.set_autopass(false).unwrap();
+        act_matching(&mut game, |action| {
+            matches!(action, Action::CastSpell { .. })
+        });
+
+        let stack_snapshot = game.snapshot_value(false);
+        let stack = stack_snapshot["stack"].as_array().unwrap();
+        assert_eq!(stack.len(), 1);
+        assert_eq!(stack[0]["name"], "Black Lotus");
+        assert_nested_card_art(&stack[0]);
+
+        game.set_autopass(true).unwrap();
+        let battlefield_snapshot = game.snapshot_value(false);
+        let lotus = battlefield_snapshot["battlefield"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|card| card["name"] == "Black Lotus")
+            .expect("Black Lotus resolved to the battlefield");
+        assert_nested_card_art(lotus);
+    }
+
+    #[test]
+    fn standard_visible_cards_include_nested_scryfall_metadata() {
         let game = WebGame::new(
             "Briksza Naya Midrange",
             "Greer G/R Aggro",
@@ -2506,12 +2564,9 @@ mod tests {
             .collect::<Vec<_>>();
 
         assert!(!standard_cards.is_empty());
-        assert!(standard_cards.iter().all(|card| {
-            card["scryfallId"].as_str().is_some_and(|id| id.len() == 36)
-                && card["artist"]
-                    .as_str()
-                    .is_some_and(|artist| !artist.is_empty())
-        }));
+        for card in standard_cards {
+            assert_nested_card_art(card);
+        }
     }
 
     #[test]
