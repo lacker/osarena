@@ -12,6 +12,32 @@ Two numbers matter to a bot, and they move independently:
 Pin both alongside trained weights. Until 1.0 the engine version bumps its
 minor for breaking changes, per Cargo's 0.x convention.
 
+## Unreleased — protocol 6
+
+### Changed
+
+- Activated, mana, and triggered actions identify the exact printed,
+  intrinsic, or granted ability that created them. Triggered abilities become
+  independent stack objects with frozen source information and may be answered
+  before they resolve; mana abilities remain immediate.
+- Card rules text and implementation coverage now belong to ordered ability
+  clauses. Card-level `Complete`, `Partial`, and `MetadataOnly` status is
+  derived from those clauses, exposed as `implementationStatus`, and used by
+  the browser's coverage messaging instead of the internal execution gate.
+- Basic land subtypes grant distinct intrinsic mana abilities. Other mana
+  producers declare their abilities beside the card, and each produced mana
+  value retains its restrictions and spell/ability riders.
+- Bespoke engine dispatch is now an optional `CardRules` hook. Declarative and
+  metadata-only cards no longer require a `CardBehavior` identity.
+- Catalog and browser hand JSON now serialize cards with no mana cost as
+  `"manaCost": null`; a printed `{0}` remains a mana-cost object whose
+  `generic` value is zero.
+
+Protocol 4 added the selected ability origin to activated-action JSON.
+Protocol 5 distinguishes no mana cost from a printed `{0}` cost.
+Protocol 6 replaces public `effectStatus` metadata with clause-derived
+`implementationStatus`; the former remains only an internal playability gate.
+
 ## 0.4.0 — protocol 2
 
 ### Fixed

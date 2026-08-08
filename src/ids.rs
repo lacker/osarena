@@ -17,6 +17,19 @@ impl CardPartId {
     pub const PRIMARY: Self = Self(0);
 }
 
+/// Identity of one printed or granted ability within a card part.
+///
+/// The same definition can create many independent ability objects during a
+/// game. Those objects receive [`GameObjectId`]s; this identifier continues to
+/// name the ability in the card's rules definition.
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct AbilityId(pub u8);
+
+impl AbilityId {
+    /// The first ability in an ordinary single-ability card part.
+    pub const PRIMARY: Self = Self(0);
+}
+
 /// Identity of one legal way to play a card, local to its card definition.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct PlayOptionId(pub u8);

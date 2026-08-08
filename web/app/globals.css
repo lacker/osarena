@@ -1164,6 +1164,25 @@ button {
   letter-spacing: 0.14em;
 }
 
+.stack-card-slot.is-triggered-ability .game-card {
+  border-color: #6d557f;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.34), transparent 58%),
+    #c8b8d2;
+  box-shadow:
+    0 0 0 1px rgba(220, 193, 238, 0.62),
+    0 4px 12px rgba(22, 12, 29, 0.55);
+}
+
+.stack-card-slot.is-triggered-ability .card-art i,
+.stack-card-slot.is-triggered-ability .card-type {
+  color: #4f315f;
+}
+
+.stack-card-slot.is-triggered-ability .stack-card-owner {
+  color: #d6b8e7;
+}
+
 .stack-card {
   padding: 5px 8px;
   border-top: 0;
@@ -1733,6 +1752,105 @@ button {
 .engine-decision {
   display: grid;
   gap: 10px;
+}
+
+.trigger-order-decision .target-prompt {
+  border-color: rgba(193, 146, 219, 0.56);
+  background: rgba(115, 70, 139, 0.13);
+}
+
+.trigger-order-list {
+  max-height: min(43vh, 390px);
+  margin: 0;
+  padding: 0 4px 0 0;
+  display: grid;
+  gap: 7px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.trigger-order-list li {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 56px;
+  padding: 8px;
+  border: 1px solid rgba(193, 146, 219, 0.42);
+  border-radius: 4px;
+  background: rgba(176, 132, 201, 0.09);
+}
+
+.trigger-order-position {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(223, 190, 241, 0.56);
+  border-radius: 50%;
+  color: #ead4f7;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.trigger-order-label {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.trigger-order-label strong {
+  overflow: hidden;
+  font-family: Georgia, serif;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trigger-order-label small {
+  overflow: hidden;
+  color: #bbaec3;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.trigger-order-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.trigger-order-controls button {
+  width: 28px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid rgba(223, 190, 241, 0.42);
+  border-radius: 3px;
+  color: #ead4f7;
+  background: rgba(223, 190, 241, 0.08);
+  font-size: 15px;
+}
+
+.trigger-order-controls button:hover:not(:disabled),
+.trigger-order-controls button:focus-visible {
+  border-color: #d8a9ef;
+  background: rgba(223, 190, 241, 0.18);
+}
+
+.trigger-order-controls button:disabled {
+  opacity: 0.25;
+}
+
+.finalize-trigger-order {
+  border-color: #aa70c6;
+  background: rgba(138, 77, 168, 0.18);
+}
+
+.trigger-placement-decision .target-prompt {
+  border-color: rgba(193, 146, 219, 0.42);
 }
 
 .decision-options {

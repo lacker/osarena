@@ -4,11 +4,11 @@ use std::fmt;
 use std::sync::Arc;
 
 use super::{
-    CardDefinition, CardPrinting, CardPrintingId, CardSet, CardStructure, PlayActionKind,
-    PlayOptionDef, SpellForm, TargetSlotDef,
+    AbilityDef, AbilityTargetDef, CardDefinition, CardPrinting, CardPrintingId, CardSet,
+    CardStructure, DeclarativeAbilityDef, PlayActionKind, PlayOptionDef, SpellForm, TargetSlotDef,
 };
 use crate::{
-    AdditionalCostId, AlternativeCostId, CardDefinitionId, CardPartId, Format, ModeId,
+    AbilityId, AdditionalCostId, AlternativeCostId, CardDefinitionId, CardPartId, Format, ModeId,
     PlayOptionId, TargetSlotId,
 };
 
@@ -240,6 +240,7 @@ fn validate_composition(definition: &CardDefinition) -> Result<(), CatalogError>
                 part: part.id,
             });
         }
+        validate_abilities(definition, part.id, part.rules.ability_clauses())?;
     }
 
     let structure_parts = structure_parts(definition)?;
@@ -282,6 +283,126 @@ fn validate_composition(definition: &CardDefinition) -> Result<(), CatalogError>
     }
 
     validate_fused_option(definition)
+}
+
+fn validate_abilities(
+    definition: &CardDefinition,
+    part: CardPartId,
+    abilities: &[AbilityDef],
+) -> Result<(), CatalogError> {
+    let mut ids = HashSet::new();
+    for ability in abilities {
+        if !ids.insert(ability.id) {
+            return Err(CatalogError::DuplicateAbilityId {
+                definition: definition.id,
+                part,
+                ability: ability.id,
+            });
+        }
+
+        if ability.text.trim().is_empty() {
+            return Err(CatalogError::EmptyAbilityText {
+                definition: definition.id,
+                part,
+                ability: ability.id,
+            });
+        }
+        if ability
+            .implementation
+            .explanation()
+            .is_some_and(|explanation| explanation.trim().is_empty())
+        {
+            return Err(CatalogError::MissingImplementationExplanation {
+                definition: definition.id,
+                part,
+                ability: ability.id,
+            });
+        }
+        if ability.activation_text.is_some()
+            && !matches!(ability.definition, DeclarativeAbilityDef::Activated(_))
+        {
+            return Err(CatalogError::ActivationTextOnNonActivatedAbility {
+                definition: definition.id,
+                part,
+                ability: ability.id,
+            });
+        }
+
+        let (source_zones, targets, is_mana_ability) = match &ability.definition {
+            DeclarativeAbilityDef::Spell(spell) => (None, spell.targets, false),
+            DeclarativeAbilityDef::ActivatedMana(activated) => {
+                (Some(activated.source_zones), activated.targets, true)
+            }
+            DeclarativeAbilityDef::TriggeredMana(triggered) => {
+                (Some(triggered.source_zones), triggered.targets, true)
+            }
+            DeclarativeAbilityDef::Activated(activated) => {
+                (Some(activated.source_zones), activated.targets, false)
+            }
+            DeclarativeAbilityDef::Triggered(triggered) => {
+                (Some(triggered.source_zones), triggered.targets, false)
+            }
+            DeclarativeAbilityDef::Static(static_ability) => {
+                (Some(static_ability.source_zones), &[][..], false)
+            }
+            DeclarativeAbilityDef::Replacement(replacement) => {
+                (Some(replacement.source_zones), &[][..], false)
+            }
+            DeclarativeAbilityDef::SpecialAction(special_action) => {
+                (Some(special_action.source_zones), &[][..], false)
+            }
+            DeclarativeAbilityDef::Evergreen(_) | DeclarativeAbilityDef::Legacy => {
+                (None, &[][..], false)
+            }
+        };
+
+        if source_zones.is_some_and(<[super::ZoneKind]>::is_empty) {
+            return Err(CatalogError::AbilityHasNoSourceZone {
+                definition: definition.id,
+                part,
+                ability: ability.id,
+            });
+        }
+        if is_mana_ability && !targets.is_empty() {
+            return Err(CatalogError::ManaAbilityHasTargets {
+                definition: definition.id,
+                part,
+                ability: ability.id,
+            });
+        }
+        validate_ability_targets(definition, part, ability.id, targets)?;
+    }
+    Ok(())
+}
+
+fn validate_ability_targets(
+    definition: &CardDefinition,
+    part: CardPartId,
+    ability: AbilityId,
+    targets: &[AbilityTargetDef],
+) -> Result<(), CatalogError> {
+    let mut ids = HashSet::new();
+    for target in targets {
+        if target.minimum > target.maximum {
+            return Err(CatalogError::InvalidAbilityTargetBounds {
+                definition: definition.id,
+                part,
+                ability,
+                target: target.id,
+                minimum: target.minimum,
+                maximum: target.maximum,
+            });
+        }
+        if !ids.insert(target.id) {
+            return Err(CatalogError::DuplicateAbilityTargetId {
+                definition: definition.id,
+                part,
+                ability,
+                target: target.id,
+            });
+        }
+    }
+    Ok(())
 }
 
 fn structure_parts(definition: &CardDefinition) -> Result<Vec<CardPartId>, CatalogError> {
@@ -570,9 +691,53 @@ pub enum CatalogError {
         printing: CardPrintingId,
     },
     OrphanPrinting(CardPrintingId),
+    EmptyAbilityText {
+        definition: CardDefinitionId,
+        part: CardPartId,
+        ability: AbilityId,
+    },
+    MissingImplementationExplanation {
+        definition: CardDefinitionId,
+        part: CardPartId,
+        ability: AbilityId,
+    },
+    ActivationTextOnNonActivatedAbility {
+        definition: CardDefinitionId,
+        part: CardPartId,
+        ability: AbilityId,
+    },
     DuplicatePartId {
         definition: CardDefinitionId,
         part: CardPartId,
+    },
+    DuplicateAbilityId {
+        definition: CardDefinitionId,
+        part: CardPartId,
+        ability: AbilityId,
+    },
+    AbilityHasNoSourceZone {
+        definition: CardDefinitionId,
+        part: CardPartId,
+        ability: AbilityId,
+    },
+    ManaAbilityHasTargets {
+        definition: CardDefinitionId,
+        part: CardPartId,
+        ability: AbilityId,
+    },
+    InvalidAbilityTargetBounds {
+        definition: CardDefinitionId,
+        part: CardPartId,
+        ability: AbilityId,
+        target: TargetSlotId,
+        minimum: u8,
+        maximum: u8,
+    },
+    DuplicateAbilityTargetId {
+        definition: CardDefinitionId,
+        part: CardPartId,
+        ability: AbilityId,
+        target: TargetSlotId,
     },
     DuplicateStructurePart {
         definition: CardDefinitionId,
@@ -700,9 +865,77 @@ impl fmt::Display for CatalogError {
                 formatter,
                 "card printing {id:?} references an unknown definition"
             ),
+            Self::EmptyAbilityText {
+                definition,
+                part,
+                ability,
+            } => write!(
+                formatter,
+                "ability {ability:?} on part {part:?} of card definition {definition:?} has empty rules text"
+            ),
+            Self::MissingImplementationExplanation {
+                definition,
+                part,
+                ability,
+            } => write!(
+                formatter,
+                "ability {ability:?} on part {part:?} of card definition {definition:?} has a non-declarative implementation without an explanation"
+            ),
+            Self::ActivationTextOnNonActivatedAbility {
+                definition,
+                part,
+                ability,
+            } => write!(
+                formatter,
+                "ability {ability:?} on part {part:?} of card definition {definition:?} has activated-action text but is not an activated ability"
+            ),
             Self::DuplicatePartId { definition, part } => write!(
                 formatter,
                 "card definition {definition:?} defines part {part:?} more than once"
+            ),
+            Self::DuplicateAbilityId {
+                definition,
+                part,
+                ability,
+            } => write!(
+                formatter,
+                "part {part:?} of card definition {definition:?} defines ability {ability:?} more than once"
+            ),
+            Self::AbilityHasNoSourceZone {
+                definition,
+                part,
+                ability,
+            } => write!(
+                formatter,
+                "ability {ability:?} on part {part:?} of card definition {definition:?} has no source zone"
+            ),
+            Self::ManaAbilityHasTargets {
+                definition,
+                part,
+                ability,
+            } => write!(
+                formatter,
+                "mana ability {ability:?} on part {part:?} of card definition {definition:?} declares targets"
+            ),
+            Self::InvalidAbilityTargetBounds {
+                definition,
+                part,
+                ability,
+                target,
+                minimum,
+                maximum,
+            } => write!(
+                formatter,
+                "target {target:?} of ability {ability:?} on part {part:?} of card definition {definition:?} requires at least {minimum} targets but allows at most {maximum}"
+            ),
+            Self::DuplicateAbilityTargetId {
+                definition,
+                part,
+                ability,
+                target,
+            } => write!(
+                formatter,
+                "ability {ability:?} on part {part:?} of card definition {definition:?} defines target {target:?} more than once"
             ),
             Self::DuplicateStructurePart { definition, part } => write!(
                 formatter,
@@ -856,14 +1089,15 @@ impl Error for CatalogError {}
 mod tests {
     use super::{CardCatalog, CatalogError};
     use crate::card::{
-        AdditionalCostDef, AlternateSpellKind, AlternativeCostDef, CardBehavior, CardDefinition,
-        CardEffectStatus, CardPart, CardPrinting, CardPrintingId, CardSet, CardStructure,
-        DoubleFacedKind, ManaCost, ModeDef, ModeSetDef, PlayOptionDef, SpellForm, TargetPredicate,
+        AbilityCostDef, AbilityDef, AbilityTargetDef, AbilityTargetPredicate, AdditionalCostDef,
+        AlternateSpellKind, AlternativeCostDef, CardBehavior, CardDefinition, CardEffectStatus,
+        CardPart, CardPrinting, CardPrintingId, CardSet, CardStructure, DoubleFacedKind, EffectDef,
+        ManaCost, ModeDef, ModeSetDef, PlayOptionDef, PlayerRelation, SpellForm, TargetPredicate,
         TargetSlotDef,
     };
     use crate::{
-        AdditionalCostId, AlternativeCostId, CardDefinitionId, CardPartId, Format, MeldRecipeId,
-        ModeId, PlayOptionId, TargetSlotId,
+        AbilityId, AdditionalCostId, AlternativeCostId, CardDefinitionId, CardPartId, Format,
+        MeldRecipeId, ModeId, PlayOptionId, TargetSlotId,
     };
 
     fn definition(id: u16, name: &str, set: CardSet) -> CardDefinition {
@@ -909,7 +1143,7 @@ mod tests {
             "Right",
             SpellForm::Part(CardPartId(1)),
             card.rules.mana_cost,
-            card.rules.effect_status,
+            CardEffectStatus::Implemented,
         ));
         card
     }
@@ -1031,6 +1265,73 @@ mod tests {
             CatalogError::DuplicatePlayOptionId {
                 definition: CardDefinitionId(1),
                 option: PlayOptionId::DEFAULT,
+            }
+        );
+    }
+
+    #[test]
+    fn ability_ids_are_unique_within_each_card_part() {
+        static ABILITIES: [AbilityDef; 2] = [
+            AbilityDef::spell(AbilityId::PRIMARY, "first", EffectDef::None),
+            AbilityDef::spell(AbilityId::PRIMARY, "second", EffectDef::None),
+        ];
+        let mut card = definition(1, "Test Card", CardSet::Alpha);
+        card.parts[0].rules = card.parts[0].rules.with_abilities(&ABILITIES);
+
+        assert_eq!(
+            error(card),
+            CatalogError::DuplicateAbilityId {
+                definition: CardDefinitionId(1),
+                part: CardPartId::PRIMARY,
+                ability: AbilityId::PRIMARY,
+            }
+        );
+    }
+
+    #[test]
+    fn explicitly_tagged_mana_abilities_cannot_declare_targets() {
+        static COSTS: [AbilityCostDef; 1] = [AbilityCostDef::TapSource];
+        static TARGETS: [AbilityTargetDef; 1] = [AbilityTargetDef::exactly_one(
+            TargetSlotId(1),
+            "target player",
+            AbilityTargetPredicate::Player(PlayerRelation::Any),
+        )];
+        static ABILITIES: [AbilityDef; 1] = [AbilityDef::activated_mana(
+            AbilityId::PRIMARY,
+            "Target player adds mana.",
+            &COSTS,
+            EffectDef::None,
+        )
+        .with_targets(&TARGETS)];
+        let mut card = definition(1, "Test Card", CardSet::Alpha);
+        card.parts[0].rules = card.parts[0].rules.with_abilities(&ABILITIES);
+
+        assert_eq!(
+            error(card),
+            CatalogError::ManaAbilityHasTargets {
+                definition: CardDefinitionId(1),
+                part: CardPartId::PRIMARY,
+                ability: AbilityId::PRIMARY,
+            }
+        );
+    }
+
+    #[test]
+    fn activated_action_text_belongs_to_the_exact_activated_clause() {
+        static ABILITIES: [AbilityDef; 1] =
+            [
+                AbilityDef::spell(AbilityId::PRIMARY, "A spell ability.", EffectDef::None)
+                    .with_activation_text("Target {}", "Choose a target"),
+            ];
+        let mut card = definition(1, "Test Card", CardSet::Alpha);
+        card.parts[0].rules = card.parts[0].rules.with_abilities(&ABILITIES);
+
+        assert_eq!(
+            error(card),
+            CatalogError::ActivationTextOnNonActivatedAbility {
+                definition: CardDefinitionId(1),
+                part: CardPartId::PRIMARY,
+                ability: AbilityId::PRIMARY,
             }
         );
     }

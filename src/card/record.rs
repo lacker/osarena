@@ -1,6 +1,4 @@
-use super::{
-    CardArt, CardBehavior, CardComposition, CardDefinition, CardPrinting, CardRules, CardSet,
-};
+use super::{CardArt, CardComposition, CardDefinition, CardPrinting, CardRules, CardSet};
 use crate::CardDefinitionId;
 
 type CompositionBuilder = fn() -> CardComposition;
@@ -11,20 +9,17 @@ pub(super) struct CardRecord {
     pub(super) name: &'static str,
     pub(super) art: CardArt,
     pub(super) set: CardSet,
-    pub(super) is_basic_land: bool,
-    pub(super) behavior: CardBehavior,
     pub(super) rules: CardRules,
     composition: Option<CompositionBuilder>,
 }
 
 impl CardRecord {
+    #[allow(clippy::large_types_passed_by_value)]
     pub(super) const fn new(
         id: CardDefinitionId,
         name: &'static str,
         art: CardArt,
         set: CardSet,
-        is_basic_land: bool,
-        behavior: CardBehavior,
         rules: CardRules,
     ) -> Self {
         Self {
@@ -32,8 +27,6 @@ impl CardRecord {
             name,
             art,
             set,
-            is_basic_land,
-            behavior,
             rules,
             composition: None,
         }
@@ -57,8 +50,6 @@ impl CardRecord {
             art: Some(self.art),
             set: self.set,
             printings: vec![CardPrinting::new(self.id, self.set)],
-            is_basic_land: self.is_basic_land,
-            behavior: self.behavior,
             rules: self.rules,
             parts: composition.parts,
             structure: composition.structure,

@@ -70,7 +70,7 @@ impl Deck {
             let Some(card) = catalog.get(id) else {
                 return Err(DeckError::UnknownCard(id));
             };
-            let limit = if card.is_basic_land {
+            let limit = if card.is_basic_land() {
                 usize::MAX
             } else if catalog.is_restricted_in(id, format) {
                 1

@@ -1,12 +1,21 @@
 use penta::game::PermanentObservation;
 use penta::poc;
 use penta::{
-    Action, CardInstanceId, CardPartId, CastChoices, Game, GameResult, HandcraftedPolicy, ManaPool,
-    PlayOptionId, PlayerId, PlayerObservation, Policy, RandomPolicy, Step, Target, TargetSelection,
-    TargetSlotId, play_game,
+    AbilityId, AbilityOrigin, Action, BasicLandType, CardInstanceId, CardPartId, CastChoices, Game,
+    GameResult, HandcraftedPolicy, ManaPool, PlayOptionId, PlayerId, PlayerObservation, Policy,
+    RandomPolicy, Step, Target, TargetSelection, TargetSlotId, play_game,
 };
 
 const ACTION_LIMIT: usize = 50_000;
+const PRIMARY_PRINTED_ABILITY: AbilityOrigin = AbilityOrigin::Printed {
+    definition: penta::CardDefinitionId(0),
+    part: CardPartId::PRIMARY,
+    ability: AbilityId::PRIMARY,
+};
+
+fn activated_targets(target: Target) -> Vec<TargetSelection> {
+    vec![TargetSelection::single(TargetSlotId(0), target)]
+}
 
 fn policy_observation(
     battlefield: Vec<PermanentObservation>,
@@ -85,6 +94,7 @@ fn handcrafted_does_not_float_unneeded_mana_in_its_main_phase() {
             Action::PassPriority,
             Action::ActivateManaAbility {
                 source: CardInstanceId(1),
+                ability: AbilityOrigin::IntrinsicBasicLand(BasicLandType::Mountain),
                 color: penta::ManaColor::Red,
             },
         ],
@@ -291,7 +301,8 @@ fn handcrafted_only_uses_orcish_mechanics_on_a_player_for_lethal() {
             Action::PassPriority,
             Action::ActivateAbility {
                 source: mechanics,
-                target: Some(Target::Player(PlayerId::Two)),
+                ability: PRIMARY_PRINTED_ABILITY,
+                targets: activated_targets(Target::Player(PlayerId::Two)),
                 sacrifice: Some(vise),
             },
         ],
@@ -322,12 +333,14 @@ fn handcrafted_sacrifices_artifacts_to_atog_for_an_unblocked_lethal_attack() {
             Action::PassPriority,
             Action::ActivateAbility {
                 source: atog,
-                target: None,
+                ability: PRIMARY_PRINTED_ABILITY,
+                targets: Vec::new(),
                 sacrifice: Some(vise),
             },
             Action::ActivateAbility {
                 source: atog,
-                target: None,
+                ability: PRIMARY_PRINTED_ABILITY,
+                targets: Vec::new(),
                 sacrifice: Some(mox),
             },
         ],
@@ -340,7 +353,8 @@ fn handcrafted_sacrifices_artifacts_to_atog_for_an_unblocked_lethal_attack() {
         policy.choose_action(&observation),
         Some(Action::ActivateAbility {
             source: atog,
-            target: None,
+            ability: PRIMARY_PRINTED_ABILITY,
+            targets: Vec::new(),
             sacrifice: Some(vise),
         })
     );
@@ -484,7 +498,8 @@ fn handcrafted_animates_a_factory_once_rather_than_every_priority() {
     let catalog = poc::catalog().unwrap();
     let animate = Action::ActivateAbility {
         source: CardInstanceId(1),
-        target: None,
+        ability: PRIMARY_PRINTED_ABILITY,
+        targets: Vec::new(),
         sacrifice: None,
     };
 

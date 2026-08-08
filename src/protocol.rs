@@ -14,16 +14,16 @@
 use serde_json::{Value, json};
 
 use crate::card::{
-    CardDefinition, CardEffectStatus, CardRules, CardSet, CardStructure, ManaCost, ModeDef,
-    PlayActionKind, PlayOptionDef, PlayRestriction, SpellForm, TargetSlotDef,
+    BasicLandType, CardDefinition, CardRules, CardSet, CardStructure, ImplementationStatus,
+    ManaCost, ModeDef, PlayActionKind, PlayOptionDef, PlayRestriction, SpellForm, TargetSlotDef,
 };
 use crate::casting::{CastChoices, CastSignature};
-use crate::game::{DecisionObservation, StackObservation};
+use crate::game::{DecisionKind, DecisionObservation, DecisionOrderSemantics, StackObservation};
 use crate::policy::Policy;
 use crate::{
-    Action, CardCatalog, Deck, Format, Game, GameObjectId, GameResult, HandcraftedPolicy,
-    ManaColor, PlayerId, PlayerObservation, RandomPolicy, StackObjectKind, Target, WinReason,
-    decks, poc,
+    AbilityOrigin, Action, CardCatalog, Deck, Format, Game, GameObjectId, GameResult,
+    HandcraftedPolicy, ManaColor, PlayerId, PlayerObservation, RandomPolicy, StackObjectKind,
+    Target, WinReason, decks, poc,
 };
 
 /// The wire contract: the JSON shapes here and the action space they
@@ -31,7 +31,14 @@ use crate::{
 /// misread the new output — a renamed field, or a change to what appears in
 /// `legalActions`. Version 1 dropped conceding from the bot's actions. Version
 /// 2 added formats, game-object identity, and structured casting choices.
-pub const PROTOCOL_VERSION: u32 = 2;
+/// Version 3 identifies trigger procedures and triggered stack objects.
+/// Version 4 identifies the exact printed, intrinsic, or granted mana ability
+/// selected by an activation.
+/// Version 5 distinguishes an absent mana cost from a printed `{0}` cost in
+/// catalog JSON.
+/// Version 6 exposes clause-derived implementation coverage and stops exposing
+/// the compatibility execution gate as card metadata.
+pub const PROTOCOL_VERSION: u32 = 6;
 
 /// The engine crate version. Rules behavior is part of the contract too: a
 /// fix can change what a trained policy sees even when the shapes hold
@@ -198,6 +205,11 @@ fn seat_by_name(name: &str) -> Option<PlayerId> {
 fn target_json(target: Target) -> Value {
     match target {
         Target::Player(player) => json!({ "type": "player", "seat": seat_name(player) }),
+        Target::Card(id) => json!({
+            "type": "card",
+            "objectId": id.0,
+            "instance": id.0,
+        }),
         Target::Permanent(id) => json!({
             "type": "permanent",
             "objectId": id.0,
@@ -289,6 +301,40 @@ const fn mana_color_name(color: ManaColor) -> &'static str {
     }
 }
 
+fn ability_origin_json(origin: AbilityOrigin) -> Value {
+    match origin {
+        AbilityOrigin::Printed {
+            definition,
+            part,
+            ability,
+        } => json!({
+            "kind": "printed",
+            "definition": definition.0,
+            "partId": part.0,
+            "abilityId": ability.0,
+        }),
+        AbilityOrigin::IntrinsicBasicLand(land_type) => json!({
+            "kind": "intrinsicBasicLand",
+            "landType": basic_land_type_name(land_type),
+        }),
+        AbilityOrigin::Granted { source, ability } => json!({
+            "kind": "granted",
+            "source": source.0,
+            "abilityId": ability.0,
+        }),
+    }
+}
+
+const fn basic_land_type_name(land_type: BasicLandType) -> &'static str {
+    match land_type {
+        BasicLandType::Plains => "plains",
+        BasicLandType::Island => "island",
+        BasicLandType::Swamp => "swamp",
+        BasicLandType::Mountain => "mountain",
+        BasicLandType::Forest => "forest",
+    }
+}
+
 /// Serializes one legal action. The `type` tag names the engine's action
 /// variant; the remaining fields identify what it operates on.
 #[must_use]
@@ -317,9 +363,14 @@ pub fn action_json(action: &Action) -> Value {
             "card": card.0,
             "playOptionId": option.0,
         }),
-        Action::ActivateManaAbility { source, color } => json!({
+        Action::ActivateManaAbility {
+            source,
+            ability,
+            color,
+        } => json!({
             "type": "ActivateManaAbility",
             "source": source.0,
+            "ability": ability_origin_json(*ability),
             "color": mana_color_name(*color),
         }),
         Action::PayLifeForMana => json!({ "type": "PayLifeForMana" }),
@@ -339,12 +390,26 @@ pub fn action_json(action: &Action) -> Value {
         }),
         Action::ActivateAbility {
             source,
-            target,
+            ability,
+            targets,
             sacrifice,
         } => json!({
             "type": "ActivateAbility",
             "source": source.0,
-            "target": target.map(target_json),
+            "ability": ability_origin_json(*ability),
+            "target": targets
+                .iter()
+                .flat_map(crate::TargetSelection::targets)
+                .next()
+                .copied()
+                .map(target_json),
+            "targets": targets
+                .iter()
+                .flat_map(crate::TargetSelection::targets)
+                .copied()
+                .map(target_json)
+                .collect::<Vec<_>>(),
+            "targetSelections": target_selections_json(targets),
             "sacrifice": sacrifice.map(|card| card.0),
         }),
         Action::DeclareAttacker { attacker } => {
@@ -444,9 +509,14 @@ fn mana_pool_json(pool: &crate::ManaPool) -> Value {
 }
 
 fn decision_json(catalog: &CardCatalog, decision: &DecisionObservation) -> Value {
-    json!({
+    let mut value = json!({
         "id": decision.id,
         "seat": seat_name(decision.player),
+        "kind": match decision.kind {
+            DecisionKind::Choice => "Choice",
+            DecisionKind::TriggerOrder => "TriggerOrder",
+            DecisionKind::TriggerPlacement => "TriggerPlacement",
+        },
         "prompt": decision.prompt,
         "visibility": format!("{:?}", decision.visibility),
         "minimum": decision.minimum,
@@ -454,6 +524,7 @@ fn decision_json(catalog: &CardCatalog, decision: &DecisionObservation) -> Value
         "cancellable": decision.cancellable,
         "options": decision.options.iter().map(|option| json!({
             "id": option.id,
+            "triggerId": matches!(decision.kind, DecisionKind::TriggerOrder).then_some(option.id),
             "label": option.label,
             "card": option.card.map(|(instance, definition)| json!({
                 "objectId": instance.0,
@@ -461,9 +532,16 @@ fn decision_json(catalog: &CardCatalog, decision: &DecisionObservation) -> Value
                 "definition": definition.0,
                 "name": card_name(catalog, definition),
             })),
+            "abilityText": option.ability_text,
             "zone": format!("{:?}", option.zone),
         })).collect::<Vec<_>>(),
-    })
+    });
+    if let Some(order_semantics) = decision.order_semantics {
+        value["orderSemantics"] = Value::from(match order_semantics {
+            DecisionOrderSemantics::Resolution => "resolution",
+        });
+    }
+    value
 }
 
 fn result_json(result: GameResult) -> Value {
@@ -636,6 +714,12 @@ pub fn observation_json_for_format(
 }
 
 fn stack_object_json(catalog: &CardCatalog, object: &StackObservation) -> Value {
+    let ability_id = object.ability.and_then(|origin| match origin {
+        AbilityOrigin::Printed { ability, .. } | AbilityOrigin::Granted { ability, .. } => {
+            Some(ability.0)
+        }
+        AbilityOrigin::IntrinsicBasicLand(_) => None,
+    });
     json!({
         "objectId": object.id.0,
         "stackId": object.id.0,
@@ -643,9 +727,14 @@ fn stack_object_json(catalog: &CardCatalog, object: &StackObservation) -> Value 
         "instance": object.id.0,
         "sourceObjectId": object.source.map(|source| source.0),
         "source": object.source.map(|source| source.0),
+        "ability": object.ability.map(ability_origin_json),
+        // Compatibility projection for clients that only know clause IDs.
+        "abilityId": ability_id,
+        "abilityText": object.ability_text,
         "kind": match object.kind {
             StackObjectKind::Spell => "Spell",
             StackObjectKind::ActivatedAbility => "ActivatedAbility",
+            StackObjectKind::TriggeredAbility => "TriggeredAbility",
         },
         "definition": object.definition.0,
         "name": stack_card_name(catalog, object.definition, object.signature.as_ref()),
@@ -680,10 +769,11 @@ fn mana_cost_json(cost: &ManaCost) -> Value {
     })
 }
 
-const fn effect_status_name(status: CardEffectStatus) -> &'static str {
+const fn implementation_status_name(status: ImplementationStatus) -> &'static str {
     match status {
-        CardEffectStatus::Implemented => "implemented",
-        CardEffectStatus::MetadataOnly => "metadataOnly",
+        ImplementationStatus::Complete => "complete",
+        ImplementationStatus::Partial => "partial",
+        ImplementationStatus::MetadataOnly => "metadataOnly",
     }
 }
 
@@ -716,12 +806,12 @@ fn rules_json(rules: &CardRules, mana_cost: Option<&ManaCost>) -> Value {
     let stats = rules.creature_stats;
     json!({
         "kind": format!("{:?}", rules.kind),
-        "typeLine": rules.type_line,
+        "typeLine": rules.type_line(),
         "manaCost": mana_cost.map(mana_cost_json),
         "power": stats.map(|stats| stats.power),
         "toughness": stats.map(|stats| stats.toughness),
-        "rulesText": rules.text,
-        "effectStatus": effect_status_name(rules.effect_status),
+        "rulesText": rules.rules_text(),
+        "implementationStatus": implementation_status_name(rules.implementation_status()),
         "colors": rules.colors,
     })
 }
@@ -781,7 +871,6 @@ fn mode_json(mode: &ModeDef) -> Value {
         "id": mode.id.0,
         "label": mode.label,
         "targets": mode.targets.iter().map(target_slot_json).collect::<Vec<_>>(),
-        "effectStatus": effect_status_name(mode.effect_status),
     })
 }
 
@@ -816,13 +905,13 @@ fn play_option_json(option: &PlayOptionDef) -> Value {
             "label": cost.label,
             "manaCost": cost.mana_cost.as_ref().map(mana_cost_json),
         })).collect::<Vec<_>>(),
-        "effectStatus": effect_status_name(option.effect_status),
     })
 }
 
 fn definition_json(catalog: &CardCatalog, format: Format, card: &CardDefinition) -> Value {
     let rules = &card.rules;
     let stats = rules.creature_stats;
+    let mana_cost = card.primary_part().and_then(|part| part.mana_cost.as_ref());
     let allowed = catalog.is_allowed_in(card.id, format);
     let banned = catalog.is_banned_in(card.id, format);
     let restricted = catalog.is_restricted_in(card.id, format);
@@ -831,18 +920,18 @@ fn definition_json(catalog: &CardCatalog, format: Format, card: &CardDefinition)
         "definition": card.id.0,
         "name": card.name,
         "kind": format!("{:?}", rules.kind),
-        "isBasicLand": card.is_basic_land,
-        "manaCost": mana_cost_json(&rules.mana_cost),
+        "isBasicLand": card.is_basic_land(),
+        "manaCost": mana_cost.map(mana_cost_json),
         "power": stats.map(|stats| stats.power),
         "toughness": stats.map(|stats| stats.toughness),
-        "rulesText": rules.text,
+        "rulesText": rules.rules_text(),
         "banned": banned,
         "restricted": restricted,
         // Protocol v2 structured and format-aware metadata.
         "allowed": allowed,
         "legal": allowed && !banned,
         "debutSet": card_set_slug(card.set),
-        "effectStatus": effect_status_name(rules.effect_status),
+        "implementationStatus": implementation_status_name(card.implementation_status()),
         "structure": structure_json(&card.structure),
         "parts": card.parts.iter().map(|part| {
             let mut value = rules_json(&part.rules, part.mana_cost.as_ref());
@@ -1174,6 +1263,52 @@ impl BotGame {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn activated_actions_serialize_their_exact_ability_origin() {
+        let mana = action_json(&Action::ActivateManaAbility {
+            source: GameObjectId(9),
+            ability: AbilityOrigin::IntrinsicBasicLand(BasicLandType::Mountain),
+            color: ManaColor::Red,
+        });
+        assert_eq!(mana["ability"]["kind"], "intrinsicBasicLand");
+        assert_eq!(mana["ability"]["landType"], "mountain");
+
+        let activated = action_json(&Action::ActivateAbility {
+            source: GameObjectId(10),
+            ability: AbilityOrigin::Printed {
+                definition: crate::card::cards::MISHRA_S_FACTORY,
+                part: crate::CardPartId::PRIMARY,
+                ability: crate::AbilityId(2),
+            },
+            targets: vec![
+                crate::TargetSelection::single(
+                    crate::TargetSlotId(3),
+                    Target::Player(PlayerId::Two),
+                ),
+                crate::TargetSelection::single(
+                    crate::TargetSlotId(7),
+                    Target::Permanent(GameObjectId(11)),
+                ),
+            ],
+            sacrifice: None,
+        });
+        assert_eq!(activated["ability"]["kind"], "printed");
+        assert_eq!(
+            activated["ability"]["definition"],
+            crate::card::cards::MISHRA_S_FACTORY.0
+        );
+        assert_eq!(activated["ability"]["partId"], 0);
+        assert_eq!(activated["ability"]["abilityId"], 2);
+        assert_eq!(activated["target"]["type"], "player");
+        assert_eq!(activated["targets"].as_array().unwrap().len(), 2);
+        assert_eq!(activated["targetSelections"][0]["slotId"], 3);
+        assert_eq!(activated["targetSelections"][1]["slotId"], 7);
+        assert_eq!(
+            activated["targetSelections"][1]["targets"][0]["objectId"],
+            11
+        );
+    }
 
     fn finish(mut game: BotGame, mut pick: impl FnMut(usize, &Value) -> usize) -> GameResult {
         for turn in 0..ACTION_LIMIT {
@@ -1657,6 +1792,63 @@ mod tests {
     }
 
     #[test]
+    fn catalog_mana_cost_distinguishes_no_cost_from_printed_zero() {
+        let catalog = poc::catalog().expect("catalog builds");
+        let value = catalog_json(&catalog);
+        let cards = value["cards"].as_array().expect("cards array");
+        let find = |name: &str| {
+            cards
+                .iter()
+                .find(|card| card["name"] == name)
+                .unwrap_or_else(|| panic!("{name} is cataloged"))
+        };
+
+        let mountain = find("Mountain");
+        assert!(mountain["manaCost"].is_null());
+        assert!(mountain["parts"][0]["manaCost"].is_null());
+
+        let mox = find("Mox Ruby");
+        assert!(mox["manaCost"].is_object());
+        assert_eq!(mox["manaCost"]["generic"], 0);
+        assert_eq!(mox["parts"][0]["manaCost"]["generic"], 0);
+    }
+
+    #[test]
+    fn catalog_exposes_derived_implementation_coverage_not_the_play_gate() {
+        let catalog = poc::catalog().expect("catalog builds");
+        let value = catalog_json_for_format(&catalog, Format::IsdRtrStandard);
+        let cards = value["cards"].as_array().expect("cards array");
+        let find = |name: &str| {
+            cards
+                .iter()
+                .find(|card| card["name"] == name)
+                .unwrap_or_else(|| panic!("{name} is cataloged"))
+        };
+
+        let pilgrim = find("Avacyn's Pilgrim");
+        assert_eq!(pilgrim["implementationStatus"], "complete");
+        assert_eq!(pilgrim["parts"][0]["implementationStatus"], "complete");
+        assert!(pilgrim.get("effectStatus").is_none());
+        assert!(pilgrim["parts"][0].get("effectStatus").is_none());
+
+        let vault = find("Vault of the Archangel");
+        assert_eq!(vault["implementationStatus"], "partial");
+        assert_eq!(vault["parts"][0]["implementationStatus"], "partial");
+
+        let act = find("Blasphemous Act");
+        assert_eq!(act["implementationStatus"], "metadataOnly");
+        assert_eq!(act["parts"][0]["implementationStatus"], "metadataOnly");
+
+        assert!(cards.iter().all(|card| {
+            card["playOptions"].as_array().is_some_and(|options| {
+                options
+                    .iter()
+                    .all(|option| option.get("effectStatus").is_none())
+            })
+        }));
+    }
+
+    #[test]
     fn deck_names_all_resolve() {
         for name in deck_names() {
             assert!(deck_by_name(name).is_some(), "{name} resolves");
@@ -1871,6 +2063,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::too_many_lines)]
     fn stack_json_uses_game_object_identity_and_preserves_cast_signature() {
         let catalog = poc::catalog().expect("catalog builds");
         let signature = CastSignature::from_validated_choices(
@@ -1881,6 +2074,8 @@ mod tests {
             id: GameObjectId(40),
             kind: StackObjectKind::Spell,
             source: None,
+            ability: None,
+            ability_text: None,
             definition: crate::card::cards::TURN_BURN,
             controller: PlayerId::One,
             targets: signature.iter_targets().copied().collect(),
@@ -1911,6 +2106,8 @@ mod tests {
             id: GameObjectId(41),
             kind: StackObjectKind::Spell,
             source: None,
+            ability: None,
+            ability_text: None,
             definition: crate::card::cards::TURN_BURN,
             controller: PlayerId::One,
             targets: Vec::new(),
@@ -1924,6 +2121,8 @@ mod tests {
             id: GameObjectId(42),
             kind: StackObjectKind::ActivatedAbility,
             source: Some(GameObjectId(39)),
+            ability: None,
+            ability_text: None,
             definition: crate::card::cards::MISHRA_S_FACTORY,
             controller: PlayerId::One,
             targets: Vec::new(),
@@ -1941,6 +2140,94 @@ mod tests {
             "the ability and its source are distinct game objects"
         );
         assert!(ability_value["signature"].is_null());
+
+        let trigger = StackObservation {
+            id: GameObjectId(43),
+            kind: StackObjectKind::TriggeredAbility,
+            source: Some(GameObjectId(38)),
+            ability: Some(AbilityOrigin::Printed {
+                definition: crate::card::cards::ANKH_OF_MISHRA,
+                part: crate::CardPartId::PRIMARY,
+                ability: crate::AbilityId::PRIMARY,
+            }),
+            ability_text: Some(
+                "Whenever a land enters, Ankh of Mishra deals 2 damage to its controller.".into(),
+            ),
+            definition: crate::card::cards::ANKH_OF_MISHRA,
+            controller: PlayerId::Two,
+            targets: Vec::new(),
+            chosen_permanents: Vec::new(),
+            x: 0,
+            signature: None,
+        };
+        let trigger_value = stack_object_json(&catalog, &trigger);
+        assert_eq!(trigger_value["kind"], "TriggeredAbility");
+        assert_eq!(trigger_value["sourceObjectId"], 38);
+        assert_eq!(trigger_value["abilityId"], 0);
+        assert_eq!(trigger_value["ability"]["kind"], "printed");
+        assert_eq!(
+            trigger_value["ability"]["definition"],
+            crate::card::cards::ANKH_OF_MISHRA.0
+        );
+        assert_eq!(
+            trigger_value["abilityText"],
+            "Whenever a land enters, Ankh of Mishra deals 2 damage to its controller."
+        );
+        assert_eq!(trigger_value["controller"], "p2");
+    }
+
+    #[test]
+    fn decision_json_exposes_trigger_procedure_and_resolution_order_semantics() {
+        let catalog = poc::catalog().expect("catalog builds");
+        let decision = DecisionObservation {
+            id: 7,
+            player: PlayerId::One,
+            kind: DecisionKind::TriggerOrder,
+            order_semantics: Some(DecisionOrderSemantics::Resolution),
+            prompt: "Choose the order your triggers resolve".into(),
+            visibility: crate::game::DecisionVisibility::Public,
+            preference: crate::game::DecisionPreference::Neutral,
+            minimum: 2,
+            maximum: 2,
+            cancellable: false,
+            options: vec![
+                crate::game::DecisionOption {
+                    id: 11,
+                    label: "First Ankh trigger".into(),
+                    card: Some((GameObjectId(81), crate::card::cards::ANKH_OF_MISHRA)),
+                    ability_text: Some("First frozen trigger text".into()),
+                    zone: crate::game::DecisionZone::Battlefield,
+                },
+                crate::game::DecisionOption {
+                    id: 12,
+                    label: "Second Ankh trigger".into(),
+                    card: Some((GameObjectId(82), crate::card::cards::ANKH_OF_MISHRA)),
+                    ability_text: Some("Second frozen trigger text".into()),
+                    zone: crate::game::DecisionZone::Battlefield,
+                },
+            ],
+        };
+
+        let value = decision_json(&catalog, &decision);
+        assert_eq!(value["kind"], "TriggerOrder");
+        assert_eq!(value["orderSemantics"], "resolution");
+        assert_eq!(value["options"][0]["triggerId"], 11);
+        assert_eq!(value["options"][0]["card"]["objectId"], 81);
+        assert_eq!(
+            value["options"][0]["abilityText"],
+            "First frozen trigger text"
+        );
+
+        let ordinary = DecisionObservation {
+            kind: DecisionKind::Choice,
+            order_semantics: None,
+            ..decision
+        };
+        assert!(
+            decision_json(&catalog, &ordinary)
+                .get("orderSemantics")
+                .is_none()
+        );
     }
 
     #[test]

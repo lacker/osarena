@@ -161,7 +161,7 @@ impl Format {
     /// printing selected for a deck does not change that identity's legality.
     #[must_use]
     pub fn allows_card(self, card: &CardDefinition) -> bool {
-        card.is_basic_land
+        card.is_basic_land()
             || card
                 .printings
                 .iter()

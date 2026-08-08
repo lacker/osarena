@@ -3,11 +3,17 @@
 use std::error::Error;
 use std::fmt;
 
-use crate::card::{CardBehavior, CardCatalog};
+use crate::card::{
+    AbilityCostDef, BasicLandType, CardBehavior, CardCatalog, CardKind, CardSupertype,
+    DeclarativeAbilityDef, EffectDef, ValueDef,
+};
 use crate::game::{
     DecisionObservation, DecisionPreference, Game, GameResult, PlayerObservation, Step,
 };
-use crate::{Action, ActionError, CardDefinitionId, CastChoices, GameObjectId, PlayerId, Target};
+use crate::{
+    AbilityOrigin, Action, ActionError, CardDefinitionId, CastChoices, GameObjectId, PlayerId,
+    Target,
+};
 
 /// Chooses one of the actions in a player's current observation.
 pub trait Policy {
@@ -92,6 +98,28 @@ pub struct HandcraftedPolicy {
     mulligans_taken: u8,
 }
 
+#[derive(Clone, Copy, Debug, Default)]
+struct DeclarativeSpellProfile {
+    damage: Option<u16>,
+    cards_drawn: Option<u16>,
+    effect_kinds: u8,
+}
+
+impl DeclarativeSpellProfile {
+    const COUNTERS: u8 = 1 << 0;
+    const REMOVES: u8 = 1 << 1;
+    const TAPS: u8 = 1 << 2;
+    const APPLIES: u8 = 1 << 3;
+
+    fn mark(&mut self, effect_kind: u8) {
+        self.effect_kinds |= effect_kind;
+    }
+
+    const fn has(self, effect_kind: u8) -> bool {
+        self.effect_kinds & effect_kind != 0
+    }
+}
+
 impl HandcraftedPolicy {
     #[must_use]
     pub fn new(catalog: CardCatalog) -> Self {
@@ -102,7 +130,106 @@ impl HandcraftedPolicy {
     }
 
     fn behavior(&self, definition: CardDefinitionId) -> Option<CardBehavior> {
-        self.catalog.get(definition).map(|card| card.behavior)
+        self.catalog
+            .get(definition)
+            .and_then(|card| card.rules.special_behavior())
+    }
+
+    fn is_mana_source(&self, definition: CardDefinitionId) -> bool {
+        self.catalog.get(definition).is_some_and(|card| {
+            card.rules.ability_clauses().iter().any(|ability| {
+                ability.implementation.is_executable()
+                    && matches!(ability.definition, DeclarativeAbilityDef::ActivatedMana(_))
+            })
+        })
+    }
+
+    fn declarative_mana_value(&self, definition: CardDefinitionId) -> Option<i32> {
+        let card = self.catalog.get(definition)?;
+        if card.rules.kind == CardKind::Land {
+            return self.is_mana_source(definition).then_some(80);
+        }
+        card.rules
+            .ability_clauses()
+            .iter()
+            .filter(|ability| ability.implementation.is_executable())
+            .find_map(|ability| {
+                let DeclarativeAbilityDef::ActivatedMana(definition) = ability.definition else {
+                    return None;
+                };
+                let EffectDef::AddMana(effect) = ability.effect else {
+                    return None;
+                };
+                Some(
+                    if effect.amount >= 3
+                        && definition.costs.contains(&AbilityCostDef::SacrificeSource)
+                    {
+                        100
+                    } else {
+                        90
+                    },
+                )
+            })
+    }
+
+    fn declarative_spell_profile(
+        &self,
+        definition: CardDefinitionId,
+        x: u16,
+    ) -> Option<DeclarativeSpellProfile> {
+        let card = self.catalog.get(definition)?;
+        let ability = card.rules.ability_clauses().iter().find(|ability| {
+            ability.implementation.is_executable()
+                && matches!(ability.definition, DeclarativeAbilityDef::Spell(_))
+        })?;
+        let mut profile = DeclarativeSpellProfile::default();
+        Self::collect_spell_effect_profile(ability.effect, x, &mut profile);
+        Some(profile)
+    }
+
+    fn collect_spell_effect_profile(
+        effect: EffectDef,
+        x: u16,
+        profile: &mut DeclarativeSpellProfile,
+    ) {
+        match effect {
+            EffectDef::Sequence(effects) => {
+                for effect in effects {
+                    Self::collect_spell_effect_profile(*effect, x, profile);
+                }
+            }
+            EffectDef::DealDamage { amount, .. } => {
+                profile.damage = Self::policy_value(amount, x);
+            }
+            EffectDef::DrawCards { amount, .. } => {
+                profile.cards_drawn = Self::policy_value(amount, x);
+            }
+            EffectDef::Counter { .. } => profile.mark(DeclarativeSpellProfile::COUNTERS),
+            EffectDef::Destroy { .. } => profile.mark(DeclarativeSpellProfile::REMOVES),
+            EffectDef::Tap { .. } => profile.mark(DeclarativeSpellProfile::TAPS),
+            EffectDef::Apply { .. } => profile.mark(DeclarativeSpellProfile::APPLIES),
+            EffectDef::None
+            | EffectDef::AddMana(_)
+            | EffectDef::GainLife { .. }
+            | EffectDef::LoseLife { .. }
+            | EffectDef::Sacrifice { .. }
+            | EffectDef::AddPlusOneCounters { .. }
+            | EffectDef::OptionalManaPayment { .. }
+            | EffectDef::EntersTapped
+            | EffectDef::MoveToZone { .. }
+            | EffectDef::Special(_) => {}
+        }
+    }
+
+    fn policy_value(value: ValueDef, x: u16) -> Option<u16> {
+        match value {
+            ValueDef::Constant(value) => u16::try_from(value).ok(),
+            ValueDef::ChosenX => Some(x),
+            ValueDef::SourcePower
+            | ValueDef::SourceToughness
+            | ValueDef::TriggerEventAmount
+            | ValueDef::CardsInHandAbove { .. } => None,
+        }
     }
 
     fn hand_definition(
@@ -177,7 +304,7 @@ impl HandcraftedPolicy {
                         1_000
                     }
                 }),
-            Target::Player(_) => -10_000,
+            Target::Player(_) | Target::Card(_) => -10_000,
         }
     }
 
@@ -186,9 +313,7 @@ impl HandcraftedPolicy {
             behavior,
             Some(
                 CardBehavior::SwordsToPlowshares
-                    | CardBehavior::Disenchant
                     | CardBehavior::DivineOffering
-                    | CardBehavior::Shatter
                     | CardBehavior::Terror
                     | CardBehavior::DustToDust
                     | CardBehavior::Detonate
@@ -212,7 +337,7 @@ impl HandcraftedPolicy {
                         250 + i32::from(permanent.power.unwrap_or(0).max(0)) * 25
                     }
                 }),
-            Target::Player(_) | Target::Spell(_) => -10_000,
+            Target::Player(_) | Target::Card(_) | Target::Spell(_) => -10_000,
         }
     }
 
@@ -231,7 +356,7 @@ impl HandcraftedPolicy {
                         250
                     }
                 }),
-            Target::Spell(_) => 100,
+            Target::Card(_) | Target::Spell(_) => 100,
         }
     }
 
@@ -265,46 +390,25 @@ impl HandcraftedPolicy {
                         100
                     }
                 }),
-            Target::Spell(_) => -500,
+            Target::Card(_) | Target::Spell(_) => -500,
         }
     }
 
     fn card_value(&self, definition: CardDefinitionId) -> i32 {
+        if let Some(value) = self.declarative_mana_value(definition) {
+            return value;
+        }
         match self.behavior(definition) {
-            Some(CardBehavior::BlackLotus) => 100,
-            Some(
-                CardBehavior::MoxRuby
-                | CardBehavior::MoxEmerald
-                | CardBehavior::MoxJet
-                | CardBehavior::MoxPearl
-                | CardBehavior::MoxSapphire
-                | CardBehavior::ManaVault
-                | CardBehavior::SolRing,
-            ) => 90,
-            Some(
-                CardBehavior::Island
-                | CardBehavior::Forest
-                | CardBehavior::Pendelhaven
-                | CardBehavior::Mountain
-                | CardBehavior::MishrasFactory
-                | CardBehavior::Badlands
-                | CardBehavior::Bayou
-                | CardBehavior::CityOfBrass
-                | CardBehavior::Plateau
-                | CardBehavior::Plains
-                | CardBehavior::Savannah
-                | CardBehavior::Scrubland
-                | CardBehavior::StripMine
-                | CardBehavior::Taiga
-                | CardBehavior::TropicalIsland
-                | CardBehavior::Tundra
-                | CardBehavior::UndergroundSea
-                | CardBehavior::VolcanicIsland,
-            ) => 80,
             Some(CardBehavior::LightningBolt | CardBehavior::GoblinGrenade) => 75,
             Some(behavior) if behavior.kind().is_creature() => 65,
             Some(_) => 55,
-            None => 0,
+            None => self.catalog.get(definition).map_or(0, |card| {
+                if card.rules.kind.is_creature() {
+                    65
+                } else {
+                    55
+                }
+            }),
         }
     }
 
@@ -314,7 +418,12 @@ impl HandcraftedPolicy {
         card: GameObjectId,
         choices: &CastChoices,
     ) -> i32 {
-        let behavior = Self::hand_definition(observation, card).and_then(|id| self.behavior(id));
+        let definition = Self::hand_definition(observation, card);
+        let behavior = definition.and_then(|id| self.behavior(id));
+        let declarative = definition.and_then(|id| self.declarative_spell_profile(id, choices.x()));
+        let kind = definition
+            .and_then(|id| self.catalog.get(id))
+            .map(|card| card.rules.kind);
         let x = choices.x();
         let damage = match behavior {
             Some(CardBehavior::LightningBolt | CardBehavior::ChainLightning) => Some(3),
@@ -323,20 +432,19 @@ impl HandcraftedPolicy {
                 x.checked_div(u16::try_from(choices.iter_targets().count()).unwrap_or(u16::MAX))
                     .unwrap_or(0),
             ),
-            _ => None,
+            _ => declarative.and_then(|profile| profile.damage),
         };
+        let cards_drawn = declarative.and_then(|profile| profile.cards_drawn);
+        let counters = declarative
+            .is_some_and(|profile| profile.has(DeclarativeSpellProfile::COUNTERS))
+            || matches!(behavior, Some(CardBehavior::RedElementalBlast));
+        let removes = declarative
+            .is_some_and(|profile| profile.has(DeclarativeSpellProfile::REMOVES))
+            || Self::is_hostile_removal(behavior);
         let target_score: i32 = choices
             .iter_targets()
             .map(|target| {
-                if matches!(
-                    behavior,
-                    Some(CardBehavior::AncestralRecall | CardBehavior::Braingeyser)
-                ) {
-                    let cards_drawn = if behavior == Some(CardBehavior::AncestralRecall) {
-                        3
-                    } else {
-                        x
-                    };
+                if let Some(cards_drawn) = cards_drawn {
                     match target {
                         Target::Player(player) if *player == observation.viewer => {
                             if usize::from(cards_drawn) > observation.library_sizes[player.index()]
@@ -354,14 +462,11 @@ impl HandcraftedPolicy {
                                 -10_000
                             }
                         }
-                        Target::Permanent(_) | Target::Spell(_) => -10_000,
+                        Target::Card(_) | Target::Permanent(_) | Target::Spell(_) => -10_000,
                     }
-                } else if matches!(
-                    behavior,
-                    Some(CardBehavior::Counterspell | CardBehavior::RedElementalBlast)
-                ) {
+                } else if counters {
                     Self::counter_target_score(observation, *target)
-                } else if Self::is_hostile_removal(behavior) {
+                } else if removes {
                     Self::removal_target_score(observation, *target)
                 } else {
                     damage.map_or_else(
@@ -372,20 +477,22 @@ impl HandcraftedPolicy {
             })
             .sum();
         let base = match behavior {
-            Some(CardBehavior::AncestralRecall) => 9_200,
-            Some(CardBehavior::Counterspell | CardBehavior::RedElementalBlast) => 8_900,
-            Some(CardBehavior::SwordsToPlowshares | CardBehavior::Disenchant) => 8_400,
+            Some(CardBehavior::RedElementalBlast) => 8_900,
+            Some(CardBehavior::SwordsToPlowshares) => 8_400,
             Some(CardBehavior::TimeWalk) => 8_300,
-            Some(CardBehavior::Braingeyser) => 7_500 + i32::from(x) * 30,
             Some(CardBehavior::GoblinGrenade) => 8_500,
             Some(CardBehavior::LightningBolt | CardBehavior::ChainLightning) => 8_000,
             Some(CardBehavior::Fireball) => 7_900 + i32::from(x) * 20,
-            Some(CardBehavior::Shatter | CardBehavior::Detonate | CardBehavior::ChaosOrb) => 7_400,
+            Some(CardBehavior::Detonate | CardBehavior::ChaosOrb) => 7_400,
             Some(CardBehavior::Fork) => 7_300,
             Some(CardBehavior::WheelOfFortune) => 6_600,
             Some(behavior) if behavior.kind().is_permanent() => 6_800,
-            Some(_) => 6_200,
-            None => -10_000,
+            _ if cards_drawn.is_some_and(|amount| amount >= 3) => 9_200,
+            _ if counters => 8_900,
+            _ if removes => 8_400,
+            _ if damage.is_some() => 8_000,
+            None if kind.is_some_and(CardKind::is_permanent) => 6_800,
+            Some(_) | None => 6_200,
         };
         base + target_score
     }
@@ -394,28 +501,45 @@ impl HandcraftedPolicy {
         &self,
         observation: &PlayerObservation,
         source: GameObjectId,
-        target: Option<Target>,
+        ability: AbilityOrigin,
+        targets: &[crate::TargetSelection],
         sacrifice: Option<GameObjectId>,
     ) -> i32 {
-        let behavior =
-            Self::permanent_definition(observation, source).and_then(|id| self.behavior(id));
-        let target_score = target.map_or(0, |value| {
-            if behavior == Some(CardBehavior::OrcishMechanics) {
-                Self::damage_target_score(observation, value, 2)
-            } else if behavior == Some(CardBehavior::Triskelion) {
-                Self::damage_target_score(observation, value, 1)
-            } else {
-                Self::target_score(observation, value)
-            }
-        });
+        let source_definition = Self::permanent_definition(observation, source);
+        let behavior = source_definition.and_then(|id| self.behavior(id));
+        let declarative = source_definition
+            .and_then(|definition| self.declarative_activated_profile(definition, ability));
+        let target = targets
+            .iter()
+            .flat_map(crate::TargetSelection::targets)
+            .next()
+            .copied();
+        let target_score = targets
+            .iter()
+            .flat_map(crate::TargetSelection::targets)
+            .copied()
+            .map(|value| {
+                if behavior == Some(CardBehavior::OrcishMechanics) {
+                    Self::damage_target_score(observation, value, 2)
+                } else if behavior == Some(CardBehavior::Triskelion) {
+                    Self::damage_target_score(observation, value, 1)
+                } else if let Some(amount) = declarative.and_then(|profile| profile.damage) {
+                    Self::damage_target_score(observation, value, amount)
+                } else if declarative.is_some_and(|profile| {
+                    profile.has(DeclarativeSpellProfile::REMOVES | DeclarativeSpellProfile::TAPS)
+                }) {
+                    Self::removal_target_score(observation, value)
+                } else {
+                    Self::target_score(observation, value)
+                }
+            })
+            .sum::<i32>();
         let sacrifice_cost = sacrifice
             .filter(|card| *card != source)
             .and_then(|card| Self::permanent_definition(observation, card))
             .map_or(0, |definition| self.card_value(definition));
         let score = match behavior {
-            Some(
-                CardBehavior::ChaosOrb | CardBehavior::StripMine | CardBehavior::OrcishMechanics,
-            ) => 7_200 + target_score,
+            Some(CardBehavior::ChaosOrb | CardBehavior::OrcishMechanics) => 7_200 + target_score,
             // Animating a Factory that is already a creature does nothing but
             // spend mana, so only the +1/+1 mode stays repeatable.
             Some(CardBehavior::MishrasFactory)
@@ -432,16 +556,25 @@ impl HandcraftedPolicy {
                 -100
             }
             Some(CardBehavior::MishrasFactory) => 5_800 + target_score,
-            Some(
-                CardBehavior::GoblinBalloonBrigade
-                | CardBehavior::GraniteGargoyle
-                | CardBehavior::DragonWhelp,
-            ) => 5_200,
+            Some(CardBehavior::DragonWhelp) => 5_200,
             Some(CardBehavior::Atog) if self.atog_can_attack_for_lethal(observation, source) => {
                 10_000
             }
             Some(CardBehavior::Atog) => -100,
             Some(_) => 4_500 + target_score,
+            None if declarative.is_some_and(|profile| {
+                profile.has(DeclarativeSpellProfile::REMOVES | DeclarativeSpellProfile::TAPS)
+            }) =>
+            {
+                7_200 + target_score
+            }
+            None if declarative.is_some_and(|profile| profile.cards_drawn.is_some()) => 6_500,
+            None if declarative
+                .is_some_and(|profile| profile.has(DeclarativeSpellProfile::APPLIES)) =>
+            {
+                5_200 + target_score
+            }
+            None if declarative.is_some() => 4_500 + target_score,
             None => -10_000,
         };
         if behavior == Some(CardBehavior::OrcishMechanics)
@@ -451,6 +584,40 @@ impl HandcraftedPolicy {
             return -1_000;
         }
         score - sacrifice_cost
+    }
+
+    fn declarative_activated_profile(
+        &self,
+        definition: CardDefinitionId,
+        origin: AbilityOrigin,
+    ) -> Option<DeclarativeSpellProfile> {
+        let AbilityOrigin::Printed {
+            definition: origin_definition,
+            part,
+            ability,
+        } = origin
+        else {
+            return None;
+        };
+        if origin_definition != definition {
+            return None;
+        }
+        let ability = self
+            .catalog
+            .get(definition)?
+            .part(part)?
+            .rules
+            .ability_clauses()
+            .iter()
+            .find(|candidate| candidate.id == ability)?;
+        if !ability.implementation.is_executable()
+            || !matches!(ability.definition, DeclarativeAbilityDef::Activated(_))
+        {
+            return None;
+        }
+        let mut profile = DeclarativeSpellProfile::default();
+        Self::collect_spell_effect_profile(ability.effect, 0, &mut profile);
+        Some(profile)
     }
 
     fn atog_can_attack_for_lethal(
@@ -479,8 +646,9 @@ impl HandcraftedPolicy {
             .filter(|permanent| {
                 permanent.controller == observation.viewer
                     && self
-                        .behavior(permanent.definition)
-                        .is_some_and(|behavior| behavior.kind().is_artifact())
+                        .catalog
+                        .get(permanent.definition)
+                        .is_some_and(|card| card.rules.kind.is_artifact())
             })
             .count();
         let potential_power = atog
@@ -601,7 +769,7 @@ impl HandcraftedPolicy {
                             i32::from(assignment.amount)
                         }
                     }),
-                Target::Player(_) | Target::Spell(_) => 0,
+                Target::Player(_) | Target::Card(_) | Target::Spell(_) => 0,
             })
             .sum()
     }
@@ -613,39 +781,7 @@ impl HandcraftedPolicy {
         let mana_sources = observation
             .hand
             .iter()
-            .filter(|(_, definition)| {
-                matches!(
-                    self.behavior(*definition),
-                    Some(
-                        CardBehavior::Mountain
-                            | CardBehavior::MishrasFactory
-                            | CardBehavior::MoxEmerald
-                            | CardBehavior::MoxJet
-                            | CardBehavior::MoxPearl
-                            | CardBehavior::MoxRuby
-                            | CardBehavior::MoxSapphire
-                            | CardBehavior::ManaVault
-                            | CardBehavior::BlackLotus
-                            | CardBehavior::Island
-                            | CardBehavior::Forest
-                            | CardBehavior::Pendelhaven
-                            | CardBehavior::Badlands
-                            | CardBehavior::Bayou
-                            | CardBehavior::CityOfBrass
-                            | CardBehavior::Plateau
-                            | CardBehavior::Plains
-                            | CardBehavior::Savannah
-                            | CardBehavior::Scrubland
-                            | CardBehavior::Taiga
-                            | CardBehavior::Tundra
-                            | CardBehavior::TropicalIsland
-                            | CardBehavior::UndergroundSea
-                            | CardBehavior::VolcanicIsland
-                            | CardBehavior::FellwarStone
-                            | CardBehavior::LlanowarElves
-                    )
-                )
-            })
+            .filter(|(_, definition)| self.is_mana_source(*definition))
             .count();
         !(2..=5).contains(&mana_sources)
     }
@@ -680,7 +816,9 @@ impl HandcraftedPolicy {
         // The legend rule bins a duplicate on arrival. Replacing a tapped copy
         // with a fresh one is fine; duplicating an untapped one wastes both
         // the card and the land drop.
-        if behavior.is_some_and(CardBehavior::is_legendary)
+        if definition
+            .and_then(|id| self.catalog.get(id))
+            .is_some_and(|card| card.rules.has_supertype(CardSupertype::Legendary))
             && observation.battlefield.iter().any(|permanent| {
                 permanent.controller == observation.viewer
                     && Some(permanent.definition) == definition
@@ -689,11 +827,23 @@ impl HandcraftedPolicy {
         {
             return 40;
         }
+        let basic_land_type_count =
+            definition
+                .and_then(|id| self.catalog.get(id))
+                .map_or(0, |card| {
+                    BasicLandType::ALL
+                        .into_iter()
+                        .filter(|land_type| card.rules.has_subtype(land_type.subtype()))
+                        .count()
+                });
+        if basic_land_type_count >= 2 {
+            return 9_400;
+        }
+        if basic_land_type_count == 1 {
+            return 9_300;
+        }
         match behavior {
-            Some(CardBehavior::Tundra | CardBehavior::VolcanicIsland) => 9_400,
-            Some(CardBehavior::Island | CardBehavior::Mountain | CardBehavior::Plains) => 9_300,
             Some(CardBehavior::MishrasFactory) => 9_200,
-            Some(CardBehavior::StripMine) => 9_100,
             Some(_) | None => 9_000,
         }
     }
@@ -759,9 +909,11 @@ impl HandcraftedPolicy {
             Action::CastSpell { card, choices, .. } => self.score_cast(observation, *card, choices),
             Action::ActivateAbility {
                 source,
-                target,
+                ability,
+                targets,
                 sacrifice,
-            } => self.score_ability(observation, *source, *target, *sacrifice),
+                ..
+            } => self.score_ability(observation, *source, *ability, targets, *sacrifice),
             Action::DeclareAttacker { attacker } => self.score_attack(observation, *attacker),
             Action::DeclareBlocker { blocker, attacker } => {
                 Self::score_block(observation, *blocker, *attacker)

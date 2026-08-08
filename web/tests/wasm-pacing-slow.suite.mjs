@@ -122,7 +122,10 @@ test("[slow] the pass button label matches where the click actually lands", asyn
   assert.ok(total > 300, `exercised enough passes, got ${total}`);
   // "Go to damage" needs a block to have been declared, which this sweep only
   // reaches by luck; the defender test below covers it deliberately.
-  for (const required of ["Your turn", "End turn", "Go to attacks", "No blocks", "Go to their end step"]) {
+  // The focused pacing suite deterministically exercises "Go to attacks" and
+  // verifies its landing step. This broad action-order sweep may declare the
+  // human attackers directly instead of reaching that pass label.
+  for (const required of ["Your turn", "End turn", "No blocks", "Go to their end step"]) {
     assert.ok(tally.has(required), `saw "${required}"; got ${[...tally.keys()].join(", ")}`);
   }
 

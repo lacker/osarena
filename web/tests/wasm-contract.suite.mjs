@@ -23,6 +23,41 @@ test("The Deck exposes colored costs and control rules to the browser", async ()
 
   game.free();
 });
+
+test("card coverage comes from ability definitions rather than play gates", async () => {
+  await initializeWasm();
+
+  const game = new WebGame(
+    "Briksza Naya Midrange",
+    "Greer G/R Aggro",
+    "Handcrafted",
+    true,
+    2,
+    "isd-rtr-standard",
+  );
+  const opening = JSON.parse(game.state_json());
+  const pilgrim = opening.human.hand.find(
+    (card) => card.name === "Avacyn's Pilgrim",
+  );
+  const bonfire = opening.human.hand.find(
+    (card) => card.name === "Bonfire of the Damned",
+  );
+
+  assert.ok(pilgrim);
+  assert.equal(
+    pilgrim.implementationStatus,
+    "complete",
+    "its creature body and printed mana ability are fully modeled despite the legacy play gate",
+  );
+  assert.ok(bonfire);
+  assert.equal(bonfire.implementationStatus, "metadataOnly");
+  assert.ok(
+    opening.human.hand.every((card) => card.metadataOnly === undefined),
+    "the browser bridge no longer projects the internal gate as coverage",
+  );
+
+  game.free();
+});
 test("staged engine decisions are serialized as generic private choices", async () => {
   await initializeWasm();
 
@@ -35,6 +70,8 @@ test("staged engine decisions are serialized as generic private choices", async 
   game.act(state.actions.find((action) => action.label === "Cast Demonic Tutor").index);
   state = JSON.parse(game.state_json());
 
+  assert.equal(state.decision.kind, "Choice");
+  assert.equal(state.decision.orderSemantics, undefined);
   assert.equal(state.decision.visibility, "Private");
   // A search never obliges the searcher to find, so the minimum is zero even
   // with a full library. The client relies on this to offer "Choose none".
@@ -49,6 +86,54 @@ test("staged engine decisions are serialized as generic private choices", async 
   const choice = state.decision.options[0];
   game.choose_decision(state.decision.id, JSON.stringify([choice.id]));
   assert.equal(JSON.parse(game.state_json()).decision, null);
+
+  game.free();
+});
+
+test("concurrent triggers expose resolution ordering and frozen stack ability metadata", async () => {
+  await initializeWasm();
+
+  const game = new WebGame("Artifacts", "Goblins", "Random", true, 183);
+  let state = JSON.parse(game.state_json());
+  const act = (label) => {
+    const action = state.actions.find((candidate) => candidate.label.includes(label));
+    assert.ok(action, `${label} is available`);
+    game.act(action.index);
+    state = JSON.parse(game.state_json());
+  };
+
+  act("Keep this hand");
+  act("Cast Black Lotus");
+  act("Cast Mox Sapphire");
+  act("Black Lotus for Red");
+  act("Mox Sapphire for Blue");
+  act("Cast Ankh of Mishra");
+  act("Cast Ankh of Mishra");
+  act("Play Mountain");
+
+  assert.equal(state.decision.kind, "TriggerOrder");
+  assert.equal(state.decision.orderSemantics, "resolution");
+  assert.equal(state.decision.minimum, 2);
+  assert.equal(state.decision.maximum, 2);
+  assert.equal(state.decision.options.length, 2);
+  assert.equal(state.decision.options[0].triggerId, state.decision.options[0].id);
+  assert.match(state.decision.options[0].abilityText, /Whenever a land enters/);
+
+  const desiredResolutionOrder = state.decision.options.map((option) => option.id).reverse();
+  const firstSource = state.decision.options[1].cardId;
+  game.set_autopass(false);
+  game.choose_decision(state.decision.id, JSON.stringify(desiredResolutionOrder));
+  state = JSON.parse(game.state_json());
+
+  assert.equal(state.stack.length, 2);
+  assert.equal(state.stack[0].kind, "TriggeredAbility");
+  assert.equal(state.stack[0].sourceId, firstSource);
+  assert.equal(state.stack[0].abilityId, 0);
+  assert.match(state.stack[0].abilityText, /Whenever a land enters/);
+  assert.ok(
+    state.stack.every((object) => object.kind === "TriggeredAbility"),
+    "both objects remain visibly distinct triggered abilities",
+  );
 
   game.free();
 });
@@ -119,6 +204,11 @@ test("the Robots deck and its new card rules are packaged for the browser", asyn
   assert.equal(juggernaut.power, 5);
   assert.equal(juggernaut.toughness, 3);
   assert.match(juggernaut.rulesText, /attacks each combat if able/i);
+  assert.equal(
+    juggernaut.implementationStatus,
+    "partial",
+    "its body and attack requirement work while the Wall restriction is deferred",
+  );
 
   game.free();
 });
