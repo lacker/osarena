@@ -603,6 +603,7 @@ fn drawing_from_an_empty_library_loses_the_game() {
 }
 
 #[test]
+#[ignore = "slow simulation sweep"]
 fn all_builtin_deck_matchups_complete_under_deterministic_greedy_bots() {
     let decks = [
         ("Goblins", penta::poc::goblins()),

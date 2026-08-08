@@ -1536,6 +1536,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "slow simulation sweep"]
     fn bots_are_never_offered_the_chance_to_resign() {
         // Conceding is legal in every state and strictly dominated, so it is
         // not in the bot's list at all. That makes picking blindly — index
@@ -1583,6 +1584,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "slow simulation sweep"]
     fn decisions_reach_bots_as_concrete_indexed_actions() {
         // The engine's decision template has empty options; the protocol
         // must never show that to a bot. Play games until decisions appear

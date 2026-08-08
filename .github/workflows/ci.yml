@@ -1,59 +1,80 @@
 name: CI
 
-# Both jobs run the same scripts you run locally, so CI and `./scripts/*.sh`
-# cannot drift apart: if it passes here it passed the way you'd check it.
+# Every lane runs a target from the root Makefile used locally. The lanes are
+# independent so the longest Rust and browser simulations can run in parallel.
 on:
   push:
     branches: [main]
   pull_request:
 
-# A new push supersedes the run in flight for the same branch.
+permissions:
+  contents: read
+
+# A new push supersedes the run in flight for the same branch or pull request.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # Rust formatting, lints, and tests, plus the browser client and its
-  # engine tests. Equivalent to `./scripts/check-all.sh`.
-  check-all:
-    name: engine and web
-    runs-on: ubuntu-latest
+  check-tooling:
+    name: tooling
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # rust-toolchain.toml names the version, components, and targets, so
-      # there is nothing to restate here and nothing to drift.
+      - name: Install actionlint
+        uses: taiki-e/install-action@6c6fd71fe4fb72c3697d269963d0e15df8adedad # v2.85.10
+        with:
+          tool: actionlint@1.7.12
+
+      - name: Check repository tooling
+        run: make lint-infra
+
+  check-rust:
+    name: rust
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # rust-toolchain.toml owns the version, components, and targets.
       - name: Install the pinned Rust toolchain
         run: rustup show active-toolchain || rustup toolchain install
 
-      # The wasm-bindgen CLI must match the crate exactly or it refuses the
-      # module, so read the version out of the lockfile rather than pinning
-      # it twice and letting the two drift.
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: Check Rust
+        run: make check-rust
+
+  check-web:
+    name: web
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install the pinned Rust toolchain
+        run: rustup show active-toolchain || rustup toolchain install
+
+      # The CLI and crate must match exactly. The shared helper reads the crate
+      # version from the lockfile instead of maintaining a second version pin.
       - name: Read wasm-bindgen version from Cargo.lock
         id: wasm-bindgen
-        run: |
-          version="$(
-            awk '/^name = "wasm-bindgen"$/ { found = 1; next }
-                 found && /^version = / { gsub(/[",]/, "", $3); print $3; exit }' Cargo.lock
-          )"
-          if [[ -z "$version" ]]; then
-            echo "could not find wasm-bindgen in Cargo.lock" >&2
-            exit 1
-          fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(./scripts/wasm-bindgen-version.sh)" >> "$GITHUB_OUTPUT"
 
       - name: Install wasm-bindgen CLI
-        uses: taiki-e/install-action@v2
+        uses: taiki-e/install-action@6c6fd71fe4fb72c3697d269963d0e15df8adedad # v2.85.10
         with:
           tool: wasm-bindgen-cli@${{ steps.wasm-bindgen.outputs.version }}
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
 
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
         with:
           package_json_file: web/package.json
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           cache: pnpm
@@ -63,31 +84,31 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: web
 
-      # Generates the Git-ignored WASM bindings on the way through.
-      - name: check-all
-        run: ./scripts/check-all.sh
+      - name: Check web
+        run: make check-web
 
-  # The bot-facing surfaces: the C ABI and the Python module each play full
-  # games. Equivalent to `./scripts/check-bindings.sh`.
   check-bindings:
     name: bot bindings
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install the pinned Rust toolchain
         run: rustup show active-toolchain || rustup toolchain install
 
-      - uses: actions/setup-python@v7
+      # The Python package promises compatibility from 3.9 onward, so exercise
+      # the minimum supported interpreter rather than only a newer one.
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: "3.11"
+          python-version: "3.9"
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           # penta-py is its own workspace, so it needs naming separately.
           workspaces: |
             .
             bindings/penta-py
 
-      - name: check-bindings
-        run: ./scripts/check-bindings.sh
+      - name: Check bindings
+        run: make check-bindings

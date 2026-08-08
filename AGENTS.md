@@ -26,6 +26,44 @@ work exposes a missing field, relationship, index, or query pattern, update the
 refresh builder, both skills, and the documented schema together, then rebuild
 and validate the cache. Avoid expanding them for isolated one-off questions.
 
+## Validation
+
+Use the root `Makefile` as the canonical entry point; `make help` lists the
+available suites.
+
+- During implementation, run the narrowest target or filtered test that
+  exercises the changed behavior. Do not run the full gate after every edit.
+- Run `make check-fast` at coherent checkpoints. It covers formatting, lints,
+  normal Rust tests, and the fast browser-facing WASM suite without a
+  production web build or the simulation-heavy tests.
+- Run the relevant slow target when a change affects simulation, policy,
+  auto-pass, combat progression, or another behavior covered by that suite.
+- Run `make check` once the change is stable and ready to push or open as a PR.
+  If bindings changed, also run `make check-bindings`; `make ci` runs every
+  repository gate.
+- Do not rerun an unchanged passing suite unless later edits could affect it.
+  In the handoff, list the exact targets run and call out any deferred gate.
+- For UI changes, command-line checks do not replace the visual verification
+  below.
+
+Map changed paths to the narrowest useful target before broadening:
+
+- `src/game/**`, `src/card/**`, and core rules: `make test-engine-unit
+  FILTER=<name>` or `make test-engine-integration FILTER=<name>`.
+- `src/policy.rs` and policy behavior: `make test-policy FILTER=<name>`; add
+  `make test-rust-slow` when the simulation sweeps are relevant.
+- `src/protocol.rs`: `make test-engine-unit FILTER=protocol`, then
+  `make test-wasm-rust` plus the matching browser contract suite when the
+  exposed bridge can change. For `wasm/**`, start with the latter two targets.
+- `web/app/**`: `make lint-web`, `make typecheck-web`, and the matching WASM or
+  render target, followed by the required browser verification for UI changes.
+- `bindings/penta-ffi/**` or `bindings/penta-py/**`: use the corresponding
+  `make check-bindings-*` target; use strict `make check-bindings` before handoff.
+- `Makefile`, `scripts/**`, or `.github/workflows/**`: `make lint-infra` and
+  exercise the changed orchestration target. For `.github/dependabot.yml`,
+  validate against GitHub's Dependabot 2.0 schema. Run `make doctor` when
+  prerequisites are in question.
+
 ## UI changes
 
 For every change that can affect the web interface:

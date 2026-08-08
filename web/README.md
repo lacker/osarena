@@ -28,15 +28,33 @@ and unchanged bindings skip `wasm-bindgen`.
 
 ## Checks
 
-From the repository root, run:
+From the repository root, use the canonical `Makefile` task catalog and select
+the smallest relevant suite while iterating:
 
 ```bash
-./scripts/check-all.sh
+make lint-web
+make typecheck-web
+make test-web-wasm-casting PATTERN='auto-pass'
+make test-web-render
 ```
 
-That formats, lints, and tests both Rust crates, rebuilds the WASM artifact,
-builds the client, and runs the browser-facing tests. The shorter commands are
-available from this directory as `pnpm lint`, `pnpm build`, and `pnpm test`.
+The fast WASM tests are organized into `contract`, `casting`, `combat`, `pacing`,
+and `state` domains. Each has a discoverable target such as
+`make test-web-wasm-contract`; `make test-web-wasm` runs all five. These targets
+do not build the production application. Run the simulation-heavy sweeps with
+`make test-web-wasm-slow`, or use `make test-web-full` for every web test.
+`PATTERN` can narrow any domain or aggregate target by test name.
+
+`make check-fast` is the broad development checkpoint, while `make check` is
+the complete engine and web gate for stable, PR-ready work.
+
+From this directory, `pnpm run test:fast`, `pnpm run test:wasm`,
+`pnpm run test:wasm:slow`, and `pnpm run test:render` provide targeted aliases.
+The fast alias also discovers standalone Node tests that do not need a
+production build.
+`pnpm run typecheck` checks the application through the root orchestration.
+`pnpm test` and `pnpm run test:all` retain the complete web gate. `pnpm lint`
+and `pnpm build` remain available directly.
 
 ## Deploying
 

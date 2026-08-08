@@ -347,6 +347,7 @@ fn handcrafted_sacrifices_artifacts_to_atog_for_an_unblocked_lethal_attack() {
 }
 
 #[test]
+#[ignore = "slow simulation sweep"]
 fn handcrafted_policy_decisively_beats_random_across_builtin_decks_and_seats() {
     let catalog = poc::catalog().unwrap();
     let decks = [

@@ -120,6 +120,9 @@ impl Game {
     /// Answers a pending decision with explicit option ids, for multi-pick
     /// decisions where the default expansion in `legalActions` is not what
     /// you want. The observation's `decision` object lists the options.
+    // PyO3 materializes a Python sequence as an owned Vec at the language
+    // boundary, even though the engine only needs a borrowed slice.
+    #[allow(clippy::needless_pass_by_value)]
     fn choose_decision(&mut self, option_ids: Vec<u32>) -> PyResult<()> {
         self.inner
             .choose_decision(&option_ids)

@@ -272,9 +272,10 @@ mutates game rules in TypeScript.
 Build fresh browser bindings after changing the Rust API:
 
 ```sh
-rustup target add wasm32-unknown-unknown
-cargo install wasm-bindgen-cli
-./scripts/build-wasm.sh
+cargo install wasm-bindgen-cli \
+  --version "$(./scripts/wasm-bindgen-version.sh)" --locked
+make doctor
+make build-wasm
 ```
 
 Then start the interface:
@@ -293,20 +294,36 @@ The `dev`, `build`, and `test` workflows ensure the ignored WASM bindings are
 up to date before they run. Cargo checks incrementally, and `wasm-bindgen` is
 skipped when the compiled module and generator version are unchanged.
 
-```sh
-cargo test
-cargo clippy --all-targets --all-features -- -D warnings
-```
-
 ## Checks
 
-Two scripts cover everything, and CI runs exactly these on every push and
-pull request rather than restating their steps:
+The root `Makefile` is the shared task catalog for Rust, WASM, web, and binding
+checks. `make help` lists every target. During development, select the closest
+suite and optionally narrow it by test name:
 
 ```sh
-./scripts/check-all.sh       # Rust fmt, clippy, tests; web lint, build, tests
-./scripts/check-bindings.sh  # the C ABI and Python module each play full games
+make test-engine-unit FILTER=mana_burn
+make test-engine-integration FILTER=mountain_casts
+make test-web-wasm-pacing PATTERN='auto-pass'
+make typecheck-web
+make lint-web
 ```
+
+Use `make check-fast` for a broad checkpoint without the production web build
+or simulation-heavy sweeps. Once a change is stable and ready for a push or PR,
+`make check` runs the complete engine and web gate. Binding changes can use
+`make check-bindings-c` or `make check-bindings-python` while iterating, then
+strict `make check-bindings` for both. `make check-bindings-available` is the
+explicit best-effort local variant when Python is unavailable; `make ci` never
+skips a repository gate. The old `scripts/check-all.sh` entry point remains as
+a compatibility wrapper.
+
+All Cargo validation commands enforce the committed lockfiles, matching the
+web install's frozen-lockfile behavior. `make doctor` checks the local compiler,
+Node, pnpm, Python/C binding prerequisites, ShellCheck, Actionlint, the pinned
+Rust compiler/components and WASM target, and the exact `wasm-bindgen` CLI
+version required by `Cargo.lock`; it reports setup problems without installing
+tools implicitly. Install ShellCheck and Actionlint through your platform's
+package manager (`brew install shellcheck actionlint` on macOS).
 
 `rust-toolchain.toml` pins the Rust version, components, and the wasm
 target, so rustup installs the same compiler for contributors, maintainers,
