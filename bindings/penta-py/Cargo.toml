@@ -17,7 +17,7 @@ crate-type = ["cdylib"]
 [dependencies]
 # Renamed because this cdylib is itself the `penta` Python module.
 engine = { package = "penta", path = "../.." }
-pyo3 = { version = "0.24", features = ["extension-module", "abi3-py39"] }
+pyo3 = { version = "0.29", features = ["extension-module", "abi3-py39"] }
 
 [lints.rust]
 unsafe_code = "forbid"
