@@ -425,13 +425,28 @@ impl CardComposition {
     }
 }
 
+/// Canonical artwork metadata used when no exact printing is selected.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CardArt {
+    pub scryfall_id: String,
+    pub artist: String,
+}
+
+impl CardArt {
+    #[must_use]
+    pub fn new(scryfall_id: impl Into<String>, artist: impl Into<String>) -> Self {
+        Self {
+            scryfall_id: scryfall_id.into(),
+            artist: artist.into(),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CardDefinition {
     pub id: CardDefinitionId,
     pub name: String,
-    /// Canonical artwork metadata used when no exact printing is selected.
-    pub scryfall_id: Option<String>,
-    pub artist: Option<String>,
+    pub art: Option<CardArt>,
     /// The canonical record's debut set within this catalog.
     ///
     /// Rules that care where a card debuted, such as City in a Bottle, use
@@ -464,8 +479,7 @@ impl CardDefinition {
         Self {
             id,
             name,
-            scryfall_id: None,
-            artist: None,
+            art: None,
             set,
             printings: vec![CardPrinting::new(id, set)],
             is_basic_land,

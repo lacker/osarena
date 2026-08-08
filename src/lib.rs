@@ -17,7 +17,7 @@ pub mod rules;
 pub use action::{Action, ActionError, CombatDamageAssignment, ManaColor, Target};
 pub use card::{
     ActivatedAbilityText, AdditionalCostDef, AlternateManaCost, AlternateSpellKind,
-    AlternativeCostDef, CardBehavior, CardCatalog, CardComposition, CardDefinition,
+    AlternativeCostDef, CardArt, CardBehavior, CardCatalog, CardComposition, CardDefinition,
     CardEffectStatus, CardKind, CardPart, CardPrinting, CardPrintingId, CardRules, CardSet,
     CardStructure, CatalogError, CharacteristicContext, CharacteristicError, CreatureStats,
     DoubleFacedKind, LandEntry, ManaCost, ManaProduction, MeldComponentDef, MeldRecipeDef,

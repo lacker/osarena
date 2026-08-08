@@ -936,6 +936,7 @@ impl WebGame {
             .iter()
             .map(|permanent| {
                 let card = self.catalog.get(permanent.definition);
+                let art = card.and_then(|card| card.art.as_ref());
                 let part = card.and_then(|card| card.part(permanent.presented));
                 let rules = part
                     .map(|part| &part.rules)
@@ -960,8 +961,8 @@ impl WebGame {
                         || self.card_name(permanent.definition),
                         |part| part.name.clone(),
                     ),
-                    "scryfallId": card.and_then(|card| card.scryfall_id.as_deref()).unwrap_or(""),
-                    "artist": card.and_then(|card| card.artist.as_deref()).unwrap_or(""),
+                    "scryfallId": art.map_or("", |art| art.scryfall_id.as_str()),
+                    "artist": art.map_or("", |art| art.artist.as_str()),
                     "kind": current_kind,
                     "typeLine": rules.map_or("", |rules| rules.type_line),
                     "metadataOnly": rules.is_some_and(|rules| {
@@ -997,13 +998,14 @@ impl WebGame {
             .iter()
             .map(|(id, definition)| {
                 let card = self.catalog.get(*definition);
+                let art = card.and_then(|card| card.art.as_ref());
                 let mana_cost = card.map(|card| card.rules.mana_cost);
                 let creature_stats = card.and_then(|card| card.rules.creature_stats);
                 json!({
                     "id": id.0,
                     "name": self.card_name(*definition),
-                    "scryfallId": card.and_then(|card| card.scryfall_id.as_deref()).unwrap_or(""),
-                    "artist": card.and_then(|card| card.artist.as_deref()).unwrap_or(""),
+                    "scryfallId": art.map_or("", |art| art.scryfall_id.as_str()),
+                    "artist": art.map_or("", |art| art.artist.as_str()),
                     "kind": card.map_or("unknown".into(), |card| {
                         format!("{:?}", card.rules.kind).to_ascii_lowercase()
                     }),
@@ -1036,6 +1038,7 @@ impl WebGame {
                 // Enough card detail for the browser to draw a real card on
                 // the stack rather than a name tag.
                 let card = self.catalog.get(object.definition);
+                let art = card.and_then(|card| card.art.as_ref());
                 let signature = object.signature.as_ref();
                 let presentation = stack_card_presentation(card, signature);
                 let targets = signature.map_or_else(
@@ -1049,8 +1052,8 @@ impl WebGame {
                     "cardId": object.id.0,
                     "sourceId": object.source.map(|source| source.0),
                     "name": presentation.name,
-                    "scryfallId": card.and_then(|card| card.scryfall_id.as_deref()).unwrap_or(""),
-                    "artist": card.and_then(|card| card.artist.as_deref()).unwrap_or(""),
+                    "scryfallId": art.map_or("", |art| art.scryfall_id.as_str()),
+                    "artist": art.map_or("", |art| art.artist.as_str()),
                     "owner": if object.controller == self.human { "human" } else { "opponent" },
                     "kind": format!("{:?}", object.kind),
                     "x": signature.map_or(0, penta::CastSignature::x),

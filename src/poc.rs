@@ -50,12 +50,16 @@ mod tests {
                 "{} is missing rules text",
                 card.name
             );
+            let art = card
+                .art
+                .as_ref()
+                .unwrap_or_else(|| panic!("{} is missing art metadata", card.name));
             assert!(
-                card.scryfall_id.as_deref().is_some_and(is_uuid),
+                is_uuid(&art.scryfall_id),
                 "{} has an invalid Scryfall ID",
                 card.name
             );
-            let scryfall_id = card.scryfall_id.as_deref().unwrap();
+            let scryfall_id = art.scryfall_id.as_str();
             assert!(
                 scryfall_ids.insert(scryfall_id),
                 "{} repeats Scryfall ID {}",
@@ -63,9 +67,7 @@ mod tests {
                 scryfall_id
             );
             assert!(
-                card.artist
-                    .as_deref()
-                    .is_some_and(|artist| !artist.trim().is_empty()),
+                !art.artist.trim().is_empty(),
                 "{} is missing its artist",
                 card.name
             );
@@ -101,7 +103,10 @@ mod tests {
             ),
         ] {
             let card = catalog.get(id).unwrap();
-            assert_eq!(card.scryfall_id.as_deref(), Some(scryfall_id));
+            assert_eq!(
+                card.art.as_ref().map(|art| art.scryfall_id.as_str()),
+                Some(scryfall_id)
+            );
             assert_eq!(card.set, set);
         }
     }

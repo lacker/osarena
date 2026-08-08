@@ -20,11 +20,11 @@ pub use catalog::{CardCatalog, CatalogError};
 pub use characteristics::{CharacteristicContext, CharacteristicError, applicable_part_ids};
 pub use model::{
     ActivatedAbilityText, AdditionalCostDef, AlternateManaCost, AlternateSpellKind,
-    AlternativeCostDef, CardBehavior, CardComposition, CardDefinition, CardEffectStatus, CardKind,
-    CardPart, CardPrinting, CardPrintingId, CardRules, CardSet, CardStructure, CreatureStats,
-    DoubleFacedKind, LandEntry, ManaCost, ManaProduction, MeldComponentDef, MeldRecipeDef,
-    MeldResultDef, ModeDef, ModeSetDef, PlayActionKind, PlayOptionDef, PlayRestriction, SpellForm,
-    TargetPredicate, TargetSlotDef,
+    AlternativeCostDef, CardArt, CardBehavior, CardComposition, CardDefinition, CardEffectStatus,
+    CardKind, CardPart, CardPrinting, CardPrintingId, CardRules, CardSet, CardStructure,
+    CreatureStats, DoubleFacedKind, LandEntry, ManaCost, ManaProduction, MeldComponentDef,
+    MeldRecipeDef, MeldResultDef, ModeDef, ModeSetDef, PlayActionKind, PlayOptionDef,
+    PlayRestriction, SpellForm, TargetPredicate, TargetSlotDef,
 };
 
 /// The built-in catalog, validated once per process. Construction walks every

@@ -1,4 +1,6 @@
-use super::{CardBehavior, CardComposition, CardDefinition, CardPrinting, CardRules, CardSet};
+use super::{
+    CardArt, CardBehavior, CardComposition, CardDefinition, CardPrinting, CardRules, CardSet,
+};
 use crate::CardDefinitionId;
 
 type CompositionBuilder = fn() -> CardComposition;
@@ -56,8 +58,7 @@ impl CardRecord {
         CardDefinition {
             id: self.id,
             name: self.name.into(),
-            scryfall_id: Some(self.scryfall_id.to_owned()),
-            artist: Some(self.artist.to_owned()),
+            art: Some(CardArt::new(self.scryfall_id, self.artist)),
             set: self.set,
             printings: vec![CardPrinting::new(self.id, self.set)],
             is_basic_land: self.is_basic_land,
